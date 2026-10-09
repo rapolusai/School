@@ -16,7 +16,9 @@ The refresh token is an httpOnly, `SameSite=Strict` cookie named `refresh_token`
 | POST | `/api/auth/logout` | (refresh cookie) | `204`, cookie cleared, token family revoked |
 | POST | `/api/platform/auth/login` | `{ email, password }` | `200 AuthResponse` (platform admin, no refresh cookie) |
 
-`schoolCode`: 3–40 characters, lowercase letters, digits and hyphens, starting with a letter.
+`schoolCode`: 3–40 characters, lowercase letters, digits and hyphens, starting with a letter. A few
+codes are reserved (`admin`, `api`, `app`, `www`, `platform`, …) and answer `409` like a taken code.
+Self-service sign-up starts the school on a 14-day trial of the `STARTER` plan.
 `password`: at least 10 characters.
 `board`: one of `CBSE`, `ICSE`, `STATE`, `IB`, `CAMBRIDGE`.
 
@@ -43,6 +45,14 @@ type Me = {
 Login failures return `401` with a generic message (no hint whether the school, email or password was wrong).
 Repeated failures return `429`.
 
+Refresh rotates the cookie. A refresh with a cookie that was already replaced in the last 30 seconds (two
+tabs refreshing together) returns `401` and leaves the newer cookie alone; an older replaced cookie is
+treated as stolen: every session in that chain ends and the event is audited. Refresh and logout reject
+requests whose `Origin` header is not the web app.
+
+Audit actions written in Phase 0: `school.created`, `user.created`, `auth.login`, `auth.login_failed`,
+`auth.logout`, `auth.refresh_reused`.
+
 ## School (tenant) endpoints
 
 | Method | Path | Permission | Success |
@@ -67,7 +77,7 @@ type AuditEvent = { id: string; at: string; actorName: string | null; action: st
 | Method | Path | Success |
 | --- | --- | --- |
 | GET | `/api/platform/tenants` | `200 TenantSummary[]` |
-| POST | `/api/platform/tenants` | `201 TenantSummary`; body `{ schoolName, schoolCode, board, city, plan, adminName, adminEmail, password }` |
+| POST | `/api/platform/tenants` | `201 TenantSummary`; body `{ schoolName, schoolCode, board, city, plan, adminName, adminEmail, password }`. The school starts `ACTIVE` with no trial. |
 
 ```ts
 type TenantSummary = { id: string; name: string; code: string; status: string; plan: string;

@@ -15,7 +15,16 @@ import {
   formatLongDate,
   hourInIndia,
 } from "@/lib/format";
-import { localeFor, plural, roleLabel, translateOr, useI18n, type MessageKey } from "@/lib/i18n";
+import {
+  auditActionLabel,
+  auditEntityLabel,
+  localeFor,
+  plural,
+  roleLabel,
+  translateOr,
+  useI18n,
+  type MessageKey,
+} from "@/lib/i18n";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import type { Tenant } from "@/lib/types";
 import { useApiData } from "@/lib/use-api-data";
@@ -213,10 +222,12 @@ export function DashboardView() {
                     <History size={18} aria-hidden="true" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="mono break-words text-ink">{event.action}</p>
+                    <p className="break-words text-ink" title={event.action}>
+                      {auditActionLabel(t, event.action)}
+                    </p>
                     <p className="text-[13px] text-ink-3">
                       {event.actorName ?? t("common.system")}
-                      {event.entityType ? ` · ${event.entityType}` : ""}
+                      {event.entityType ? ` · ${auditEntityLabel(t, event.entityType)}` : ""}
                     </p>
                   </div>
                   <time className="text-xs text-ink-3 whitespace-nowrap" dateTime={event.at}>

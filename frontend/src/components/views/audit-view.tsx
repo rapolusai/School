@@ -3,7 +3,7 @@
 import { ErrorState, LoadingRows, PageHead } from "@/components/ui/states";
 import { api } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
-import { localeFor, plural, useI18n } from "@/lib/i18n";
+import { auditActionLabel, auditEntityLabel, localeFor, plural, useI18n } from "@/lib/i18n";
 import type { AuditEvent } from "@/lib/types";
 import { useApiData } from "@/lib/use-api-data";
 
@@ -54,11 +54,13 @@ export function AuditView() {
                         <time dateTime={event.at}>{formatDateTime(event.at, locale)}</time>
                       </td>
                       <td>{event.actorName ?? <span className="text-ink-3">{t("common.system")}</span>}</td>
-                      <td className="mono break-all text-ink">{event.action}</td>
+                      <td className="text-ink" title={event.action}>
+                        {auditActionLabel(t, event.action)}
+                      </td>
                       <td className="hidden md:table-cell">
                         {event.entityType ? (
                           <>
-                            {event.entityType}
+                            {auditEntityLabel(t, event.entityType)}
                             {event.entityId ? (
                               <span className="mono text-ink-3" title={event.entityId}>
                                 {" "}

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { en } from "./en";
 import { hi } from "./hi";
-import { plural, roleLabel, translate, translateOr, type Translate } from "./index";
+import { auditActionLabel, auditEntityLabel, plural, roleLabel, translate, translateOr, type Translate } from "./index";
 
 const placeholders = (text: string) => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
 
@@ -66,5 +66,18 @@ describe("translate", () => {
     for (const key of Object.keys(en)) {
       if (key.endsWith(".one")) expect(Object.keys(en), key).toContain(key.replace(/\.one$/, ".other"));
     }
+  });
+});
+
+describe("audit labels", () => {
+  const t: Translate = (key, vars) => translate("en", key, vars);
+
+  it("names known actions and entities in plain words", () => {
+    expect(auditActionLabel(t, "user.created")).toBe("Person added");
+    expect(auditEntityLabel(t, "school")).toBe("School");
+  });
+
+  it("shows unknown actions as the server sent them", () => {
+    expect(auditActionLabel(t, "fees.refunded")).toBe("fees.refunded");
   });
 });

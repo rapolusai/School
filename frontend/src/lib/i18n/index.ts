@@ -98,6 +98,16 @@ export function roleLabel(t: Translate, code: string, serverName?: string): stri
   return translateOr(t, `role.${code}`, serverName ?? code);
 }
 
+/** Readable name for an audit action such as "user.created"; unknown actions are shown as sent. */
+export function auditActionLabel(t: Translate, action: string): string {
+  return translateOr(t, `audit.action.${action}`, action);
+}
+
+/** Readable name for an audited entity type such as "user". */
+export function auditEntityLabel(t: Translate, entityType: string): string {
+  return translateOr(t, `audit.entity.${entityType}`, entityType);
+}
+
 /** Message bases that have ".one" and ".other" variants. */
 export type PluralBase = {
   [K in MessageKey]: K extends `${infer Base}.one` ? Base : never;

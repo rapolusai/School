@@ -189,7 +189,7 @@ export function SignupView() {
         </div>
       </div>
 
-      <form ref={formRef} className="flex flex-col gap-3.5" onSubmit={onSubmit} noValidate>
+      <form ref={formRef} method="post" className="flex flex-col gap-3.5" onSubmit={onSubmit} noValidate>
         <FormAlert message={formError} />
 
         {step === 1 ? (

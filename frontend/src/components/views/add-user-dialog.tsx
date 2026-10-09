@@ -117,7 +117,7 @@ export function AddUserDialog({
       description={t("users.dialog.description")}
       closeLabel={t("common.close")}
     >
-      <form className="flex flex-col gap-3.5" onSubmit={onSubmit} noValidate>
+      <form method="post" className="flex flex-col gap-3.5" onSubmit={onSubmit} noValidate>
         <FormAlert message={formError} />
         <TextField
           label={t("users.field.name")}

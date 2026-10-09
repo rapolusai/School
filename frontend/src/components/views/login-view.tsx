@@ -98,7 +98,8 @@ export function LoginView({
         </div>
       ) : null}
 
-      <form className="flex flex-col gap-3.5" onSubmit={onSubmit}>
+      {/* method="post": if scripts fail to load, a native submit must never put the password in the URL. */}
+      <form method="post" className="flex flex-col gap-3.5" onSubmit={onSubmit}>
         <FormAlert message={error} />
         {!platform ? (
           <TextField
