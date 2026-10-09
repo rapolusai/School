@@ -42,7 +42,9 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
             "academics.section", "academics.subject", "academics.class_subject", "students.student",
             "students.guardian", "students.student_guardian", "students.enrollment", "admissions.application",
             "admissions.application_guardian", "admissions.timeline_entry", "admissions.assessment_slot",
-            "attendance.register", "attendance.entry", "notifications.message", "notifications.settings");
+            "attendance.register", "attendance.entry", "notifications.message", "notifications.settings",
+            "staff.department", "staff.staff_profile", "staff.leave_type", "staff.leave_balance",
+            "staff.leave_request", "staff.attendance");
 
     /** The last day of the fixtures' current year, 2026-27. */
     static final LocalDate LAST_DAY = LocalDate.of(2027, 3, 31);
@@ -118,6 +120,24 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
                 {"absenceAlertsEnabled":true,"absenceAlertChannel":"SMS","alertLanguage":"en",
                  "quietHoursEnabled":true,"quietHoursStart":"21:00","quietHoursEnd":"07:00"}""")
                 .andExpect(status().isOk());
+        // Staff records: a department, a profile, leave types, a balance, a leave request and a check-in.
+        String department = TestApi.read(api.post("/api/staff/departments", admin.accessToken(), """
+                {"name":"Primary"}""").andExpect(status().isCreated()), "$.id");
+        String tara = TestApi.read(api.post("/api/staff", admin.accessToken(), """
+                {"name":"Tara Teacher","email":"tara@%s.akshara.test","password":"%s","roles":["TEACHER"],
+                 "employeeCode":"T-1","designation":"Teacher","departmentId":"%s","employmentType":"PERMANENT",
+                 "dateOfJoining":"2020-06-01","mobile":"9876501003"}"""
+                .formatted(school.code(), TestApi.PASSWORD, department)).andExpect(status().isCreated()), "$.userId");
+        String casual = TestApi.read(api.post("/api/leave/types/standard", admin.accessToken(), null)
+                .andExpect(status().isOk()), "$[0].id");
+        api.put("/api/leave/balances", admin.accessToken(), """
+                {"userId":"%s","leaveTypeId":"%s","opening":2,"accrued":12}""".formatted(tara, casual))
+                .andExpect(status().isOk());
+        Session taraSession = api.login(school.code(), "tara@" + school.code() + ".akshara.test", TestApi.PASSWORD);
+        api.post("/api/leave/requests", taraSession.accessToken(), """
+                {"leaveTypeId":"%s","fromDate":"2027-03-15","toDate":"2027-03-15","halfDay":false,
+                 "reason":"Family function"}""".formatted(casual)).andExpect(status().isCreated());
+        api.post("/api/staff-attendance/me/check-in", taraSession.accessToken(), null).andExpect(status().isOk());
         School other = api.signup();
 
         try (Connection app = appConnection(); Connection owner = ownerConnection()) {

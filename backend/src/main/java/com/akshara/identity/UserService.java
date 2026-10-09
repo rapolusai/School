@@ -1,10 +1,12 @@
 package com.akshara.identity;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -24,11 +26,14 @@ public class UserService {
     private final UserRepository users;
     private final RoleRepository roles;
     private final AuditService audit;
+    private final RefreshTokenRepository tokens;
 
-    public UserService(UserRepository users, RoleRepository roles, AuditService audit) {
+    public UserService(UserRepository users, RoleRepository roles, AuditService audit,
+            RefreshTokenRepository tokens) {
         this.users = users;
         this.roles = roles;
         this.audit = audit;
+        this.tokens = tokens;
     }
 
     /** Seeds the standard roles for a brand-new school. Runs inside the caller's transaction. */
@@ -64,5 +69,26 @@ public class UserService {
             audit.record(actor, "user.created", "user", user.getId(), details);
         }
         return user;
+    }
+
+    /**
+     * Stops a person of the current school signing in (for example when they leave) and ends their open sessions.
+     * The account and everything it did stay on record. Returns false when the account was already disabled.
+     */
+    @Transactional
+    public boolean disableUser(UUID userId, Map<String, ?> details, AuditService.Actor actor) {
+        TenantContext.require();
+        UserAccount user = users.findById(userId).orElseThrow(() -> ApiException.notFound("User"));
+        if (!user.disable()) {
+            return false;
+        }
+        users.flush();
+        tokens.revokeAllOf(userId, Instant.now());
+        if (actor == null) {
+            audit.record("user.disabled", "user", userId, details);
+        } else {
+            audit.record(actor, "user.disabled", "user", userId, details);
+        }
+        return true;
     }
 }

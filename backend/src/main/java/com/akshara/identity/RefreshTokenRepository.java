@@ -15,4 +15,12 @@ interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID> {
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("update RefreshToken t set t.revokedAt = ?2 where t.familyId = ?1 and t.revokedAt is null")
     int revokeFamily(UUID familyId, Instant at);
+
+    /**
+     * Ends every session of one person, for example when they leave the school. Does not clear the caller's
+     * persistence context, so entities it already loaded stay managed.
+     */
+    @Modifying(flushAutomatically = true)
+    @Query("update RefreshToken t set t.revokedAt = ?2 where t.userId = ?1 and t.revokedAt is null")
+    int revokeAllOf(UUID userId, Instant at);
 }

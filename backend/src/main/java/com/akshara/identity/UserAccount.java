@@ -88,6 +88,15 @@ public class UserAccount extends AssignedIdEntity {
         lastLoginAt = Instant.now();
     }
 
+    /** Stops the person signing in. Returns false when they already could not. Nothing is deleted. */
+    boolean disable() {
+        if (status == UserStatus.DISABLED) {
+            return false;
+        }
+        status = UserStatus.DISABLED;
+        return true;
+    }
+
     public boolean isActive() {
         return status == UserStatus.ACTIVE;
     }
