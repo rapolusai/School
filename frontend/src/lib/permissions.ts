@@ -1,6 +1,8 @@
 import {
   Building2,
+  GraduationCap,
   LayoutDashboard,
+  School,
   ScrollText,
   ShieldCheck,
   Users,
@@ -9,17 +11,22 @@ import {
 import type { MessageKey } from "./i18n/en";
 import type { Me } from "./types";
 
-/** Permission codes from docs/api/phase-0.md. */
+/** Permission codes from docs/api/phase-0.md and docs/api/phase-1.md. */
 export const PERMISSIONS = {
   dashboardView: "dashboard.view",
   usersRead: "users.read",
   usersManage: "users.manage",
   rolesRead: "roles.read",
   auditRead: "audit.read",
+  settingsManage: "settings.manage",
+  academicsRead: "academics.read",
+  studentsRead: "students.read",
+  studentsManage: "students.manage",
+  childView: "child.view",
   platformAdmin: "platform.admin",
 } as const;
 
-export type NavGroup = "overview" | "administration" | "platform";
+export type NavGroup = "overview" | "academics" | "administration" | "platform";
 
 export type NavItem = {
   key: string;
@@ -32,7 +39,7 @@ export type NavItem = {
   group: NavGroup;
 };
 
-/** Every Phase 0 navigation item, in display order. */
+/** Every navigation item, in display order. */
 export const NAV_ITEMS: readonly NavItem[] = [
   {
     key: "dashboard",
@@ -42,6 +49,24 @@ export const NAV_ITEMS: readonly NavItem[] = [
     icon: LayoutDashboard,
     permission: PERMISSIONS.dashboardView,
     group: "overview",
+  },
+  {
+    key: "students",
+    href: "/app/students",
+    labelKey: "nav.students",
+    shortLabelKey: "nav.students.short",
+    icon: GraduationCap,
+    permission: PERMISSIONS.studentsRead,
+    group: "academics",
+  },
+  {
+    key: "setup",
+    href: "/app/setup",
+    labelKey: "nav.setup",
+    shortLabelKey: "nav.setup.short",
+    icon: School,
+    permission: PERMISSIONS.academicsRead,
+    group: "academics",
   },
   {
     key: "users",

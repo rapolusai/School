@@ -100,3 +100,46 @@ export function humanizeCode(code: string): string {
   const words = code.replace(/[._-]+/g, " ").trim().toLowerCase();
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
+
+const PLAIN_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/**
+ * A calendar date without time ("2026-06-01", as the API sends dates of birth and academic
+ * years) → "1 Jun 2026". Never shifts the day, whatever the viewer's time zone.
+ */
+export function formatPlainDate(value: string | null | undefined, locale = "en-IN"): string {
+  if (!value) return "";
+  const match = PLAIN_DATE.exec(value);
+  if (!match) return "";
+  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat(locale, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date);
+}
+
+/** Today's date in India as "YYYY-MM-DD" (for date inputs and "not in the future" checks). */
+export function todayInIndia(now: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: DISPLAY_TIME_ZONE,
+  }).formatToParts(now);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+/** "9876500001" → "98765 00001" (Indian mobile grouping). Other values are returned as given. */
+export function formatPhone(phone: string | null | undefined): string {
+  if (!phone) return "";
+  return /^\d{10}$/.test(phone) ? `${phone.slice(0, 5)} ${phone.slice(5)}` : phone;
+}
+
+/** "Class 5" + "A" → "Class 5 A"; missing parts are skipped. */
+export function classLabel(className: string | null | undefined, sectionName: string | null | undefined): string {
+  return [className, sectionName].filter(Boolean).join(" ");
+}

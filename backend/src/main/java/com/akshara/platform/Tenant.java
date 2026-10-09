@@ -45,6 +45,14 @@ public class Tenant extends AssignedIdEntity {
 
     private Instant trialEndsAt;
 
+    private String address;
+
+    private String phone;
+
+    private String contactEmail;
+
+    private String udiseCode;
+
     @Column(nullable = false)
     private Instant createdAt;
 
@@ -110,5 +118,29 @@ public class Tenant extends AssignedIdEntity {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public String getContactEmail() {
+        return contactEmail;
+    }
+
+    public String getUdiseCode() {
+        return udiseCode;
+    }
+
+    /** Contact details a school admin maintains. Name, code, board and plan are not changed here. */
+    void updateProfile(String address, String phone, String contactEmail, String udiseCode) {
+        this.address = address;
+        this.phone = phone;
+        this.contactEmail = contactEmail;
+        this.udiseCode = udiseCode;
     }
 }

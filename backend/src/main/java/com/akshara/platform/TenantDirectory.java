@@ -62,6 +62,19 @@ public class TenantDirectory {
         }
     }
 
+    /** The school's public profile: name, board, city and contact details. */
+    public Optional<SchoolProfile> profile(UUID id) {
+        return tenants.findById(id).map(SchoolProfile::of);
+    }
+
+    /** Updates the contact details of a school. Values are stored as given; callers validate and trim them. */
+    @Transactional
+    public SchoolProfile updateProfile(UUID id, String address, String phone, String contactEmail, String udiseCode) {
+        Tenant tenant = tenants.findById(id).orElseThrow(() -> ApiException.notFound("School"));
+        tenant.updateProfile(address, phone, contactEmail, udiseCode);
+        return SchoolProfile.of(tenants.saveAndFlush(tenant));
+    }
+
     /** Removes a school that has no data yet. Used to undo a sign-up that failed half way. */
     @Transactional
     public void removeEmpty(UUID id) {

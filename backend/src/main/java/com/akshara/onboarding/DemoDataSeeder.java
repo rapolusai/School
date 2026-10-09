@@ -2,7 +2,10 @@ package com.akshara.onboarding;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +15,10 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
+import com.akshara.academics.AcademicsService;
 import com.akshara.audit.AuditService.Actor;
 import com.akshara.identity.UserService;
 import com.akshara.platform.Board;
@@ -20,10 +26,12 @@ import com.akshara.platform.Plan;
 import com.akshara.platform.TenantDirectory;
 import com.akshara.platform.TenantStatus;
 import com.akshara.shared.TenantContext;
+import com.akshara.students.StudentService;
 
 /**
- * Local development and staging only: creates a demo school with one person per standard role. The password comes
- * from configuration (Secrets Manager in AWS) and is never written in the repository.
+ * Local development and staging only: creates a demo school with one person per standard role, its classes, subjects
+ * and academic years, and about sixty students (see {@link DemoSchoolData}). The password comes from configuration
+ * (Secrets Manager in AWS) and is never written in the repository. Runs once: an existing demo school is left alone.
  */
 @Component
 @ConditionalOnProperty(name = "akshara.demo.enabled", havingValue = "true")
@@ -50,14 +58,21 @@ public class DemoDataSeeder implements ApplicationRunner {
     private final UserService users;
     private final PasswordEncoder passwordEncoder;
     private final String password;
+    private final AcademicsService academics;
+    private final StudentService students;
+    private final TransactionTemplate tx;
 
     public DemoDataSeeder(SchoolProvisioning provisioning, TenantDirectory tenants, UserService users,
-            PasswordEncoder passwordEncoder, @Value("${akshara.demo.password:}") String password) {
+            PasswordEncoder passwordEncoder, @Value("${akshara.demo.password:}") String password,
+            AcademicsService academics, StudentService students, PlatformTransactionManager transactionManager) {
         this.provisioning = provisioning;
         this.tenants = tenants;
         this.users = users;
         this.passwordEncoder = passwordEncoder;
         this.password = password;
+        this.academics = academics;
+        this.students = students;
+        this.tx = new TransactionTemplate(transactionManager);
     }
 
     @Override
@@ -74,10 +89,16 @@ public class DemoDataSeeder implements ApplicationRunner {
                 Board.CBSE, "Hyderabad", Plan.GROWTH, "Priya Nair", "admin" + DEMO_DOMAIN, password),
                 TenantStatus.TRIAL, Instant.now().plus(30, ChronoUnit.DAYS), seeder);
         String hash = passwordEncoder.encode(password);
+        Map<String, UUID> userIds = new HashMap<>();
         TenantContext.runAs(school.tenant().id(), () -> {
-            PEOPLE.forEach(p -> users.createUser(p.name(), p.email(), hash, List.of(p.role()), seeder));
+            PEOPLE.forEach(p -> userIds.put(p.email(),
+                    users.createUser(p.name(), p.email(), hash, List.of(p.role()), seeder).getId()));
             return null;
         });
-        log.info("Seeded demo school '{}' with {} people", DEMO_CODE, PEOPLE.size() + 1);
+        Integer studentCount = TenantContext.runAs(school.tenant().id(), () -> tx.execute(status ->
+                new DemoSchoolData(academics, students, seeder).seed(userIds.get("teacher" + DEMO_DOMAIN),
+                        "parent" + DEMO_DOMAIN, "student" + DEMO_DOMAIN)));
+        log.info("Seeded demo school '{}' with {} people and {} students", DEMO_CODE, PEOPLE.size() + 1,
+                studentCount);
     }
 }

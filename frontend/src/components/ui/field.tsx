@@ -91,3 +91,37 @@ export function SelectField({ label, hint, error, className, options, ...select 
     </div>
   );
 }
+
+type TextAreaFieldProps = BaseProps &
+  Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, "className" | "id">;
+
+/** Labelled multi-line input, wired up like TextField. */
+export function TextAreaField({ label, hint, error, className, ...textarea }: TextAreaFieldProps) {
+  const id = useId();
+  const hintId = `${id}-hint`;
+  const errorId = `${id}-error`;
+  return (
+    <div className={`field ${className ?? ""}`}>
+      <label htmlFor={id} className="field-label">
+        {label}
+      </label>
+      <textarea
+        id={id}
+        className="input"
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy(hintId, errorId, hint, error)}
+        {...textarea}
+      />
+      {hint ? (
+        <p id={hintId} className="field-hint">
+          {hint}
+        </p>
+      ) : null}
+      {error ? (
+        <p id={errorId} className="field-error">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}

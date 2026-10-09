@@ -9,6 +9,7 @@ import { isActivePath, SideNavLink } from "./nav-link";
 
 const GROUP_LABELS: Record<NavGroup, MessageKey> = {
   overview: "nav.group.overview",
+  academics: "nav.group.academics",
   administration: "nav.group.administration",
   platform: "nav.group.platform",
 };

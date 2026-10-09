@@ -28,6 +28,7 @@ import {
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import type { Tenant } from "@/lib/types";
 import { useApiData } from "@/lib/use-api-data";
+import { MyChildren, MyClass } from "./my-children";
 
 function greetingKey(hour: number): MessageKey {
   if (hour < 12) return "dashboard.greeting.morning";
@@ -109,6 +110,11 @@ export function DashboardView() {
   const canUsers = hasPermission(me, PERMISSIONS.usersRead);
   const canRoles = hasPermission(me, PERMISSIONS.rolesRead);
   const canAudit = hasPermission(me, PERMISSIONS.auditRead);
+  // Admins hold child.view too (every school permission); staff find students on the Students page instead.
+  const canChildren =
+    hasPermission(me, PERMISSIONS.childView) &&
+    (Boolean(me?.roles.includes("PARENT")) || !hasPermission(me, PERMISSIONS.studentsRead));
+  const isStudent = me?.roles.includes("STUDENT") ?? false;
 
   const users = useApiData(canUsers ? "users" : null, api.listUsers);
   const roles = useApiData(canRoles ? "roles" : null, api.listRoles);
@@ -128,6 +134,9 @@ export function DashboardView() {
       />
 
       {tenant ? <TrialBanner tenant={tenant} now={now} /> : null}
+
+      {canChildren ? <MyChildren /> : null}
+      {isStudent ? <MyClass /> : null}
 
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
         {canUsers ? (

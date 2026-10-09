@@ -1,15 +1,40 @@
 import type {
+  AcademicYear,
   AuditEvent,
   AuthResponse,
+  Child,
+  ClassRequest,
+  ClassView,
+  CreateStudentRequest,
   CreateTenantRequest,
   CreateUserRequest,
+  Guardian,
+  GuardianFields,
+  ImportResult,
+  LeaveRequest,
   ProblemDetails,
+  PromoteRequest,
+  PromotionResult,
   Role,
+  SchoolProfile,
+  SchoolProfileRequest,
+  SectionRequest,
+  SectionView,
+  SignInRequest,
   SignupRequest,
   SignupResponse,
+  StudentDetail,
+  StudentPage,
+  StudentQuery,
+  Subject,
+  SubjectRef,
+  SubjectRequest,
+  TeacherRef,
   TenantSummary,
+  UpdateStudentRequest,
   UserSummary,
   Me,
+  YearRequest,
 } from "./types";
 
 /** A failed API call, parsed from an RFC 9457 problem+json body when one is present. */
@@ -202,8 +227,21 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
 }
 
 /* ------------------------------------------------------------------ */
-/* Endpoint helpers (docs/api/phase-0.md)                              */
+/* Endpoint helpers (docs/api/phase-0.md, docs/api/phase-1.md)         */
 /* ------------------------------------------------------------------ */
+
+const id = (value: string) => encodeURIComponent(value);
+
+/** "?yearId=…&q=…" from the set filters only. Exported for tests. */
+export function studentQueryString(query: StudentQuery): string {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value === undefined || value === null || value === "") continue;
+    params.set(key, String(value));
+  }
+  const text = params.toString();
+  return text ? `?${text}` : "";
+}
 
 export const api = {
   signup: (body: SignupRequest) =>
@@ -225,4 +263,81 @@ export const api = {
   listTenants: () => apiFetch<TenantSummary[]>("/api/platform/tenants"),
   createTenant: (body: CreateTenantRequest) =>
     apiFetch<TenantSummary>("/api/platform/tenants", { method: "POST", body }),
+
+  /* School setup */
+  listYears: () => apiFetch<AcademicYear[]>("/api/academics/years"),
+  createYear: (body: YearRequest) =>
+    apiFetch<AcademicYear>("/api/academics/years", { method: "POST", body }),
+  updateYear: (yearId: string, body: YearRequest) =>
+    apiFetch<AcademicYear>(`/api/academics/years/${id(yearId)}`, { method: "PUT", body }),
+  setCurrentYear: (yearId: string) =>
+    apiFetch<AcademicYear>(`/api/academics/years/${id(yearId)}/set-current`, { method: "POST" }),
+  deleteYear: (yearId: string) =>
+    apiFetch<void>(`/api/academics/years/${id(yearId)}`, { method: "DELETE" }),
+
+  listClasses: () => apiFetch<ClassView[]>("/api/academics/classes"),
+  createClass: (body: ClassRequest) =>
+    apiFetch<ClassView>("/api/academics/classes", { method: "POST", body }),
+  updateClass: (classId: string, body: ClassRequest) =>
+    apiFetch<ClassView>(`/api/academics/classes/${id(classId)}`, { method: "PUT", body }),
+  deleteClass: (classId: string) =>
+    apiFetch<void>(`/api/academics/classes/${id(classId)}`, { method: "DELETE" }),
+  createSection: (classId: string, body: SectionRequest) =>
+    apiFetch<SectionView>(`/api/academics/classes/${id(classId)}/sections`, { method: "POST", body }),
+  updateSection: (sectionId: string, body: SectionRequest) =>
+    apiFetch<SectionView>(`/api/academics/sections/${id(sectionId)}`, { method: "PUT", body }),
+  deleteSection: (sectionId: string) =>
+    apiFetch<void>(`/api/academics/sections/${id(sectionId)}`, { method: "DELETE" }),
+  listTeachers: () => apiFetch<TeacherRef[]>("/api/academics/teachers"),
+
+  listSubjects: () => apiFetch<Subject[]>("/api/academics/subjects"),
+  createSubject: (body: SubjectRequest) =>
+    apiFetch<Subject>("/api/academics/subjects", { method: "POST", body }),
+  updateSubject: (subjectId: string, body: SubjectRequest) =>
+    apiFetch<Subject>(`/api/academics/subjects/${id(subjectId)}`, { method: "PUT", body }),
+  deleteSubject: (subjectId: string) =>
+    apiFetch<void>(`/api/academics/subjects/${id(subjectId)}`, { method: "DELETE" }),
+  setClassSubjects: (classId: string, subjectIds: string[]) =>
+    apiFetch<SubjectRef[]>(`/api/academics/classes/${id(classId)}/subjects`, {
+      method: "PUT",
+      body: { subjectIds },
+    }),
+
+  getSchoolProfile: () => apiFetch<SchoolProfile>("/api/school/profile"),
+  updateSchoolProfile: (body: SchoolProfileRequest) =>
+    apiFetch<SchoolProfile>("/api/school/profile", { method: "PUT", body }),
+
+  /* Students */
+  listStudents: (query: StudentQuery = {}) =>
+    apiFetch<StudentPage>(`/api/students${studentQueryString(query)}`),
+  getStudent: (studentId: string) => apiFetch<StudentDetail>(`/api/students/${id(studentId)}`),
+  createStudent: (body: CreateStudentRequest) =>
+    apiFetch<StudentDetail>("/api/students", { method: "POST", body }),
+  updateStudent: (studentId: string, body: UpdateStudentRequest) =>
+    apiFetch<StudentDetail>(`/api/students/${id(studentId)}`, { method: "PUT", body }),
+  leaveStudent: (studentId: string, body: LeaveRequest) =>
+    apiFetch<StudentDetail>(`/api/students/${id(studentId)}/leave`, { method: "POST", body }),
+  addGuardian: (studentId: string, body: GuardianFields) =>
+    apiFetch<Guardian>(`/api/students/${id(studentId)}/guardians`, { method: "POST", body }),
+  updateGuardian: (studentId: string, guardianId: string, body: GuardianFields) =>
+    apiFetch<Guardian>(`/api/students/${id(studentId)}/guardians/${id(guardianId)}`, {
+      method: "PUT",
+      body,
+    }),
+  removeGuardian: (studentId: string, guardianId: string) =>
+    apiFetch<void>(`/api/students/${id(studentId)}/guardians/${id(guardianId)}`, { method: "DELETE" }),
+  guardianSignIn: (studentId: string, guardianId: string, body: SignInRequest) =>
+    apiFetch<Guardian>(`/api/students/${id(studentId)}/guardians/${id(guardianId)}/sign-in`, {
+      method: "POST",
+      body,
+    }),
+  studentSignIn: (studentId: string, body: SignInRequest) =>
+    apiFetch<StudentDetail>(`/api/students/${id(studentId)}/sign-in`, { method: "POST", body }),
+  promoteStudents: (body: PromoteRequest) =>
+    apiFetch<PromotionResult>("/api/students/promote", { method: "POST", body }),
+  importStudents: (csv: string, dryRun: boolean) =>
+    apiFetch<ImportResult>(`/api/students/import?dryRun=${dryRun}`, { method: "POST", body: { csv } }),
+
+  myChildren: () => apiFetch<Child[]>("/api/me/children"),
+  myStudentRecord: () => apiFetch<Child>("/api/me/student"),
 };

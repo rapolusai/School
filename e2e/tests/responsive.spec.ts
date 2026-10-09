@@ -23,7 +23,7 @@ test("no horizontal scroll, and the right navigation for this screen size", asyn
   await expect(page.getByTestId("trial-banner")).toBeVisible();
   await expectNoHorizontalScroll(page);
 
-  for (const path of ["/app/users", "/app/roles", "/app/audit"]) {
+  for (const path of ["/app/students", "/app/setup", "/app/users", "/app/roles", "/app/audit"]) {
     await page.goto(path);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await expect(page.getByText("Loading…")).toHaveCount(0);

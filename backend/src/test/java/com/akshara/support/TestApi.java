@@ -100,6 +100,20 @@ public class TestApi {
         return perform(MockMvcRequestBuilders.post(path), token, json);
     }
 
+    public ResultActions put(String path, String token, String json) throws Exception {
+        return perform(MockMvcRequestBuilders.put(path), token, json);
+    }
+
+    public ResultActions delete(String path, String token) throws Exception {
+        return perform(MockMvcRequestBuilders.delete(path), token, null);
+    }
+
+    /** Reads one value from a response body, e.g. {@code "$.id"}. */
+    public static String read(ResultActions result, String path) throws Exception {
+        Object value = JsonPath.read(result.andReturn().getResponse().getContentAsString(), path);
+        return value == null ? null : value.toString();
+    }
+
     public ResultActions refresh(String refreshToken) throws Exception {
         MockHttpServletRequestBuilder request = MockMvcRequestBuilders.post("/api/auth/refresh");
         if (refreshToken != null) {

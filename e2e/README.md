@@ -30,3 +30,4 @@ E2E_BASE_URL=http://localhost:3000 npm test
 | `users.spec.ts` | admin adds a Teacher; teacher has no Users/Audit nav and sees access denied |
 | `isolation.spec.ts` | school A lists only its users; A's token gets 404 for a user of school B |
 | `responsive.spec.ts` | no horizontal scroll; bottom bar on mobile, icon rail on tablet, sidebar on desktop |
+| `students.spec.ts` | admin sets up a year, class and section; admits a student; searches; opens the record; gives the mother a sign-in; the parent sees the child and gets 403 from `/api/students`; another school gets 404 |

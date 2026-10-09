@@ -104,3 +104,5 @@ export type ProblemDetails = {
   detail?: string;
   errors?: Record<string, string>;
 };
+
+export * from "./types/school";

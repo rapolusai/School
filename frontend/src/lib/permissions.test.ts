@@ -3,7 +3,7 @@ import { hasPermission, landingPath, navFor, navItemForPath, safeNextPath } from
 import type { Me } from "./types";
 
 const ALL_SCHOOL_PERMISSIONS =
-  "dashboard.view users.read users.manage roles.read audit.read settings.manage students.read students.manage attendance.mark attendance.read fees.read fees.collect exams.manage notices.send child.view".split(
+  "dashboard.view users.read users.manage roles.read audit.read settings.manage students.read students.manage attendance.mark attendance.read fees.read fees.collect exams.manage notices.send child.view academics.read".split(
     " ",
   );
 
@@ -30,15 +30,17 @@ function user(roles: string[], permissions: string[], platformAdmin = false): Me
   };
 }
 
-// Seeded roles from docs/api/phase-0.md
+// Seeded roles from docs/api/phase-0.md, with academics.read added in docs/api/phase-1.md
 const SCHOOL_ADMIN = user(["SCHOOL_ADMIN"], ALL_SCHOOL_PERMISSIONS);
 const PRINCIPAL = user(
   ["PRINCIPAL"],
-  "dashboard.view users.read roles.read audit.read students.read attendance.read fees.read exams.manage notices.send".split(" "),
+  "dashboard.view users.read roles.read audit.read students.read attendance.read fees.read exams.manage notices.send academics.read".split(
+    " ",
+  ),
 );
 const TEACHER = user(
   ["TEACHER"],
-  "dashboard.view students.read attendance.mark attendance.read exams.manage notices.send".split(" "),
+  "dashboard.view students.read attendance.mark attendance.read exams.manage notices.send academics.read".split(" "),
 );
 const PARENT = user(["PARENT"], ["dashboard.view", "child.view"]);
 const PLATFORM_ADMIN = user([], ["platform.admin"], true);
@@ -47,15 +49,27 @@ const keys = (me: Me | null) => navFor(me).map((item) => item.key);
 
 describe("navFor", () => {
   it("gives a school admin every school item and no platform items", () => {
-    expect(keys(SCHOOL_ADMIN)).toEqual(["dashboard", "users", "roles", "audit"]);
+    expect(keys(SCHOOL_ADMIN)).toEqual(["dashboard", "students", "setup", "users", "roles", "audit"]);
   });
 
-  it("gives a principal read access to users, roles and audit", () => {
-    expect(keys(PRINCIPAL)).toEqual(["dashboard", "users", "roles", "audit"]);
+  it("gives a principal read access to students, setup, users, roles and audit", () => {
+    expect(keys(PRINCIPAL)).toEqual(["dashboard", "students", "setup", "users", "roles", "audit"]);
   });
 
-  it("gives a teacher only the dashboard", () => {
-    expect(keys(TEACHER)).toEqual(["dashboard"]);
+  it("gives a teacher the dashboard, students and school setup", () => {
+    expect(keys(TEACHER)).toEqual(["dashboard", "students", "setup"]);
+  });
+
+  it("gives front office students and setup without administration", () => {
+    const frontOffice = user(["FRONT_OFFICE"], ["dashboard.view", "students.read", "students.manage", "academics.read"]);
+    expect(keys(frontOffice)).toEqual(["dashboard", "students", "setup"]);
+  });
+
+  it("groups students and setup under the School group", () => {
+    expect(navFor(SCHOOL_ADMIN).filter((item) => item.group === "academics").map((item) => item.key)).toEqual([
+      "students",
+      "setup",
+    ]);
   });
 
   it("gives a parent only the dashboard", () => {
@@ -109,6 +123,9 @@ describe("navItemForPath", () => {
   it("matches nested paths to their section", () => {
     expect(navItemForPath("/app/users")?.key).toBe("users");
     expect(navItemForPath("/app/users/123")?.key).toBe("users");
+    expect(navItemForPath("/app/students/abc")?.key).toBe("students");
+    expect(navItemForPath("/app/students/import")?.key).toBe("students");
+    expect(navItemForPath("/app/setup")?.key).toBe("setup");
     expect(navItemForPath("/app/platform/schools")?.key).toBe("schools");
     expect(navItemForPath("/app/unknown")).toBeUndefined();
   });
