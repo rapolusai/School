@@ -109,3 +109,5 @@ export * from "./types/school";
 export * from "./types/admissions";
 export * from "./types/attendance";
 export * from "./types/notifications";
+export * from "./types/timetable";
+export * from "./types/homework";

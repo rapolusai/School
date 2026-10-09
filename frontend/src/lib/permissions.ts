@@ -1,10 +1,12 @@
 import {
   Building2,
+  CalendarDays,
   ClipboardList,
   ClipboardCheck,
   GraduationCap,
   LayoutDashboard,
   MessageSquareText,
+  NotebookPen,
   School,
   ScrollText,
   ShieldCheck,
@@ -14,7 +16,7 @@ import {
 import type { MessageKey } from "./i18n/en";
 import type { Me } from "./types";
 
-/** Permission codes from docs/api/phase-0.md, phase-1.md and phase-1-attendance.md. */
+/** Permission codes from docs/api/phase-0.md, phase-1.md, phase-1-attendance.md and phase-1-timetable-homework.md. */
 export const PERMISSIONS = {
   dashboardView: "dashboard.view",
   usersRead: "users.read",
@@ -33,6 +35,9 @@ export const PERMISSIONS = {
   attendanceMark: "attendance.mark",
   attendanceManage: "attendance.manage",
   messagesRead: "messages.read",
+  timetableRead: "timetable.read",
+  timetableManage: "timetable.manage",
+  homeworkManage: "homework.manage",
 } as const;
 
 export type NavGroup = "overview" | "academics" | "administration" | "platform";
@@ -66,6 +71,24 @@ export const NAV_ITEMS: readonly NavItem[] = [
     shortLabelKey: "nav.attendance.short",
     icon: ClipboardCheck,
     permission: PERMISSIONS.attendanceRead,
+    group: "academics",
+  },
+  {
+    key: "timetable",
+    href: "/app/timetable",
+    labelKey: "nav.timetable",
+    shortLabelKey: "nav.timetable.short",
+    icon: CalendarDays,
+    permission: PERMISSIONS.timetableRead,
+    group: "academics",
+  },
+  {
+    key: "homework",
+    href: "/app/homework",
+    labelKey: "nav.homework",
+    shortLabelKey: "nav.homework.short",
+    icon: NotebookPen,
+    permission: PERMISSIONS.homeworkManage,
     group: "academics",
   },
   {

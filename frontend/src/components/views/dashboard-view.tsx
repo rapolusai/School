@@ -30,7 +30,9 @@ import type { Tenant } from "@/lib/types";
 import { useApiData } from "@/lib/use-api-data";
 import { AdmissionsCard } from "./admissions/admissions-card";
 import { AttendanceTodayCard, MarkAttendanceCards } from "./attendance/attendance-cards";
+import { ChildrenHomeworkCards, StudentHomeworkCard } from "./homework/homework-cards";
 import { MyChildren, MyClass } from "./my-children";
+import { StudentTodayCard, TodayClassesCard } from "./timetable/timetable-cards";
 
 function greetingKey(hour: number): MessageKey {
   if (hour < 12) return "dashboard.greeting.morning";
@@ -119,6 +121,7 @@ export function DashboardView() {
   const isStudent = me?.roles.includes("STUDENT") ?? false;
   const canAttendanceToday = hasPermission(me, PERMISSIONS.attendanceManage);
   const canMarkOwn = hasPermission(me, PERMISSIONS.attendanceMark) && !canAttendanceToday;
+  const isTeacher = (me?.roles.includes("TEACHER") ?? false) && hasPermission(me, PERMISSIONS.timetableRead);
 
   const users = useApiData(canUsers ? "users" : null, api.listUsers);
   const roles = useApiData(canRoles ? "roles" : null, api.listRoles);
@@ -140,7 +143,15 @@ export function DashboardView() {
       {tenant ? <TrialBanner tenant={tenant} now={now} /> : null}
 
       {canChildren ? <MyChildren /> : null}
+      {canChildren ? <ChildrenHomeworkCards /> : null}
       {isStudent ? <MyClass /> : null}
+      {isStudent ? (
+        <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
+          <StudentTodayCard />
+          <StudentHomeworkCard />
+        </div>
+      ) : null}
+      {isTeacher ? <TodayClassesCard /> : null}
       {canMarkOwn ? <MarkAttendanceCards /> : null}
       {canAttendanceToday ? <AttendanceTodayCard /> : null}
 
