@@ -34,6 +34,10 @@ public class SecurityConfig {
         "/api/public/signup", "/api/auth/login", "/api/auth/refresh", "/api/auth/logout", "/api/platform/auth/login"
     };
 
+    /** The public admissions enquiry form of a school (no sign-in; rate-limited by the admissions module). */
+    static final String PUBLIC_ADMISSION_INFO = "/api/public/schools/*/admission-info";
+    static final String PUBLIC_ENQUIRIES = "/api/public/schools/*/enquiries";
+
     @Bean
     SecurityFilterChain api(HttpSecurity http, JwtService jwtService) throws Exception {
         http
@@ -45,6 +49,8 @@ public class SecurityConfig {
                         .referrerPolicy(r -> r.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER)))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, PUBLIC_POSTS).permitAll()
+                        .requestMatchers(HttpMethod.GET, PUBLIC_ADMISSION_INFO).permitAll()
+                        .requestMatchers(HttpMethod.POST, PUBLIC_ENQUIRIES).permitAll()
                         .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
                         .requestMatchers("/api/platform/**").hasAuthority(Permissions.PLATFORM_ADMIN)
                         .requestMatchers("/api/**").authenticated()

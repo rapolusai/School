@@ -21,13 +21,15 @@ public final class Permissions {
     public static final String EXAMS_MANAGE = "exams.manage";
     public static final String NOTICES_SEND = "notices.send";
     public static final String CHILD_VIEW = "child.view";
+    public static final String ADMISSIONS_READ = "admissions.read";
+    public static final String ADMISSIONS_MANAGE = "admissions.manage";
 
     public static final String PLATFORM_ADMIN = "platform.admin";
 
     public static final List<String> ALL_SCHOOL = List.of(
             DASHBOARD_VIEW, USERS_READ, USERS_MANAGE, ROLES_READ, AUDIT_READ, SETTINGS_MANAGE,
             STUDENTS_READ, STUDENTS_MANAGE, ATTENDANCE_MARK, ATTENDANCE_READ, FEES_READ, FEES_COLLECT,
-            EXAMS_MANAGE, NOTICES_SEND, CHILD_VIEW, ACADEMICS_READ);
+            EXAMS_MANAGE, NOTICES_SEND, CHILD_VIEW, ACADEMICS_READ, ADMISSIONS_READ, ADMISSIONS_MANAGE);
 
     private Permissions() {
     }

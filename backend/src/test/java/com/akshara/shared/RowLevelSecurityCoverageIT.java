@@ -7,6 +7,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -35,7 +37,8 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
 
     static final List<String> PHASE_ONE_TABLES = List.of("academics.academic_year", "academics.school_class",
             "academics.section", "academics.subject", "academics.class_subject", "students.student",
-            "students.guardian", "students.student_guardian", "students.enrollment");
+            "students.guardian", "students.student_guardian", "students.enrollment", "admissions.application",
+            "admissions.application_guardian", "admissions.timeline_entry", "admissions.assessment_slot");
 
     /** Phase 0 foreign keys created before composite tenant keys were required. V1 cannot change. */
     static final Set<String> SINGLE_COLUMN_FK_ALLOWED = Set.of("identity.refresh_token");
@@ -82,7 +85,7 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         School school = api.signup();
         Session admin = api.login(school);
         SchoolFixtures fixtures = new SchoolFixtures(api);
-        fixtures.currentYear(admin);
+        String yearId = fixtures.currentYear(admin);
         String classId = fixtures.schoolClass(admin, "Class 1");
         String section = fixtures.section(admin, classId, "A", 30);
         String subject = TestApi.read(api.post("/api/academics/subjects", admin.accessToken(), """
@@ -90,6 +93,14 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         api.put("/api/academics/classes/" + classId + "/subjects", admin.accessToken(), """
                 {"subjectIds":["%s"]}""".formatted(subject));
         fixtures.student(admin, section, "RLS-1", "Asha", null, "Lata Rao", "9876501001");
+        String application = TestApi.read(api.post("/api/admissions/applications", admin.accessToken(), """
+                {"stage":"APPLICATION","firstName":"Ravi","dateOfBirth":"2019-05-01","classId":"%s",
+                 "academicYearId":"%s","source":"WALK_IN",
+                 "guardians":[{"name":"Meena Rao","relation":"MOTHER","phone":"9876501002"}]}"""
+                .formatted(classId, yearId)), "$.id");
+        api.post("/api/admissions/applications/" + application + "/slots", admin.accessToken(), """
+                {"kind":"TEST","scheduledAt":"%s","mode":"IN_PERSON","location":"Room 4"}"""
+                .formatted(Instant.now().plus(Duration.ofDays(3))));
         School other = api.signup();
 
         try (Connection app = appConnection(); Connection owner = ownerConnection()) {

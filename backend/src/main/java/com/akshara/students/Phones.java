@@ -1,17 +1,20 @@
 package com.akshara.students;
 
-/** Indian mobile numbers: accepted with or without +91, 0, spaces or hyphens; stored as ten digits. */
-final class Phones {
+/**
+ * Indian mobile numbers: accepted with or without +91, 0, spaces or hyphens; stored as ten digits. Public so that
+ * other modules that collect parents' numbers (admissions) apply exactly the same rule.
+ */
+public final class Phones {
 
     /** What the API accepts before normalising. */
-    static final String INPUT_PATTERN = "^(\\+91|91|0)?[\\s-]*[6-9](?:[\\s-]*[0-9]){9}$";
-    static final String MESSAGE = "Enter a 10-digit Indian mobile number.";
+    public static final String INPUT_PATTERN = "^(\\+91|91|0)?[\\s-]*[6-9](?:[\\s-]*[0-9]){9}$";
+    public static final String MESSAGE = "Enter a 10-digit Indian mobile number.";
 
     private Phones() {
     }
 
     /** Returns the ten-digit number, or null when the input is not an Indian mobile number. */
-    static String normalize(String raw) {
+    public static String normalize(String raw) {
         if (raw == null) {
             return null;
         }
