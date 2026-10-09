@@ -277,8 +277,22 @@ A `RazorpayPaymentGateway implements PaymentGateway`, selected with
 
 **Reminders.** For each student who is still overdue, a `fees.fee_reminder` row is stored (who asked,
 amount, days late) and a `FeeReminderRequested` event is published; students who are no longer
-overdue are skipped. The fees module sends nothing itself: the notifications module listens to the
-event.
+overdue are skipped. Each reminder queues a `fees.reminder` message to the student's primary parent
+or guardian (see Parent messages below).
+
+**Parent messages.** `FeeMessages` (fees module) listens to the two events below and queues a message
+in the notifications outbox in the same transaction, so a rolled-back payment or reminder sends
+nothing. It uses the school's alert channel (WhatsApp then SMS, or SMS only), language and quiet
+hours from `/api/notifications/settings`, and skips students whose primary guardian has no valid
+mobile number. Messages are simulated until a provider is connected.
+
+| Template | When | Text (English) |
+| --- | --- | --- |
+| `fees.receipt` | a receipt is issued today, at the counter or online (receipts entered for an earlier day, such as the demo data, get none) | "Dear {guardian}, {school} received {amount} towards the fees of {student} on {date}. Receipt no. {receiptNo}. Thank you." |
+| `fees.reminder` | staff request a reminder for an overdue student | "Dear {guardian}, fees of {amount} for {student} at {school} are overdue since {date}. Please pay at the school office or online. Ignore this if you have already paid." |
+
+`{amount}` is written like `₹1,84,300.50`; `{date}` like `09 Oct 2026`. Both templates have Hindi
+texts and need DLT registration before real SMS (see phase-1-attendance.md).
 
 **Tally CSV** columns: `Date` (`dd-MM-yyyy`), `Receipt No`, `Ledger` (the fee head's name, `Late
 fee` or `Advance fee`), `Amount` (rupees, two decimals), `Mode`, `Narration` ("Fee from Arjun
@@ -299,8 +313,9 @@ child and pay online; they never reach `/api/fees` (`403`).
 
 ## Events
 
-Published with Spring's `ApplicationEventPublisher` inside the transaction that made the change;
-listeners should use `@TransactionalEventListener` (after commit).
+Published with Spring's `ApplicationEventPublisher` inside the transaction that made the change.
+`FeeMessages` listens in that transaction to queue parent messages in the outbox; other listeners
+that act outside the database should use `@TransactionalEventListener` (after commit).
 
 ```java
 record FeePaymentReceived(UUID tenantId, UUID receiptId, String receiptNo, UUID studentId,

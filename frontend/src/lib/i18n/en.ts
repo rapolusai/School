@@ -1058,6 +1058,8 @@ export const en = {
   "messages.status.FAILED": "Failed",
   "messages.status.SKIPPED": "Skipped",
   "messages.template.attendance.absence": "Absence alert",
+  "messages.template.fees.receipt": "Fee receipt",
+  "messages.template.fees.reminder": "Fee reminder",
   // ---- fees ----
   "nav.group.finance": "Accounts",
   "nav.fees": "Fees",

@@ -52,7 +52,7 @@ class MessageTemplatesTest {
         missing.remove("school");
         assertThatThrownBy(() -> MessageTemplates.render(MessageTemplates.ABSENCE_ALERT, "en", missing))
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("school");
-        assertThatThrownBy(() -> MessageTemplates.render("fees.reminder", "en", PARAMS))
+        assertThatThrownBy(() -> MessageTemplates.render("no.such.template", "en", PARAMS))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThat(MessageTemplates.exists(MessageTemplates.ABSENCE_ALERT)).isTrue();
     }
@@ -61,5 +61,26 @@ class MessageTemplatesTest {
     void aDateThatIsNotIsoIsShownAsGiven() {
         assertThat(MessageTemplates.formatDate("yesterday", "en")).isEqualTo("yesterday");
         assertThat(MessageTemplates.formatDate("2026-01-05", "en")).isEqualTo("05 Jan 2026");
+    }
+
+    @Test
+    void feeReceiptAndReminderTextsReadAsAgreed() {
+        Map<String, String> receipt = Map.of("guardian", "Anitha Sharma", "student", "Arjun Sharma",
+                "school", "Akshara Demo School", "amount", "₹12,500", "receiptNo", "RCPT/2026-27/000042",
+                "date", "2026-10-09");
+        assertThat(MessageTemplates.render(MessageTemplates.FEE_RECEIPT, "en", receipt)).isEqualTo(
+                "Dear Anitha Sharma, Akshara Demo School received ₹12,500 towards the fees of Arjun Sharma on"
+                        + " 09 Oct 2026. Receipt no. RCPT/2026-27/000042. Thank you.");
+        assertThat(MessageTemplates.render(MessageTemplates.FEE_RECEIPT, "hi", receipt))
+                .contains("₹12,500").contains("RCPT/2026-27/000042").doesNotContain("{").doesNotContain("Oct");
+
+        Map<String, String> reminder = Map.of("guardian", "Anitha Sharma", "student", "Arjun Sharma",
+                "school", "Akshara Demo School", "amount", "₹1,84,300.50", "date", "2026-09-10");
+        assertThat(MessageTemplates.render(MessageTemplates.FEE_REMINDER, "en", reminder)).isEqualTo(
+                "Dear Anitha Sharma, fees of ₹1,84,300.50 for Arjun Sharma at Akshara Demo School are overdue since"
+                        + " 10 Sep 2026. Please pay at the school office or online. Ignore this if you have already"
+                        + " paid.");
+        assertThat(MessageTemplates.render(MessageTemplates.FEE_REMINDER, "hi", reminder))
+                .contains("₹1,84,300.50").doesNotContain("{").doesNotContain("Sep");
     }
 }

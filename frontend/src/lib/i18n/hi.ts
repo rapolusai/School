@@ -1056,6 +1056,8 @@ export const hi: Record<MessageKey, string> = {
   "messages.status.FAILED": "विफल",
   "messages.status.SKIPPED": "छोड़ा गया",
   "messages.template.attendance.absence": "अनुपस्थिति सूचना",
+  "messages.template.fees.receipt": "शुल्क रसीद",
+  "messages.template.fees.reminder": "शुल्क रिमाइंडर",
   // ---- fees ----
   "nav.group.finance": "लेखा",
   "nav.fees": "शुल्क",

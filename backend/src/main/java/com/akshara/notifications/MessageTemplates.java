@@ -24,12 +24,28 @@ public final class MessageTemplates {
     /** Sent to a student's primary contact when the student is first marked absent on a day. */
     public static final String ABSENCE_ALERT = "attendance.absence";
 
+    /** Sent to a student's primary contact when a fee receipt is issued, at the counter or online. */
+    public static final String FEE_RECEIPT = "fees.receipt";
+
+    /** Sent to a student's primary contact when staff ask for an overdue-fee reminder. */
+    public static final String FEE_REMINDER = "fees.reminder";
+
     private static final Map<String, Map<String, String>> TEMPLATES = Map.of(
             ABSENCE_ALERT, Map.of(
                     ENGLISH, "Dear {guardian}, {student} ({class}) was marked absent at {school} on {date}. "
                             + "Please contact the school if this is unexpected.",
                     HINDI, "प्रिय {guardian}, {student} ({class}) को {date} को {school} में अनुपस्थित दर्ज किया गया है। "
-                            + "यदि यह अपेक्षित नहीं है, तो कृपया विद्यालय से संपर्क करें।"));
+                            + "यदि यह अपेक्षित नहीं है, तो कृपया विद्यालय से संपर्क करें।"),
+            FEE_RECEIPT, Map.of(
+                    ENGLISH, "Dear {guardian}, {school} received {amount} towards the fees of {student} on {date}. "
+                            + "Receipt no. {receiptNo}. Thank you.",
+                    HINDI, "प्रिय {guardian}, {school} को {date} को {student} की फीस के लिए {amount} प्राप्त हुए। "
+                            + "रसीद संख्या {receiptNo}। धन्यवाद।"),
+            FEE_REMINDER, Map.of(
+                    ENGLISH, "Dear {guardian}, fees of {amount} for {student} at {school} are overdue since {date}. "
+                            + "Please pay at the school office or online. Ignore this if you have already paid.",
+                    HINDI, "प्रिय {guardian}, {school} में {student} की {amount} फीस {date} से बकाया है। "
+                            + "कृपया विद्यालय कार्यालय में या ऑनलाइन भुगतान करें। यदि आप भुगतान कर चुके हैं, तो इसे अनदेखा करें।"));
 
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{(\\w+)}");
     private static final DateTimeFormatter ENGLISH_DATE = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH);
