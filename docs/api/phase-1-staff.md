@@ -149,7 +149,9 @@ Sundays); Paternity leave PL 15; Loss of pay LOP (no balance, half days). School
 
 ### Rules
 
-- **Working days** are counted in one place, `WorkingDayCalendar` (`SundayOffCalendar` today: Monday to Saturday).
+- **Working days** are counted in one place, `WorkingDayCalendar`: `SchoolHolidayCalendar` counts Monday to Saturday
+  less the whole-school holidays in the school calendar (`communication.SchoolCalendar`), so leave never costs a
+  declared holiday and holidays are off days in staff attendance. `SundayOffCalendar` (Sundays only) is kept for unit tests.
   A request costs its working days, or 0.5 for a half day (`halfDay` needs `fromDate == toDate` and a type that
   allows half days: `400 errors.halfDay`). A range with no working day is `400 errors.toDate`. When the school
   calendar (holidays) exists, it provides a `@Primary WorkingDayCalendar` bean and leave and reports follow it.

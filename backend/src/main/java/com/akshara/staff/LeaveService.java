@@ -512,7 +512,8 @@ public class LeaveService {
         }
         List<LocalDate> working = calendar.workingDays(from, to);
         if (working.isEmpty()) {
-            throw ApiException.badRequest("There are no working days in these dates (Sundays are not counted).",
+            throw ApiException.badRequest(
+                    "There are no working days in these dates (Sundays and school holidays are not counted).",
                     "toDate");
         }
         int total = (int) ChronoUnit.DAYS.between(from, to) + 1;

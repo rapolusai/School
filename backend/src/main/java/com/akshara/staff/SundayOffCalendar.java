@@ -5,7 +5,10 @@ import java.time.LocalDate;
 
 import org.springframework.stereotype.Component;
 
-/** Monday to Saturday are working days; Sundays are not. Holidays are not known yet (no school calendar). */
+/**
+ * Monday to Saturday are working days; Sundays are not. The application uses {@link SchoolHolidayCalendar}, which also
+ * leaves out the school's declared holidays; this plain rule remains for unit tests.
+ */
 @Component
 public class SundayOffCalendar implements WorkingDayCalendar {
 

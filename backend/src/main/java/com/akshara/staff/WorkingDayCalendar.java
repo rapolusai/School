@@ -6,8 +6,7 @@ import java.util.List;
 
 /**
  * Which days are school working days. This is the only place leave days, staff attendance reports and the demo data
- * ask; today every day except Sunday counts ({@link SundayOffCalendar}). When the school calendar (holidays) is built,
- * it provides its own bean of this type marked {@code @Primary}, and leave counting and reports follow it.
+ * ask: Monday to Saturday, less the school calendar's whole-school holidays ({@link SchoolHolidayCalendar}).
  */
 public interface WorkingDayCalendar {
 

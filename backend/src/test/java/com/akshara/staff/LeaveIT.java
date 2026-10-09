@@ -75,6 +75,30 @@ class LeaveIT extends IntegrationTest {
     }
 
     @Test
+    void aSchoolHolidayIsNotALeaveDayOrAStaffWorkingDay() throws Exception {
+        LocalDate monday = staff.monday(1);
+        LocalDate wednesday = monday.plusDays(2);
+        api.post("/api/calendar/entries", admin.accessToken(), """
+                {"kind":"HOLIDAY","title":"Founders Day","startsOn":"%s","endsOn":null,"audience":"SCHOOL",
+                 "classIds":[]}""".formatted(wednesday)).andExpect(status().isCreated());
+
+        api.post("/api/leave/preview", raviSession.accessToken(), preview("CL", monday, monday.plusDays(6), false))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.workingDays.length()").value(5))
+                .andExpect(jsonPath("$.workingDays", not(hasItem(wednesday.toString()))))
+                .andExpect(jsonPath("$.nonWorkingDays").value(2))
+                .andExpect(jsonPath("$.days").value(5.0));
+        api.post("/api/leave/preview", raviSession.accessToken(), preview("CL", wednesday, wednesday, false))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.toDate").exists());
+        api.get("/api/staff-attendance/days/" + wednesday, admin.accessToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.workingDay").value(false));
+        api.get("/api/staff-attendance/days/" + monday, admin.accessToken())
+                .andExpect(jsonPath("$.workingDay").value(true));
+    }
+
+    @Test
     void thePreviewCountsWorkingDaysAndHalfDays() throws Exception {
         LocalDate monday = staff.monday(1);
         api.post("/api/leave/preview", raviSession.accessToken(), preview("CL", monday, monday.plusDays(6), false))
