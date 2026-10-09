@@ -18,6 +18,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,7 @@ import com.akshara.academics.AcademicsDirectory.SectionInfo;
 import com.akshara.academics.AcademicsDirectory.YearInfo;
 import com.akshara.audit.AuditService;
 import com.akshara.audit.AuditService.Actor;
+import com.akshara.communication.SchoolCalendar;
 import com.akshara.shared.ApiException;
 import com.akshara.shared.CurrentUser;
 import com.akshara.shared.TenantContext;
@@ -61,8 +63,9 @@ public class AttendanceService {
             AttendanceCounts counts, Double presentPercent, boolean canMark) {
     }
 
+    /** {@code holiday} is the title of the whole-school holiday on the date (nobody marks attendance then), or null. */
     public record SectionsForDay(LocalDate date, LocalDate today, YearRef academicYear, boolean canMark,
-            List<SectionDay> sections) {
+            List<SectionDay> sections, String holiday) {
     }
 
     /** One line of a register. {@code inSection} is false for a student marked earlier who has since left. */
@@ -73,7 +76,7 @@ public class AttendanceService {
     public record RegisterView(UUID sectionId, UUID classId, String className, String sectionName, String label,
             LocalDate date, String academicYearName, boolean marked, String markedByName, Instant markedAt,
             String updatedByName, Instant updatedAt, boolean canEdit, AttendanceCounts counts, int unmarked,
-            Double presentPercent, List<RegisterEntry> entries) {
+            Double presentPercent, List<RegisterEntry> entries, String holiday) {
     }
 
     public record SaveResult(RegisterView register, boolean firstSave, int changed, int alertsQueued,
@@ -87,10 +90,11 @@ public class AttendanceService {
     private final AbsenceAlerts alerts;
     private final AuditService audit;
     private final ApplicationEventPublisher events;
+    private final SchoolCalendar calendar;
 
     public AttendanceService(AttendanceRegisterRepository registers, AttendanceEntryRepository entries,
             AcademicsDirectory academics, StudentRoster roster, AbsenceAlerts alerts, AuditService audit,
-            ApplicationEventPublisher events) {
+            ApplicationEventPublisher events, SchoolCalendar calendar) {
         this.registers = registers;
         this.entries = entries;
         this.academics = academics;
@@ -98,6 +102,7 @@ public class AttendanceService {
         this.alerts = alerts;
         this.audit = audit;
         this.events = events;
+        this.calendar = calendar;
     }
 
     /** Today in India, the school day attendance is marked for. */
@@ -113,9 +118,10 @@ public class AttendanceService {
         TenantContext.require();
         Optional<YearInfo> current = academics.currentYear();
         if (current.isEmpty()) {
-            return new SectionsForDay(date, today(), null, scope.canMark(), List.of());
+            return new SectionsForDay(date, today(), null, scope.canMark(), List.of(), null);
         }
         YearInfo year = yearFor(date);
+        String holiday = calendar.holidayOn(date).orElse(null);
         List<SectionInfo> visible = academics.sections().stream().filter(s -> scope.canRead(s.id())).toList();
         Map<UUID, AttendanceRegister> bySection = registers.findByAttendanceDate(date).stream()
                 .collect(Collectors.toMap(AttendanceRegister::getSectionId, Function.identity()));
@@ -127,9 +133,10 @@ public class AttendanceService {
             AttendanceCounts c = r == null ? AttendanceCounts.NONE : counts.getOrDefault(r.getId(), AttendanceCounts.NONE);
             return new SectionDay(s.id(), s.classId(), s.className(), s.name(), s.label(), s.classTeacherName(),
                     enrolled.getOrDefault(s.id(), 0L), r != null, r == null ? null : r.getMarkedByName(),
-                    r == null ? null : r.getMarkedAt(), c, c.presentPercent(), scope.canMark(s.id()));
+                    r == null ? null : r.getMarkedAt(), c, c.presentPercent(),
+                    holiday == null && scope.canMark(s.id()));
         }).toList();
-        return new SectionsForDay(date, today(), YearRef.of(year), scope.canMark(), days);
+        return new SectionsForDay(date, today(), YearRef.of(year), holiday == null && scope.canMark(), days, holiday);
     }
 
     // ------------------------------------------------------------------ one register
@@ -160,6 +167,12 @@ public class AttendanceService {
             throw new AccessDeniedException("Not this person's section");
         }
         YearInfo year = yearFor(date);
+        Optional<String> holiday = calendar.holidayOn(date);
+        if (holiday.isPresent()) {
+            String detail = date + " is a school holiday (" + holiday.get()
+                    + "). Attendance is not marked on holidays.";
+            throw new ApiException(HttpStatus.CONFLICT, "School holiday", detail, Map.of("date", detail));
+        }
         Actor by = actor != null ? actor : new Actor(CurrentUser.id().orElse(null), CurrentUser.name().orElse(null));
 
         AttendanceRegister register = registers.lockBySectionAndDate(sectionId, date).orElse(null);
@@ -317,12 +330,13 @@ public class AttendanceService {
                 .sorted(Comparator.comparing(s -> s.fullName().toLowerCase(Locale.ROOT)))
                 .forEach(s -> rows.add(new RegisterEntry(s.id(), s.fullName(), s.admissionNo(), s.rollNo(), false,
                         marks.get(s.id()))));
+        String holiday = calendar.holidayOn(date).orElse(null);
         AttendanceCounts counts = AttendanceCounts.of(marks.values());
         int unmarked = (int) rows.stream().filter(r -> r.status() == null).count();
         return new RegisterView(section.id(), section.classId(), section.className(), section.name(), section.label(),
                 date, year.name(), register != null, register == null ? null : register.getMarkedByName(),
                 register == null ? null : register.getMarkedAt(), register == null ? null : register.getUpdatedByName(),
-                register == null ? null : register.getEditedAt(), scope.canMark(section.id()), counts, unmarked,
-                counts.presentPercent(), rows);
+                register == null ? null : register.getEditedAt(), holiday == null && scope.canMark(section.id()),
+                counts, unmarked, counts.presentPercent(), rows, holiday);
     }
 }

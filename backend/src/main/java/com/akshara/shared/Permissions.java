@@ -27,6 +27,12 @@ public final class Permissions {
     public static final String ADMISSIONS_MANAGE = "admissions.manage";
     /** The log of SMS, WhatsApp and email messages the school has sent. */
     public static final String MESSAGES_READ = "messages.read";
+    /** Read one's own notice board and the school calendar. */
+    public static final String NOTICES_READ = "notices.read";
+    /** Approve or reject circulars sent for approval, and address any class, section or role. */
+    public static final String NOTICES_APPROVE = "notices.approve";
+    /** Add, change and remove school calendar entries. */
+    public static final String CALENDAR_MANAGE = "calendar.manage";
 
     public static final String PLATFORM_ADMIN = "platform.admin";
 
@@ -34,7 +40,7 @@ public final class Permissions {
             DASHBOARD_VIEW, USERS_READ, USERS_MANAGE, ROLES_READ, AUDIT_READ, SETTINGS_MANAGE,
             STUDENTS_READ, STUDENTS_MANAGE, ATTENDANCE_MARK, ATTENDANCE_READ, FEES_READ, FEES_COLLECT,
             EXAMS_MANAGE, NOTICES_SEND, CHILD_VIEW, ACADEMICS_READ, ADMISSIONS_READ, ADMISSIONS_MANAGE,
-            ATTENDANCE_MANAGE, MESSAGES_READ);
+            ATTENDANCE_MANAGE, MESSAGES_READ, NOTICES_READ, NOTICES_APPROVE, CALENDAR_MANAGE);
 
     private Permissions() {
     }

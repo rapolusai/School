@@ -42,7 +42,9 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
             "academics.section", "academics.subject", "academics.class_subject", "students.student",
             "students.guardian", "students.student_guardian", "students.enrollment", "admissions.application",
             "admissions.application_guardian", "admissions.timeline_entry", "admissions.assessment_slot",
-            "attendance.register", "attendance.entry", "notifications.message", "notifications.settings");
+            "attendance.register", "attendance.entry", "notifications.message", "notifications.settings",
+            "communication.calendar_entry", "communication.calendar_entry_class", "communication.circular",
+            "communication.circular_target", "communication.circular_recipient", "communication.settings");
 
     /** The last day of the fixtures' current year, 2026-27. */
     static final LocalDate LAST_DAY = LocalDate.of(2027, 3, 31);
@@ -117,6 +119,18 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         api.put("/api/notifications/settings", admin.accessToken(), """
                 {"absenceAlertsEnabled":true,"absenceAlertChannel":"SMS","alertLanguage":"en",
                  "quietHoursEnabled":true,"quietHoursStart":"21:00","quietHoursEnd":"07:00"}""")
+                .andExpect(status().isOk());
+        // A calendar entry for the class; a circular to the section's parents and the admins, sent (so it has
+        // recipients); and the school's communication settings.
+        api.post("/api/calendar/entries", admin.accessToken(), """
+                {"kind":"EVENT","title":"Sports day","startsOn":"%s","audience":"CLASSES","classIds":["%s"]}"""
+                .formatted(LAST_DAY, classId)).andExpect(status().isCreated());
+        String circular = TestApi.read(api.post("/api/notices", admin.accessToken(), """
+                {"title":"Welcome","body":"Welcome back.","category":"GENERAL",
+                 "audience":{"sectionIds":["%s"],"roles":["PARENT","SCHOOL_ADMIN"]}}""".formatted(section)), "$.id");
+        api.post("/api/notices/" + circular + "/submit", admin.accessToken(), "").andExpect(status().isOk());
+        api.put("/api/notices/settings", admin.accessToken(), """
+                {"teacherCircularsNeedApproval":true,"enquiryAckEnabled":true,"enquiryAckChannel":"SMS"}""")
                 .andExpect(status().isOk());
         School other = api.signup();
 

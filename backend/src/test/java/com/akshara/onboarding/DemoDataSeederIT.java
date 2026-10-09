@@ -58,10 +58,13 @@ class DemoDataSeederIT extends IntegrationTest {
     @Autowired
     DemoAttendanceData attendanceData;
 
+    @Autowired
+    DemoCommunicationData communicationData;
+
     @Test
     void seedsADemoSchoolWithClassesAndStudentsOnce() throws Exception {
         DemoDataSeeder seeder = new DemoDataSeeder(provisioning, tenants, users, passwordEncoder, DEMO_PASSWORD,
-                academics, students, transactionManager, admissions, attendanceData);
+                academics, students, transactionManager, admissions, attendanceData, communicationData);
         seeder.run(null);
         // A second start leaves the existing demo school alone.
         seeder.run(null);
@@ -157,5 +160,25 @@ class DemoDataSeederIT extends IntegrationTest {
             assertThat(Integer.parseInt(simulated)).isPositive();
             api.get("/api/messages?status=FAILED", admin.accessToken()).andExpect(jsonPath("$.total").value(0));
         }
+
+        // Circulars in every state, and a calendar with holidays, events, an exam week and a PTM.
+        Session principal = api.login(code, "principal" + DemoDataSeeder.DEMO_DOMAIN, DEMO_PASSWORD);
+        api.get("/api/notices", principal.accessToken())
+                .andExpect(jsonPath("$.items.length()").value(DemoCommunicationData.CIRCULARS))
+                .andExpect(jsonPath("$.counts.SENT").value(5))
+                .andExpect(jsonPath("$.counts.SCHEDULED").value(1))
+                .andExpect(jsonPath("$.counts.DRAFT").value(1))
+                .andExpect(jsonPath("$.counts.PENDING_APPROVAL").value(1));
+        api.get("/api/notices/board", parent.accessToken())
+                .andExpect(jsonPath("$.total").value(4))
+                .andExpect(jsonPath("$.unread").value(2))
+                .andExpect(jsonPath("$.items[0].category").value("URGENT"))
+                .andExpect(jsonPath("$.items[0].pinned").value(true));
+        api.get("/api/calendar/entries", parent.accessToken())
+                .andExpect(jsonPath("$.entries[*].title", hasItem("Gandhi Jayanti")))
+                .andExpect(jsonPath("$.entries[*].title", hasItem("Parent-teacher meeting")))
+                .andExpect(jsonPath("$.entries[?(@.title == 'Staff meeting')]").isEmpty());
+        api.get("/api/calendar/entries", principal.accessToken())
+                .andExpect(jsonPath("$.entries[*].title", hasItem("Staff meeting")));
     }
 }

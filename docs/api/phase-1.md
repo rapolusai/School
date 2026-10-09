@@ -231,3 +231,4 @@ table is missing either.
 
 Admissions (enquiries, applications, tests and interviews, offers, admitting, the public enquiry form): see [phase-1-admissions.md](phase-1-admissions.md).
 Attendance and the notifications outbox: [phase-1-attendance.md](phase-1-attendance.md).
+Circulars, notice boards and the school calendar: [phase-1-communication.md](phase-1-communication.md).

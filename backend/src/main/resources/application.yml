@@ -66,6 +66,16 @@ akshara:
       # Sends queued messages (absence alerts). Only the simulated sender exists for now: nothing leaves the system.
       enabled: ${NOTIFICATIONS_DISPATCH_ENABLED:true}
       interval: ${NOTIFICATIONS_DISPATCH_INTERVAL:PT15S}
+  communication:
+    scheduler:
+      # Sends scheduled circulars and calendar reminders when they are due (their messages go through the outbox).
+      enabled: ${COMMUNICATION_SCHEDULER_ENABLED:true}
+      interval: ${COMMUNICATION_SCHEDULER_INTERVAL:PT1M}
+    cost:
+      # Indicative prices in paise for the estimate shown before sending a circular. Nothing is charged here.
+      sms-part-paise: ${COMMUNICATION_COST_SMS_PART_PAISE:20}
+      whatsapp-paise: ${COMMUNICATION_COST_WHATSAPP_PAISE:12}
+      email-paise: ${COMMUNICATION_COST_EMAIL_PAISE:0}
 
 ---
 # In AWS the API never holds the owner password: migrations run as a separate one-off task (profile "migrate").
@@ -92,4 +102,7 @@ spring:
 akshara:
   notifications:
     dispatch:
+      enabled: false
+  communication:
+    scheduler:
       enabled: false

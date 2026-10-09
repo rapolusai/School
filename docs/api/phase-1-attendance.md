@@ -9,8 +9,8 @@ dashboard summary, a parent's view of their own child, absence alerts to parents
 simulated sender and a message log.
 
 **Not in this slice:** period-wise (subject-by-subject) attendance, and staff check-in / staff attendance. Neither has
-tables or endpoints yet. There is also no holiday calendar: any day of the current academic year that is not in the
-future can be marked, Sundays included.
+tables or endpoints yet. Any day of the current academic year that is not in the future can be marked, Sundays
+included, except whole-school holidays from the school calendar (see [phase-1-communication.md](phase-1-communication.md)).
 
 ## Permissions
 

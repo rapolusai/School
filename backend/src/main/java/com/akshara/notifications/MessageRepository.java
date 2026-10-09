@@ -28,4 +28,9 @@ interface MessageRepository extends JpaRepository<Message, UUID> {
     Optional<Message> findByDedupeKey(String dedupeKey);
 
     List<Message> findByDedupeKeyIn(Collection<String> dedupeKeys);
+
+    /** Messages about one thing (for example a circular) that are still waiting to be sent. */
+    @Query("select m from Message m where m.relatedType = ?1 and m.relatedId = ?2 "
+            + "and m.status = com.akshara.notifications.MessageStatus.QUEUED")
+    List<Message> queuedAbout(String relatedType, UUID relatedId);
 }

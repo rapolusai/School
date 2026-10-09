@@ -1,5 +1,6 @@
 package com.akshara.attendance;
 
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.akshara.academics.AcademicsDirectory;
 import com.akshara.academics.AcademicsDirectory.SectionInfo;
 import com.akshara.academics.AcademicsDirectory.YearInfo;
+import com.akshara.communication.SchoolCalendar;
 import com.akshara.shared.ApiException;
 import com.akshara.shared.TenantContext;
 import com.akshara.students.StudentRoster;
@@ -42,7 +44,9 @@ public class AttendanceReportService {
     public static final int MAX_RANGE_DAYS = 400;
     static final int RECENT_ABSENCES = 5;
 
-    public record DayColumn(LocalDate date, boolean marked, AttendanceCounts counts, Double presentPercent) {
+    /** {@code holiday} is the title of a whole-school holiday on the day, or null; holidays are left out of totals. */
+    public record DayColumn(LocalDate date, boolean marked, AttendanceCounts counts, Double presentPercent,
+            String holiday) {
     }
 
     /** One student's line of a month register: a mark letter (P, A, L, H, E) or null for each day. */
@@ -50,9 +54,13 @@ public class AttendanceReportService {
             List<String> marks, int daysMarked, AttendanceCounts counts, Double presentPercent) {
     }
 
+    /**
+     * A month register. {@code daysMarked} and the counts leave out whole-school holidays; {@code schoolDays} is the
+     * month's Mondays to Saturdays less its {@code holidays}.
+     */
     public record MonthRegister(UUID sectionId, String className, String sectionName, String label, String month,
             List<DayColumn> days, List<StudentLine> students, int daysMarked, AttendanceCounts counts,
-            Double presentPercent) {
+            Double presentPercent, int schoolDays, int holidays) {
     }
 
     public record DayMark(LocalDate date, AttendanceStatus status) {
@@ -85,14 +93,17 @@ public class AttendanceReportService {
     private final AttendanceService attendance;
     private final AcademicsDirectory academics;
     private final StudentRoster roster;
+    private final SchoolCalendar calendar;
 
     public AttendanceReportService(AttendanceRegisterRepository registers, AttendanceEntryRepository entries,
-            AttendanceService attendance, AcademicsDirectory academics, StudentRoster roster) {
+            AttendanceService attendance, AcademicsDirectory academics, StudentRoster roster,
+            SchoolCalendar calendar) {
         this.registers = registers;
         this.entries = entries;
         this.attendance = attendance;
         this.academics = academics;
         this.roster = roster;
+        this.calendar = calendar;
     }
 
     // ------------------------------------------------------------------ month register
@@ -133,11 +144,16 @@ public class AttendanceReportService {
         List<UUID> others = markedStudents.stream().filter(id -> !students.containsKey(id)).toList();
         students.putAll(roster.students(others, rollYear));
 
+        Map<LocalDate, String> holidays = calendar.holidaysBetween(first, last);
         List<DayColumn> days = new ArrayList<>();
+        int schoolDays = 0;
         for (LocalDate d = first; !d.isAfter(last); d = d.plusDays(1)) {
             Map<UUID, AttendanceStatus> marks = byDay.get(d);
             AttendanceCounts c = marks == null ? AttendanceCounts.NONE : AttendanceCounts.of(marks.values());
-            days.add(new DayColumn(d, marks != null, c, c.presentPercent()));
+            days.add(new DayColumn(d, marks != null, c, c.presentPercent(), holidays.get(d)));
+            if (d.getDayOfWeek() != DayOfWeek.SUNDAY && !holidays.containsKey(d)) {
+                schoolDays++;
+            }
         }
 
         List<StudentLine> lines = students.values().stream()
@@ -149,7 +165,7 @@ public class AttendanceReportService {
                     for (DayColumn day : days) {
                         AttendanceStatus st = byDay.getOrDefault(day.date(), Map.of()).get(s.id());
                         marks.add(st == null ? null : st.mark());
-                        if (st != null) {
+                        if (st != null && day.holiday() == null) {
                             statuses.add(st);
                         }
                     }
@@ -158,10 +174,12 @@ public class AttendanceReportService {
                             inSection.contains(s.id()), marks, c.total(), c, c.presentPercent());
                 })
                 .toList();
-        AttendanceCounts all = days.stream().map(DayColumn::counts).reduce(AttendanceCounts.NONE,
+        List<DayColumn> counted = days.stream().filter(d -> d.holiday() == null).toList();
+        AttendanceCounts all = counted.stream().map(DayColumn::counts).reduce(AttendanceCounts.NONE,
                 AttendanceCounts::plus);
         return new MonthRegister(section.id(), section.className(), section.name(), section.label(), month.toString(),
-                days, lines, (int) days.stream().filter(DayColumn::marked).count(), all, all.presentPercent());
+                days, lines, (int) counted.stream().filter(DayColumn::marked).count(), all, all.presentPercent(),
+                schoolDays, holidays.size());
     }
 
     /** The month register as CSV: one row per student, a column per day, totals at the end of each row. */

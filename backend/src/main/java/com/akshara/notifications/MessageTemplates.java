@@ -24,12 +24,32 @@ public final class MessageTemplates {
     /** Sent to a student's primary contact when the student is first marked absent on a day. */
     public static final String ABSENCE_ALERT = "attendance.absence";
 
+    /** A circular (announcement) by SMS, WhatsApp or email: its title and the start of its text. */
+    public static final String CIRCULAR = "communication.circular";
+
+    /** A reminder of a school calendar entry (a holiday, exam, PTM or event) a few days before it. */
+    public static final String CALENDAR_REMINDER = "calendar.reminder";
+
+    /** Thanks a family for an enquiry sent through the school's public admissions form. */
+    public static final String ENQUIRY_ACKNOWLEDGEMENT = "admissions.enquiry_ack";
+
     private static final Map<String, Map<String, String>> TEMPLATES = Map.of(
             ABSENCE_ALERT, Map.of(
                     ENGLISH, "Dear {guardian}, {student} ({class}) was marked absent at {school} on {date}. "
                             + "Please contact the school if this is unexpected.",
                     HINDI, "प्रिय {guardian}, {student} ({class}) को {date} को {school} में अनुपस्थित दर्ज किया गया है। "
-                            + "यदि यह अपेक्षित नहीं है, तो कृपया विद्यालय से संपर्क करें।"));
+                            + "यदि यह अपेक्षित नहीं है, तो कृपया विद्यालय से संपर्क करें।"),
+            CIRCULAR, Map.of(
+                    ENGLISH, "Circular from {school}: {title}. {summary}",
+                    HINDI, "{school} का परिपत्र: {title}। {summary}"),
+            CALENDAR_REMINDER, Map.of(
+                    ENGLISH, "Reminder from {school}: {title} on {date}.",
+                    HINDI, "{school} की ओर से अनुस्मारक: {date} को {title}।"),
+            ENQUIRY_ACKNOWLEDGEMENT, Map.of(
+                    ENGLISH, "Thank you for your enquiry at {school} for {child} ({class}). "
+                            + "Our admissions team will contact you soon.",
+                    HINDI, "{school} में {child} ({class}) के प्रवेश के बारे में पूछताछ के लिए धन्यवाद। "
+                            + "हमारी प्रवेश टीम जल्द ही आपसे संपर्क करेगी।"));
 
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{(\\w+)}");
     private static final DateTimeFormatter ENGLISH_DATE = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH);

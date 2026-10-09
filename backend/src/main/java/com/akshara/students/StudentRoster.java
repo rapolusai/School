@@ -1,6 +1,8 @@
 package com.akshara.students;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -143,6 +145,85 @@ public class StudentRoster {
                         .map(StudentGuardian::getStudentId)
                         .collect(Collectors.toCollection(LinkedHashSet::new)))
                 .orElse(Set.of());
+    }
+
+    /** A parent or guardian linked to a student, with the sign-in they use (if any). */
+    public record FamilyGuardian(UUID guardianId, String name, String phone, String email, UUID userId,
+            boolean primary) {
+    }
+
+    /** An active student of a section, with their own sign-in (if any) and every linked parent or guardian. */
+    public record Family(UUID studentId, UUID sectionId, UUID studentUserId, List<FamilyGuardian> guardians) {
+    }
+
+    /**
+     * The active students enrolled in the year, in the given sections (every section when {@code sectionIds} is
+     * null), with their parents and guardians: who a circular or reminder to those classes reaches.
+     */
+    public List<Family> families(UUID academicYearId, Collection<UUID> sectionIds) {
+        TenantContext.require();
+        if (sectionIds != null && sectionIds.isEmpty()) {
+            return List.of();
+        }
+        String jpql = "select s, e from Enrollment e join Student s on s.id = e.studentId "
+                + "where e.academicYearId = :year and s.status = com.akshara.students.StudentStatus.ACTIVE"
+                + (sectionIds == null ? "" : " and e.sectionId in :sections")
+                + " order by e.sectionId, e.rollNo asc nulls last, s.id";
+        var query = entityManager.createQuery(jpql, Object[].class).setParameter("year", academicYearId);
+        if (sectionIds != null) {
+            query.setParameter("sections", Set.copyOf(sectionIds));
+        }
+        List<Object[]> rows = query.getResultList();
+        if (rows.isEmpty()) {
+            return List.of();
+        }
+        Set<UUID> studentIds = rows.stream().map(r -> ((Student) r[0]).getId())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        Map<UUID, List<StudentGuardian>> linksByStudent = new HashMap<>();
+        for (StudentGuardian link : entityManager.createQuery("select sg from StudentGuardian sg "
+                + "where sg.studentId in :ids", StudentGuardian.class).setParameter("ids", studentIds).getResultList()) {
+            linksByStudent.computeIfAbsent(link.getStudentId(), k -> new ArrayList<>()).add(link);
+        }
+        Map<UUID, Guardian> guardianById = guardians.findAllById(linksByStudent.values().stream()
+                .flatMap(List::stream).map(StudentGuardian::getGuardianId).collect(Collectors.toSet())).stream()
+                .collect(Collectors.toMap(Guardian::getId, g -> g));
+        return rows.stream().map(r -> {
+            Student s = (Student) r[0];
+            Enrollment e = (Enrollment) r[1];
+            List<FamilyGuardian> family = linksByStudent.getOrDefault(s.getId(), List.of()).stream()
+                    .filter(link -> guardianById.containsKey(link.getGuardianId()))
+                    .sorted(Comparator.comparing((StudentGuardian link) -> !link.isPrimary())
+                            .thenComparing(StudentGuardian::getGuardianId))
+                    .map(link -> {
+                        Guardian g = guardianById.get(link.getGuardianId());
+                        return new FamilyGuardian(g.getId(), g.getName(), g.getPhone(), g.getEmail(),
+                                g.getUserAccountId(), link.isPrimary());
+                    })
+                    .toList();
+            return new Family(s.getId(), e.getSectionId(), s.getUserAccountId(), family);
+        }).toList();
+    }
+
+    /**
+     * The sections, in the year, of the students a sign-in belongs to: a parent's children, or a student's own
+     * record. Empty for staff and for anyone whose students are not enrolled that year.
+     */
+    public Set<UUID> sectionIdsOf(UUID userId, UUID academicYearId) {
+        TenantContext.require();
+        Set<UUID> studentIds = new LinkedHashSet<>(childIdsOf(userId));
+        entityManager.createQuery("select s.id from Student s where s.userAccountId = :user", UUID.class)
+                .setParameter("user", userId)
+                .getResultList()
+                .forEach(studentIds::add);
+        if (studentIds.isEmpty() || academicYearId == null) {
+            return Set.of();
+        }
+        return new LinkedHashSet<>(entityManager.createQuery("select e.sectionId from Enrollment e "
+                + "join Student s on s.id = e.studentId where e.academicYearId = :year and e.studentId in :ids "
+                + "and s.status = com.akshara.students.StudentStatus.ACTIVE", UUID.class)
+                .setParameter("year", academicYearId)
+                .setParameter("ids", studentIds)
+                .getResultList());
     }
 
     private static RosterStudent view(Student s, Enrollment e) {
