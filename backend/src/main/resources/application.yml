@@ -1,0 +1,86 @@
+# Settings come from environment variables. In AWS they are injected from Secrets Manager and SSM Parameter Store;
+# nothing secret is stored in this file.
+spring:
+  application:
+    name: akshara-api
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/akshara}
+    # The runtime role: no table ownership, no BYPASSRLS, so row-level security always applies.
+    username: ${DB_APP_USER:akshara_app}
+    password: ${DB_APP_PASSWORD:}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+  flyway:
+    # Migrations run as the owner role; the API itself never connects as it.
+    user: ${DB_OWNER_USER:akshara_owner}
+    password: ${DB_OWNER_PASSWORD:}
+    placeholders:
+      appRole: ${DB_APP_USER:akshara_app}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  shutdown: graceful
+  error:
+    include-message: never
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+akshara:
+  auth:
+    jwt-secret: ${JWT_SECRET:}
+    cookie-secure: ${COOKIE_SECURE:true}
+    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000}
+  security:
+    allow-privileged-db-role: false
+  trial:
+    length: P14D
+  platform:
+    bootstrap-admin:
+      email: ${PLATFORM_ADMIN_EMAIL:}
+      password: ${PLATFORM_ADMIN_PASSWORD:}
+      name: ${PLATFORM_ADMIN_NAME:Platform Admin}
+  demo:
+    enabled: ${DEMO_ENABLED:false}
+    password: ${DEMO_PASSWORD:}
+
+---
+# In AWS the API never holds the owner password: migrations run as a separate one-off task (profile "migrate").
+spring:
+  config:
+    activate:
+      on-profile: aws
+  flyway:
+    enabled: false
+server:
+  # The API sits behind the load balancer; trust its X-Forwarded-For so rate limits see the real client.
+  forward-headers-strategy: native
+
+---
+# One-off task run by the deploy pipeline before new API tasks start: apply migrations, seed, then exit.
+spring:
+  config:
+    activate:
+      on-profile: migrate
+  flyway:
+    enabled: true
+  main:
+    web-application-type: none

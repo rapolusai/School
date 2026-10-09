@@ -1,0 +1,127 @@
+import { describe, expect, it } from "vitest";
+import { hasPermission, landingPath, navFor, navItemForPath, safeNextPath } from "./permissions";
+import type { Me } from "./types";
+
+const ALL_SCHOOL_PERMISSIONS =
+  "dashboard.view users.read users.manage roles.read audit.read settings.manage students.read students.manage attendance.mark attendance.read fees.read fees.collect exams.manage notices.send child.view".split(
+    " ",
+  );
+
+function user(roles: string[], permissions: string[], platformAdmin = false): Me {
+  return {
+    id: "u1",
+    name: "Test User",
+    email: "test@example.com",
+    roles,
+    permissions,
+    platformAdmin,
+    tenant: platformAdmin
+      ? null
+      : {
+          id: "t1",
+          name: "Sunrise Public School",
+          code: "sunrise-public",
+          status: "TRIAL",
+          plan: "STARTER",
+          board: "CBSE",
+          city: "Pune",
+          trialEndsAt: "2026-10-23T00:00:00Z",
+        },
+  };
+}
+
+// Seeded roles from docs/api/phase-0.md
+const SCHOOL_ADMIN = user(["SCHOOL_ADMIN"], ALL_SCHOOL_PERMISSIONS);
+const PRINCIPAL = user(
+  ["PRINCIPAL"],
+  "dashboard.view users.read roles.read audit.read students.read attendance.read fees.read exams.manage notices.send".split(" "),
+);
+const TEACHER = user(
+  ["TEACHER"],
+  "dashboard.view students.read attendance.mark attendance.read exams.manage notices.send".split(" "),
+);
+const PARENT = user(["PARENT"], ["dashboard.view", "child.view"]);
+const PLATFORM_ADMIN = user([], ["platform.admin"], true);
+
+const keys = (me: Me | null) => navFor(me).map((item) => item.key);
+
+describe("navFor", () => {
+  it("gives a school admin every school item and no platform items", () => {
+    expect(keys(SCHOOL_ADMIN)).toEqual(["dashboard", "users", "roles", "audit"]);
+  });
+
+  it("gives a principal read access to users, roles and audit", () => {
+    expect(keys(PRINCIPAL)).toEqual(["dashboard", "users", "roles", "audit"]);
+  });
+
+  it("gives a teacher only the dashboard", () => {
+    expect(keys(TEACHER)).toEqual(["dashboard"]);
+  });
+
+  it("gives a parent only the dashboard", () => {
+    expect(keys(PARENT)).toEqual(["dashboard"]);
+  });
+
+  it("gives a platform admin only Schools", () => {
+    expect(keys(PLATFORM_ADMIN)).toEqual(["schools"]);
+  });
+
+  it("returns nothing when signed out", () => {
+    expect(keys(null)).toEqual([]);
+  });
+
+  it("exposes key, href, labelKey, icon and permission for every item", () => {
+    for (const item of navFor(SCHOOL_ADMIN)) {
+      expect(item.href.startsWith("/app/")).toBe(true);
+      expect(item.labelKey).toMatch(/^nav\./);
+      expect(item.icon).toBeTruthy();
+      expect(hasPermission(SCHOOL_ADMIN, item.permission)).toBe(true);
+    }
+  });
+
+  it("does not mutate its input", () => {
+    const me = user(["TEACHER"], ["dashboard.view"]);
+    const before = JSON.stringify(me);
+    navFor(me);
+    expect(JSON.stringify(me)).toBe(before);
+  });
+});
+
+describe("hasPermission", () => {
+  it("treats platformAdmin as platform.admin even without the permission string", () => {
+    expect(hasPermission(user([], [], true), "platform.admin")).toBe(true);
+  });
+  it("is false for missing permissions", () => {
+    expect(hasPermission(TEACHER, "users.read")).toBe(false);
+    expect(hasPermission(null, "dashboard.view")).toBe(false);
+  });
+});
+
+describe("landingPath", () => {
+  it("sends platform admins to Schools and school users to the dashboard", () => {
+    expect(landingPath(PLATFORM_ADMIN)).toBe("/app/platform/schools");
+    expect(landingPath(TEACHER)).toBe("/app/dashboard");
+    expect(landingPath(null)).toBe("/login");
+  });
+});
+
+describe("navItemForPath", () => {
+  it("matches nested paths to their section", () => {
+    expect(navItemForPath("/app/users")?.key).toBe("users");
+    expect(navItemForPath("/app/users/123")?.key).toBe("users");
+    expect(navItemForPath("/app/platform/schools")?.key).toBe("schools");
+    expect(navItemForPath("/app/unknown")).toBeUndefined();
+  });
+});
+
+describe("safeNextPath", () => {
+  it("only allows paths inside the app", () => {
+    expect(safeNextPath("/app/users")).toBe("/app/users");
+    expect(safeNextPath("/app")).toBe("/app");
+    expect(safeNextPath("/apple")).toBeNull();
+    expect(safeNextPath("https://evil.example/app")).toBeNull();
+    expect(safeNextPath("//evil.example")).toBeNull();
+    expect(safeNextPath("/app\\..\\evil")).toBeNull();
+    expect(safeNextPath(null)).toBeNull();
+  });
+});

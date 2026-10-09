@@ -1,0 +1,16 @@
+# Test-only values for throwaway Testcontainers databases. None of these are used outside tests.
+akshara:
+  auth:
+    jwt-secret: test-only-signing-key-0123456789abcdef-not-for-real-use
+    cookie-secure: false
+    allowed-origins: http://localhost:3000
+  platform:
+    bootstrap-admin:
+      email: root@platform.akshara.test
+      password: test-platform-password
+      name: Test Platform Admin
+  demo:
+    enabled: false
+logging:
+  level:
+    com.akshara: INFO

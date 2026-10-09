@@ -1,0 +1,30 @@
+# Secrets and local settings
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Build output
+backend/target/
+node_modules/
+.next/
+out/
+coverage/
+playwright-report/
+test-results/
+blob-report/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+
+# Editors and OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db

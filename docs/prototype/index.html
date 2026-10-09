@@ -1,0 +1,872 @@
+<title>Akshara School Cloud</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: app shell. Full sidebar >=1024px, icon rail 640-1023px, bottom tab bar + "More" sheet below 640px. */
+:root{
+  --bg:#F5F6F3; --surface:#FFFFFF; --surface-2:#EEF1EC; --line:#DCE1DA;
+  --ink:#16201B; --ink-2:#4F5D55; --ink-3:#7C8A82;
+  --accent:#1E6B52; --accent-ink:#FFFFFF; --accent-soft:#DCEDE5;
+  --marigold:#C98A12; --marigold-soft:#F8EBCB;
+  --good:#2C7A3F; --good-soft:#DDF0E1; --warn:#A86500; --warn-soft:#F9E8C8; --bad:#B3362C; --bad-soft:#F7DEDA; --info:#2B5C9A; --info-soft:#DDE7F5;
+  --shadow:0 1px 2px rgba(22,32,27,.06),0 8px 24px rgba(22,32,27,.06);
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"Figtree","Segoe UI",system-ui,-apple-system,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --r:10px; --side:248px; --rail:76px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1512; --surface:#161E1A; --surface-2:#1D2722; --line:#2A3631;
+  --ink:#E7EDE9; --ink-2:#A9B7AF; --ink-3:#7D8C84;
+  --accent:#4FB58F; --accent-ink:#0B1A13; --accent-soft:#1C3A2F;
+  --marigold:#E3AE45; --marigold-soft:#3A2F17;
+  --good:#6CC488; --good-soft:#1D3526; --warn:#E4A94A; --warn-soft:#3A2D16; --bad:#EE8277; --bad-soft:#3F201D; --info:#83AEE6; --info-soft:#1C2A3D;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1512; --surface:#161E1A; --surface-2:#1D2722; --line:#2A3631;
+  --ink:#E7EDE9; --ink-2:#A9B7AF; --ink-3:#7D8C84;
+  --accent:#4FB58F; --accent-ink:#0B1A13; --accent-soft:#1C3A2F;
+  --marigold:#E3AE45; --marigold-soft:#3A2F17;
+  --good:#6CC488; --good-soft:#1D3526; --warn:#E4A94A; --warn-soft:#3A2D16; --bad:#EE8277; --bad-soft:#3F201D; --info:#83AEE6; --info-soft:#1C2A3D;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25); color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:clamp(22px,2.4vw,28px)} h2{font-size:18px} h3{font-size:15px;font-family:var(--f-body);font-weight:600}
+p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--f-mono);font-size:13px}
+.muted{color:var(--ink-2)} .faint{color:var(--ink-3)}
+.eyebrow{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+svg.i{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- login ---------- */
+.login{min-height:100%;display:grid;grid-template-columns:1.05fr 1fr}
+.login-art{background:var(--accent);color:#fff;padding:48px clamp(24px,5vw,64px);display:flex;flex-direction:column;justify-content:space-between;gap:32px;position:relative;overflow:hidden}
+:root[data-theme="dark"] .login-art{background:#173E31}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .login-art{background:#173E31}}
+.login-art .ruled{position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.07) 0 1px,transparent 1px 32px);pointer-events:none}
+.login-art .margin{position:absolute;top:0;bottom:0;left:clamp(16px,3vw,40px);width:1px;background:rgba(248,200,110,.5)}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:700;font-size:20px}
+.brand-mark{width:34px;height:34px;border-radius:9px;background:var(--marigold);color:#1A1406;display:grid;place-items:center;font-size:19px;font-family:var(--f-display)}
+.login-art h1{font-size:clamp(30px,4vw,48px);line-height:1.08;max-width:14ch;position:relative}
+.login-art p{max-width:46ch;opacity:.88;position:relative}
+.login-stats{display:flex;gap:28px;flex-wrap:wrap;position:relative}
+.login-stats b{display:block;font-family:var(--f-display);font-size:26px}
+.login-stats span{font-size:13px;opacity:.8}
+.login-form{padding:48px clamp(16px,5vw,64px);display:flex;flex-direction:column;justify-content:center;gap:20px;max-width:560px;width:100%;margin-inline:auto}
+.demo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.demo{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);text-align:left}
+.demo:hover{border-color:var(--accent)}
+.demo[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.demo b{font-weight:600;font-size:14px} .demo span{font-size:12px;color:var(--ink-3)}
+@media (max-width:860px){.login{grid-template-columns:1fr}.login-art{padding-block:32px}.login-art h1{font-size:30px}}
+
+/* ---------- form controls ---------- */
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label{font-size:13px;font-weight:600;color:var(--ink-2)}
+.input,select.input,textarea.input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);min-height:42px}
+.input:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:9px 16px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-weight:600;font-size:14px;min-height:40px;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.sm{padding:5px 10px;min-height:32px;font-size:13px}
+.btn.danger{color:var(--bad)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width:560px){.grid2{grid-template-columns:1fr}}
+
+/* ---------- shell ---------- */
+.shell{display:grid;grid-template-columns:var(--side) minmax(0,1fr);min-height:100%}
+.side{position:sticky;top:env(safe-area-inset-top,0px);height:100vh;height:100dvh;display:flex;flex-direction:column;gap:4px;padding:16px 12px;border-right:1px solid var(--line);background:var(--surface);overflow-y:auto}
+.side .brand{padding:4px 8px 16px}
+.tenant{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:var(--r);margin-bottom:10px;background:var(--surface-2)}
+.tenant .crest{width:30px;height:30px;border-radius:8px;background:var(--marigold-soft);color:var(--marigold);display:grid;place-items:center;font-weight:700;font-family:var(--f-display);flex:none}
+.tenant b{font-size:13px;display:block;line-height:1.25} .tenant span{font-size:11.5px;color:var(--ink-3)}
+.nav-group{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:600;padding:12px 10px 4px}
+.nav a{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:8px;color:var(--ink-2);text-decoration:none;font-weight:500;font-size:14px}
+.nav a:hover{background:var(--surface-2);color:var(--ink)}
+.nav a[aria-current="page"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.nav a .lbl{flex:1}
+.nav a .count{font-size:11.5px;background:var(--marigold-soft);color:var(--marigold);padding:1px 7px;border-radius:99px;font-weight:600}
+.side-foot{margin-top:auto;padding-top:12px}
+.main{min-width:0;display:flex;flex-direction:column}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;display:flex;align-items:center;gap:12px;padding:10px clamp(16px,3vw,32px);background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.search{flex:1;max-width:420px;display:flex;align-items:center;gap:8px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);min-height:40px;color:var(--ink-3)}
+.search input{border:0;background:transparent;outline:0;flex:1;min-width:0;color:var(--ink)}
+.top .spacer{flex:1}
+.iconbtn{width:40px;height:40px;display:grid;place-items:center;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--ink-2);position:relative;flex:none}
+.iconbtn:hover{background:var(--surface-2);color:var(--ink)}
+.dot{position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--bad);border:2px solid var(--bg)}
+.me{display:flex;align-items:center;gap:10px;padding:4px 6px 4px 4px;border-radius:99px;border:1px solid var(--line);background:var(--surface)}
+.avatar{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:13px;background:var(--accent-soft);color:var(--accent);flex:none}
+.me b{font-size:13px;display:block;line-height:1.2} .me span{font-size:11.5px;color:var(--ink-3)}
+.proto{font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:99px;background:var(--marigold-soft);color:var(--marigold);white-space:nowrap}
+.content{padding:24px clamp(16px,3vw,32px) 48px;display:flex;flex-direction:column;gap:20px;max-width:1360px;width:100%}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.page-head .actions{display:flex;gap:8px;flex-wrap:wrap}
+.mobile-only{display:none}
+.bottombar{display:none}
+
+/* tablet rail */
+@media (max-width:1023px) and (min-width:640px){
+  .shell{grid-template-columns:var(--rail) minmax(0,1fr)}
+  .side{padding:14px 10px;align-items:center}
+  .side .brand span,.tenant,.nav-group,.nav a .lbl,.nav a .count,.side-foot .lbl{display:none}
+  .side .brand{padding:4px 0 14px}
+  .nav a{justify-content:center;padding:11px;position:relative}
+  .nav a::after{content:attr(data-tip);position:absolute;left:calc(100% + 8px);top:50%;transform:translateY(-50%);background:var(--ink);color:var(--bg);font-size:12px;padding:4px 8px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s}
+  .nav a:hover::after{opacity:1}
+  .me .who{display:none}
+}
+/* phone */
+@media (max-width:639px){
+  .shell{grid-template-columns:1fr}
+  .side{display:none}
+  .mobile-only{display:inline-flex}
+  .search{display:none}
+  .me .who,.proto{display:none}
+  .content{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+  .bottombar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px))}
+  .bottombar a,.bottombar button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;font-size:11px;font-weight:600;color:var(--ink-3);text-decoration:none;background:none;border:0;border-radius:8px}
+  .bottombar [aria-current="page"]{color:var(--accent)}
+}
+
+/* ---------- components ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;min-width:0}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{display:flex;flex-direction:column;gap:6px}
+.kpi .v{font-family:var(--f-display);font-size:28px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi .d{font-size:12.5px;font-weight:600}
+.up{color:var(--good)} .down{color:var(--bad)}
+.cols{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:14px}
+.cols.even{grid-template-columns:repeat(2,minmax(0,1fr))}
+.cols.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:1100px){.cols,.cols.even,.cols.three{grid-template-columns:1fr}}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:2px 9px;border-radius:99px;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.good{background:var(--good-soft);color:var(--good)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.info{background:var(--info-soft);color:var(--info)} .pill.neutral{background:var(--surface-2);color:var(--ink-2)}
+.table-wrap{overflow-x:auto;margin:0 -18px;padding:0 18px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:12px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tbody tr.click{cursor:pointer} tbody tr.click:hover td{background:var(--surface-2)}
+td.r,th.r{text-align:right}
+.person{display:flex;align-items:center;gap:10px;min-width:0}
+.person b{font-weight:600;display:block;line-height:1.25} .person span{font-size:12.5px;color:var(--ink-3)}
+@media (max-width:760px){.hide-sm{display:none}}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.toolbar .input{width:auto;min-width:0;flex:1 1 180px;max-width:280px}
+.toolbar select.input{flex:0 1 160px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;padding:3px;background:var(--surface-2);gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;padding:5px 12px;border-radius:6px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.list{display:flex;flex-direction:column}
+.li{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line)}
+.li:last-child{border-bottom:0}
+.li .when{font-size:12px;color:var(--ink-3);white-space:nowrap;margin-left:auto}
+.badge-ic{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;flex:none}
+.bar-track{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.bar-fill{height:100%;border-radius:99px;background:var(--accent)}
+.chart svg{width:100%;height:auto;display:block}
+.chart text{fill:var(--ink-3);font-size:11px;font-family:var(--f-body)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-2)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.empty{padding:28px;text-align:center;color:var(--ink-3)}
+
+/* kanban */
+.kanban{display:grid;grid-template-columns:repeat(5,minmax(220px,1fr));gap:12px;overflow-x:auto;padding-bottom:6px}
+.lane{background:var(--surface-2);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.lane-h{display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:13.5px}
+.lane-h span{font-size:12px;color:var(--ink-3)}
+.kcard{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.kcard b{font-weight:600}
+.kcard .meta{font-size:12.5px;color:var(--ink-3)}
+
+/* attendance */
+.att-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.att-row:last-child{border-bottom:0}
+.att-row .person{flex:1 1 180px}
+.att-opts{display:flex;gap:6px}
+.att-opts button{min-width:40px;height:36px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-weight:700;font-size:13px;color:var(--ink-2)}
+.att-opts button[aria-pressed="true"][data-v="P"]{background:var(--good-soft);border-color:var(--good);color:var(--good)}
+.att-opts button[aria-pressed="true"][data-v="A"]{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.att-opts button[aria-pressed="true"][data-v="L"]{background:var(--warn-soft);border-color:var(--warn);color:var(--warn)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;font-size:12.5px}
+.cal .h{color:var(--ink-3);font-weight:600;text-align:center;font-size:11.5px}
+.cal .d{aspect-ratio:1;border-radius:8px;display:grid;place-items:center;font-weight:600;background:var(--surface-2);color:var(--ink-3);max-width:100%}
+.cal .d.P{background:var(--good-soft);color:var(--good)} .cal .d.A{background:var(--bad-soft);color:var(--bad)} .cal .d.L{background:var(--warn-soft);color:var(--warn)} .cal .d.H{background:transparent;color:var(--ink-3);border:1px dashed var(--line)}
+
+/* timetable */
+.tt{display:grid;grid-template-columns:72px repeat(6,minmax(110px,1fr));gap:6px;min-width:760px}
+.tt .h{font-size:12px;font-weight:600;color:var(--ink-3);text-align:center;padding:6px 0}
+.tt .t{font-size:12px;color:var(--ink-3);font-family:var(--f-mono);padding-top:8px}
+.slot{border-radius:8px;padding:8px 10px;font-size:12.5px;line-height:1.3;border-left:3px solid var(--c);background:color-mix(in srgb,var(--c) 12%,var(--surface))}
+.slot b{display:block;font-size:13px;font-weight:600;color:var(--ink)}
+.slot span{color:var(--ink-2)}
+.slot.brk{border:1px dashed var(--line);background:transparent;color:var(--ink-3);text-align:center;border-left-width:1px}
+
+/* plans */
+.plans{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:980px){.plans{grid-template-columns:1fr}}
+.plan{display:flex;flex-direction:column;gap:14px;position:relative}
+.plan.cur{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.plan .price{font-family:var(--f-display);font-size:32px;font-weight:700}
+.plan .price small{font-size:14px;font-weight:500;color:var(--ink-3);font-family:var(--f-body)}
+.plan ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;font-size:14px}
+.plan li{display:flex;gap:8px} .plan li::before{content:"✓";color:var(--accent);font-weight:700}
+.plan li.no{color:var(--ink-3)} .plan li.no::before{content:"–";color:var(--ink-3)}
+.tag{position:absolute;top:-11px;right:16px;background:var(--marigold);color:#1A1406;font-size:11.5px;font-weight:700;padding:2px 10px;border-radius:99px}
+
+/* report card */
+.rc{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.rc-head{background:var(--accent);color:#fff;padding:16px 18px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+:root[data-theme="dark"] .rc-head{background:#173E31}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .rc-head{background:#173E31}}
+.rc-body{padding:16px 18px;display:flex;flex-direction:column;gap:14px}
+.grade{display:inline-grid;place-items:center;width:34px;height:26px;border-radius:6px;font-weight:700;font-size:13px;background:var(--accent-soft);color:var(--accent)}
+
+/* overlay */
+.scrim{position:fixed;inset:0;background:rgba(10,16,13,.45);z-index:50;display:flex;justify-content:flex-end;animation:fade .15s ease}
+.scrim.center{justify-content:center;align-items:center;padding:16px}
+.drawer{width:min(480px,100%);height:100%;background:var(--surface);overflow-y:auto;padding:20px 22px calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:18px;animation:slide .2s ease}
+.modal{width:min(520px,100%);max-height:calc(100% - 32px);overflow-y:auto;background:var(--surface);border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:16px;animation:pop .18s ease}
+.ov-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.sheet{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-radius:16px 16px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px));z-index:60;max-height:80%;overflow-y:auto;animation:up .2s ease}
+.sheet-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.sheet-grid a{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px;border-radius:10px;font-size:12px;font-weight:600;color:var(--ink-2);text-decoration:none;text-align:center}
+.sheet-grid a[aria-current="page"]{background:var(--accent-soft);color:var(--accent)}
+.kv{display:grid;grid-template-columns:minmax(110px,auto) 1fr;gap:8px 16px;font-size:14px}
+.kv dt{color:var(--ink-3)} .kv dd{margin:0;font-weight:500;min-width:0}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tabs button{border:0;background:none;padding:8px 12px;font-weight:600;font-size:13.5px;color:var(--ink-3);border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button[aria-pressed="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;font-size:14px;z-index:90;display:flex;gap:10px;align-items:center;box-shadow:var(--shadow);animation:pop .18s ease;max-width:calc(100% - 32px)}
+@media (max-width:639px){.toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}}
+.steps{display:flex;gap:8px}
+.steps span{flex:1;height:4px;border-radius:99px;background:var(--line)}
+.steps span.on{background:var(--accent)}
+.receipt{border:1px dashed var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px;background:var(--surface-2)}
+.receipt .row{display:flex;justify-content:space-between;gap:12px;font-size:14px}
+.receipt .tot{border-top:1px dashed var(--line);padding-top:10px;font-weight:700;font-size:16px}
+/* month calendar */
+.mcal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.mcal .h{font-size:11.5px;font-weight:600;color:var(--ink-3);text-align:center;padding:4px 0}
+.mday{min-height:72px;border-radius:8px;background:var(--surface-2);padding:6px;display:flex;flex-direction:column;gap:2px;font-size:12px;min-width:0;border:2px solid transparent}
+.mday b{font-weight:600;font-size:13px}
+.mday span{font-size:11px;line-height:1.2;overflow:hidden;text-overflow:ellipsis}
+.mday.H{background:var(--bad-soft);color:var(--bad)} .mday.E{background:var(--info-soft);color:var(--info)}
+.mday.sun b{color:var(--bad)} .mday.today{border-color:var(--accent)}
+@media (max-width:639px){.mday{min-height:44px;padding:4px}.mday span{display:none}}
+/* chat */
+.chatbox{padding:0;display:grid;grid-template-columns:minmax(0,280px) minmax(0,1fr);min-height:460px;overflow:hidden}
+.convlist{border-right:1px solid var(--line);overflow-y:auto}
+.conv{display:flex;gap:10px;align-items:center;width:100%;padding:12px 14px;border:0;border-bottom:1px solid var(--line);background:transparent;text-align:left}
+.conv[aria-current="true"]{background:var(--accent-soft)}
+.unread{font-size:11px;background:var(--accent);color:var(--accent-ink);padding:1px 7px;border-radius:99px;font-weight:700}
+.chatpane{display:flex;flex-direction:column;min-width:0}
+#thread{flex:1;padding:16px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;max-height:420px}
+.bub{align-self:flex-start;max-width:80%;background:var(--surface-2);padding:8px 12px;border-radius:12px 12px 12px 4px;font-size:14px}
+.bub.mine{align-self:flex-end;background:var(--accent);color:var(--accent-ink);border-radius:12px 12px 4px 12px}
+.bub small{display:block;font-size:11px;opacity:.7;margin-top:2px;text-align:right}
+@media (max-width:760px){.chatbox{grid-template-columns:1fr}.convlist{max-height:190px;border-right:0;border-bottom:1px solid var(--line)}}
+@keyframes fade{from{opacity:0}} @keyframes slide{from{transform:translateX(24px);opacity:.6}} @keyframes pop{from{transform:scale(.97);opacity:.6}} @keyframes up{from{transform:translateY(30px)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div id="app"></div>
+
+<script>
+/* ---------------- icons ---------------- */
+const IC={
+home:'M3 10.5 12 3l9 7.5V21H3z M9 21v-6h6v6',
+users:'M16 20v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M22 20v-1a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75',
+building:'M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16 M16 9h2a2 2 0 0 1 2 2v10 M2 21h20 M8 7h4 M8 11h4 M8 15h4',
+check:'M9 11l3 3 8-8 M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
+book:'M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5',
+clip:'M9 3h6v4H9z M9 5H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-3 M9 12h6 M9 16h4',
+award:'M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12z M8.2 13.9 7 22l5-3 5 3-1.2-8.1',
+wallet:'M3 7h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M3 7V6a2 2 0 0 1 2-2h11 M16 14h2',
+bus:'M5 17V6a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v11z M5 11h14 M7 21v-4 M17 21v-4 M8 14h.01 M16 14h.01',
+mega:'M3 11v2a1 1 0 0 0 1 1h3l6 4V6L7 10H4a1 1 0 0 0-1 1z M17 8a5 5 0 0 1 0 8',
+chart:'M3 3v18h18 M8 16v-5 M13 16V8 M18 16V7',
+sliders:'M4 6h10 M18 6h2 M4 12h4 M12 12h8 M4 18h12 M16 4v4 M10 10v4 M18 16v4',
+userplus:'M15 20v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1 M8.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M19 8v6 M22 11h-6',
+brief:'M3 7h18v13H3z M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2 M3 13h18',
+clock:'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M12 7v5l3 2',
+bell:'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9 M10.3 21a1.94 1.94 0 0 0 3.4 0',
+search:'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M21 21l-4.3-4.3',
+x:'M18 6 6 18 M6 6l12 12',
+out:'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4 M16 17l5-5-5-5 M21 12H9',
+plus:'M12 5v14 M5 12h14',
+moon:'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z',
+grid:'M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z',
+shelf:'M4 4v16 M8 4v16 M12 5l4 15 M19 4v16',
+crown:'M2 19h20 M3 7l5 5 4-7 4 7 5-5-2 11H5z',
+receipt:'M5 3v18l2-1.5L9 21l2-1.5L13 21l2-1.5L17 21l2-1.5V3l-2 1.5L15 3l-2 1.5L11 3 9 4.5 7 3z M9 9h6 M9 13h6',
+arrow:'M5 12h14 M13 6l6 6-6 6',
+download:'M12 3v12 M7 10l5 5 5-5 M5 21h14',
+life:'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4.9 4.9l4.3 4.3 M14.8 14.8l4.3 4.3 M14.8 9.2l4.3-4.3 M4.9 19.1l4.3-4.3',
+box:'M21 8 12 3 3 8v8l9 5 9-5z M3 8l9 5 9-5 M12 13v8',
+shield:'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M9 12l2 2 4-4',
+menu:'M4 6h16 M4 12h16 M4 18h16',
+mail:'M3 5h18v14H3z M3 6l9 7 9-7',
+door:'M5 21V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v17 M3 21h18 M15 12h.01',
+id:'M3 5h18v14H3z M8 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4z M5 16c.5-1.7 1.6-2.5 3-2.5s2.5.8 3 2.5 M14 9h4 M14 13h4',
+bed:'M3 20V6 M3 15h18v5 M21 15v-3a3 3 0 0 0-3-3h-7v6 M7 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z',
+heart:'M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 12 5.5 5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z M12 10v5 M9.5 12.5h5',
+cal:'M3 5h18v16H3z M3 9h18 M8 3v4 M16 3v4 M8 13h2 M14 13h2 M8 17h2',
+bank:'M3 21h18 M3 10h18 M5 6l7-3 7 3 M6 10v8 M10 10v8 M14 10v8 M18 10v8',
+play:'M4 5h16v11H4z M8 20h8 M12 16v4 M10 8.5v4l3.5-2z',
+chat:'M21 12a8 8 0 0 1-11.8 7L3 21l2-5.6A8 8 0 1 1 21 12z M8 11h.01 M12 11h.01 M16 11h.01',
+pin:'M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z M12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z',
+spark:'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z',
+globe:'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M3 12h18 M12 3c2.5 2.7 3.5 5.7 3.5 9s-1 6.3-3.5 9c-2.5-2.7-3.5-5.7-3.5-9s1-6.3 3.5-9z'
+};
+const ic=(n,cls='i')=>`<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${IC[n]}"/></svg>`;
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const inr=n=>'₹'+Math.round(n).toLocaleString('en-IN');
+const initials=n=>n.split(' ').map(w=>w[0]).slice(0,2).join('');
+const $=s=>document.querySelector(s);
+
+/* ---------------- sample data (fictional) ---------------- */
+const SCHOOL={name:'Greenfield Public School',city:'Hyderabad',code:'GPS',board:'CBSE',year:'2026–27'};
+const FIRST=['Aarav','Diya','Vihaan','Ananya','Arjun','Saanvi','Kabir','Ishita','Reyansh','Meera','Aditya','Kavya','Rohan','Nisha','Siddharth','Pooja','Rahul','Tanvi','Krish','Aisha','Dev','Riya','Yash','Zara'];
+const LAST=['Sharma','Reddy','Iyer','Khan','Patel','Nair','Gupta','Rao','Das','Menon','Singh','Varma'];
+const CLASSES=['6-A','6-B','7-A','7-B','8-A','8-B','9-A','10-A'];
+let STUDENTS=FIRST.map((f,i)=>{const l=LAST[(i*5)%LAST.length];const cls=CLASSES[i%CLASSES.length];const due=[0,0,12500,0,4200,0,0,18500,0,0,6300,0][i%12];
+ return {id:'GPS-'+(2400+i*7),name:f+' '+l,cls,roll:(i%30)+1,gender:i%2?'F':'M',parent:(['Suresh','Lakshmi','Imran','Priya','Venkat','Neha'][i%6])+' '+l,phone:'+91 98'+String(48213067+i*7919).slice(0,8),att:[96,91,88,99,84,93,97,79,95,90,86,98][i%12],fee:due?'Due':'Paid',due,transport:i%3===0?'Route 3':'—'}});
+const ME={super:{name:'Kiran Rao',title:'Super Admin',scope:'Akshara HQ'},admin:{name:'Anitha Menon',title:'School Admin',scope:SCHOOL.name},principal:{name:'Dr. Ravi Shankar',title:'Principal',scope:SCHOOL.name},teacher:{name:'Fatima Shaikh',title:'Teacher · Class 8-A',scope:SCHOOL.name},accountant:{name:'Mohan Das',title:'Accountant',scope:SCHOOL.name},parent:{name:'Priya Patel',title:'Parent of Ananya',scope:SCHOOL.name},student:{name:'Ananya Patel',title:'Student · 8-A',scope:SCHOOL.name}};
+let TENANTS=[
+ {name:'Greenfield Public School',city:'Hyderabad',plan:'Growth',students:1240,status:'Active',mrr:5999,since:'Apr 2025',renew:'14 Apr 2027'},
+ {name:'St. Mary’s Convent',city:'Pune',plan:'Enterprise',students:3180,status:'Active',mrr:14999,since:'Jun 2024',renew:'01 Jun 2027'},
+ {name:'Little Lotus Kindergarten',city:'Mysuru',plan:'Starter',students:210,status:'Trial',mrr:0,since:'Sep 2026',renew:'Trial ends 22 Oct'},
+ {name:'Vidya Niketan High',city:'Jaipur',plan:'Growth',students:890,status:'Active',mrr:5999,since:'Jan 2026',renew:'10 Jan 2027'},
+ {name:'Sunrise International',city:'Kochi',plan:'Enterprise',students:2450,status:'Active',mrr:14999,since:'Mar 2025',renew:'18 Mar 2027'},
+ {name:'Bright Minds Academy',city:'Nagpur',plan:'Starter',students:280,status:'Past due',mrr:2499,since:'Aug 2025',renew:'Payment failed 02 Oct'},
+ {name:'Oakridge Primary',city:'Chennai',plan:'Growth',students:640,status:'Active',mrr:5999,since:'Jul 2025',renew:'07 Jul 2027'},
+ {name:'Navodaya Model School',city:'Warangal',plan:'Starter',students:150,status:'Trial',mrr:0,since:'Oct 2026',renew:'Trial ends 30 Oct'},
+ {name:'Heritage Valley School',city:'Dehradun',plan:'Growth',students:720,status:'Suspended',mrr:0,since:'Feb 2025',renew:'Cancelled 15 Sep'},
+ {name:'Riverdale Senior Secondary',city:'Lucknow',plan:'Enterprise',students:2900,status:'Active',mrr:14999,since:'Nov 2024',renew:'20 Nov 2026'}
+];
+let APPS=[
+ {name:'Neel Kapoor',grade:'Class 6',stage:0,date:'08 Oct',src:'Website'},{name:'Sara Thomas',grade:'Class 1',stage:0,date:'07 Oct',src:'Walk-in'},{name:'Om Prakash',grade:'Class 9',stage:0,date:'06 Oct',src:'Referral'},
+ {name:'Myra Joshi',grade:'Class 3',stage:1,date:'04 Oct',src:'Website'},{name:'Advik Rao',grade:'LKG',stage:1,date:'03 Oct',src:'Facebook'},
+ {name:'Tara Bose',grade:'Class 7',stage:2,date:'01 Oct',src:'Website'},{name:'Ved Kulkarni',grade:'Class 5',stage:2,date:'30 Sep',src:'Walk-in'},
+ {name:'Inaya Mirza',grade:'Class 2',stage:3,date:'28 Sep',src:'Referral'},
+ {name:'Harsh Vardhan',grade:'Class 8',stage:4,date:'24 Sep',src:'Website'},{name:'Laila Ahmed',grade:'UKG',stage:4,date:'22 Sep',src:'Walk-in'}
+];
+const STAGES=['Enquiry','Application','Test / interview','Offer sent','Admitted'];
+let STAFF=[
+ {name:'Fatima Shaikh',role:'Teacher',dept:'Science',classes:'8-A, 9-A',status:'Present',leave:'—'},
+ {name:'Rajesh Kumar',role:'Teacher',dept:'Mathematics',classes:'9-A, 10-A',status:'Present',leave:'—'},
+ {name:'Sneha Pillai',role:'Teacher',dept:'English',classes:'6-A, 6-B',status:'On leave',leave:'Sick · 2 days'},
+ {name:'Arvind Joshi',role:'Teacher',dept:'Social Studies',classes:'7-A, 7-B',status:'Present',leave:'—'},
+ {name:'Meena Iyer',role:'Teacher',dept:'Hindi',classes:'6-A, 8-B',status:'Late',leave:'—'},
+ {name:'Mohan Das',role:'Accountant',dept:'Finance',classes:'—',status:'Present',leave:'—'},
+ {name:'Prakash Yadav',role:'Driver',dept:'Transport',classes:'Route 3',status:'Present',leave:'—'},
+ {name:'Kavitha Rao',role:'Librarian',dept:'Library',classes:'—',status:'Present',leave:'—'}
+];
+let NOTICES=[
+ {t:'Half-yearly exams start 3 November',b:'Timetable is published under Exams. Hall tickets will be issued on 28 October.',to:'All parents · Classes 6–10',d:'09 Oct',by:'Principal'},
+ {t:'Dasara holidays: 17 to 25 October',b:'School reopens on Monday 26 October. Transport resumes the same day.',to:'Everyone',d:'06 Oct',by:'School Admin'},
+ {t:'PTM for Class 8 on Saturday',b:'Parents of Class 8 are invited between 9:30 and 12:30. Please book a slot from the app.',to:'Parents · Class 8',d:'02 Oct',by:'Class teacher'}
+];
+let HOMEWORK=[
+ {sub:'Science',cls:'8-A',t:'Chapter 6: Combustion and Flame, exercises 1–8',due:'10 Oct',sub_n:22,total:30},
+ {sub:'Mathematics',cls:'8-A',t:'Linear equations worksheet B',due:'12 Oct',sub_n:9,total:30},
+ {sub:'English',cls:'8-A',t:'Write a letter to the editor on road safety (150 words)',due:'13 Oct',sub_n:0,total:30}
+];
+let EXPENSES=[{d:'08 Oct',cat:'Utilities',item:'Electricity bill (Sep)',amt:48200,by:'Mohan Das'},{d:'05 Oct',cat:'Transport',item:'Diesel, 3 buses',amt:36400,by:'Prakash Yadav'},{d:'03 Oct',cat:'Maintenance',item:'Science lab fittings',amt:12800,by:'Mohan Das'},{d:'01 Oct',cat:'Supplies',item:'Chalk, markers, A4 paper',amt:6150,by:'Mohan Das'}];
+const ROUTES=[{r:'Route 1',v:'TS09 UB 4410',drv:'Sanjay N.',stops:9,stu:42,cap:50},{r:'Route 2',v:'TS09 UB 4411',drv:'Imtiaz K.',stops:11,stu:47,cap:50},{r:'Route 3',v:'TS09 UB 5523',drv:'Prakash Yadav',stops:8,stu:38,cap:40},{r:'Route 4',v:'TS09 UC 1029',drv:'Ramesh B.',stops:12,stu:29,cap:40}];
+const BOOKS=[{t:'Wings of Fire',a:'A. P. J. Abdul Kalam',cat:'Biography',copies:6,out:4},{t:'NCERT Science Class 8',a:'NCERT',cat:'Textbook',copies:40,out:31},{t:'Malgudi Days',a:'R. K. Narayan',cat:'Fiction',copies:5,out:5},{t:'The Story of My Experiments with Truth',a:'M. K. Gandhi',cat:'Biography',copies:3,out:1},{t:'Panchatantra Tales',a:'Vishnu Sharma',cat:'Children',copies:8,out:2}];
+let VISITORS=[{name:'Ramesh Gupta',phone:'+91 98•••• 41207',purpose:'Fee enquiry',meet:'Accounts',in:'09:12',out:'09:40'},{name:'Sunita Reddy',phone:'+91 99•••• 30118',purpose:'Parent meeting',meet:'Fatima Shaikh',in:'10:05',out:'—'},{name:'Arun Traders',phone:'+91 90•••• 77251',purpose:'Lab equipment delivery',meet:'Admin office',in:'10:30',out:'—'},{name:'Deepa Nair',phone:'+91 97•••• 66012',purpose:'Admission enquiry',meet:'Front desk',in:'11:02',out:'—'}];
+let CERTS=[{no:'TC-2026-0141',s:'Harsh Vardhan',t:'Transfer certificate',by:'Parent (app)',st:'Pending'},{no:'BC-2026-0388',s:'Diya Reddy',t:'Bonafide',by:'Parent (app)',st:'Issued'},{no:'FC-2026-0102',s:'Kabir Patel',t:'Fee paid (80C)',by:'Front office',st:'Issued'}];
+const INFIRM=[{t:'09:40',s:'Rohan Das',c:'7-A',p:'Headache',a:'Rested 30 min, back to class'},{t:'10:55',s:'Meera Menon',c:'6-B',p:'Scraped knee in PE',a:'Cleaned and dressed'},{t:'11:20',s:'Yash Rao',c:'9-A',p:'Fever 100.8 °F',a:'Sent home with parent'}];
+const PAY=[{n:'Dr. Ravi Shankar',role:'Principal',basic:72000,allow:38000,tds:9800},{n:'Rajesh Kumar',role:'Teacher',basic:36000,allow:17000,tds:600},{n:'Fatima Shaikh',role:'Teacher',basic:34000,allow:16000,tds:0},{n:'Mohan Das',role:'Accountant',basic:26000,allow:11000,tds:0},{n:'Kavitha Rao',role:'Librarian',basic:18000,allow:6000,tds:0},{n:'Prakash Yadav',role:'Driver',basic:12000,allow:5500,tds:0}];
+const MATERIAL=[{t:'How a candle burns (demo video)',sub:'Science',k:'Video',meta:'6 min · watched by 24'},{t:'Linear equations: solved examples',sub:'Mathematics',k:'PDF',meta:'12 pages'},{t:'Letter writing templates',sub:'English',k:'PDF',meta:'4 pages'}];
+const AUDIT=[['11:32','Mohan Das','Collected ₹18,500 from Diya Reddy (RCPT-2026-08812)'],['10:48','Fatima Shaikh','Changed Science marks for 2 students in 8-A'],['10:05','Anitha Menon','Exported the fee defaulters list'],['09:12','Akshara support','Read-only support session for ticket #4815'],['08:42','Fatima Shaikh','Submitted attendance for 8-A']];
+let CONV_P=[{who:'Fatima Shaikh',sub:'Class teacher, 8-A · Science',unread:1,msgs:[[0,'Ananya did very well in the Science test. Please encourage her to read chapter 7 before the exhibition.','09:58'],[1,'Thank you, ma’am. She is excited about the exhibition. Can she bring her own model?','10:12'],[0,'Yes, models are welcome. Please send it on 30 October.','10:15']]},{who:'Rajesh Kumar',sub:'Mathematics',unread:0,msgs:[[0,'Worksheet B is due on Monday 12 October.','Yesterday']]},{who:'Transport desk',sub:'Route 3',unread:0,msgs:[[0,'The bus may run 10 minutes late tomorrow because of road work near KBR Park.','Mon']]}];
+let CONV_S=[{who:'Priya Patel',sub:'Parent of Ananya Patel, 8-A',unread:1,msgs:[[1,'Ananya did very well in the Science test. Please encourage her to read chapter 7 before the exhibition.','09:58'],[0,'Thank you, ma’am. She is excited about the exhibition. Can she bring her own model?','10:12']]},{who:'Venkat Rao',sub:'Parent of Rohan Rao, 8-A',unread:2,msgs:[[0,'Rohan will be absent on Monday for a family function. I have sent a leave request in the app.','08:05'],[0,'Could you share the homework for that day?','08:06']]},{who:'Rajesh Kumar',sub:'Staff · Mathematics',unread:0,msgs:[[0,'Can we swap period 4 on Friday?','Yesterday'],[1,'Sure, done.','Yesterday']]}];
+let LEAVES=[{d:'10 Sep',r:'Fever',st:'Approved'}];
+const PTM=[['09:30',1],['09:40',0],['09:50',1],['10:00',0],['10:10',0],['10:20',1],['10:30',0],['10:40',0],['10:50',0],['11:00',1]];
+const SUBJECTS=['English','Hindi','Mathematics','Science','Social Studies','Computer'];
+let MARKS={English:[78,85,62,91,74,88,69,95],Hindi:[82,76,71,88,65,90,73,84],Mathematics:[91,67,58,96,72,85,61,99],Science:[86,79,64,93,70,89,66,97],'Social Studies':[74,81,69,87,76,83,72,90],Computer:[95,88,80,98,84,92,77,100]};
+const grade=m=>m>=91?'A1':m>=81?'A2':m>=71?'B1':m>=61?'B2':m>=51?'C1':m>=41?'C2':m>=33?'D':'E';
+
+/* ---------------- navigation per role ---------------- */
+const P={dashboard:['Dashboard','home'],schools:['Schools','building'],plans:['Plans & billing','crown'],platform:['Platform health','shield'],support:['Support','life'],
+ students:['Students','users'],admissions:['Admissions','userplus'],staff:['Staff','brief'],classes:['Classes & subjects','grid'],attendance:['Attendance','check'],timetable:['Timetable','clock'],homework:['Homework','clip'],exams:['Exams & results','award'],fees:['Fees','wallet'],expenses:['Expenses','receipt'],transport:['Transport','bus'],library:['Library & inventory','shelf'],notices:['Announcements','mega'],reports:['Reports','chart'],subscription:['Subscription','crown'],settings:['Settings','sliders'],results:['Results','award'],myfees:['Fees','wallet'],
+ frontoffice:['Front office','door'],certificates:['Certificates & ID cards','id'],hostel:['Hostel','bed'],health:['Health & safety','heart'],calendar:['Calendar & events','cal'],payroll:['Payroll','bank'],lms:['Lessons & e-learning','play'],compliance:['Compliance & audit','shield'],messages:['Messages','chat'],bustrack:['Bus tracking','pin'],requests:['Leave & PTM','cal']};
+const HI={dashboard:'डैशबोर्ड',students:'विद्यार्थी',admissions:'प्रवेश',staff:'कर्मचारी',attendance:'उपस्थिति',timetable:'समय सारिणी',homework:'गृहकार्य',exams:'परीक्षा और परिणाम',fees:'शुल्क',myfees:'शुल्क',transport:'परिवहन',library:'पुस्तकालय',notices:'सूचनाएँ',reports:'रिपोर्ट',settings:'सेटिंग्स',results:'परिणाम',calendar:'कैलेंडर',messages:'संदेश',hostel:'छात्रावास',payroll:'वेतन',bustrack:'बस ट्रैकिंग'};
+const NAV={
+ super:[['Platform',['dashboard','schools','plans','platform','support']]],
+ admin:[['Overview',['dashboard','reports','calendar']],['People',['students','admissions','staff','frontoffice']],['Academics',['classes','attendance','timetable','homework','lms','exams']],['Finance',['fees','payroll','expenses']],['Campus',['transport','hostel','library','health']],['Communication',['notices','messages']],['Administration',['certificates','compliance','subscription','settings']]],
+ principal:[['Overview',['dashboard','reports','calendar']],['People',['students','staff']],['Academics',['attendance','timetable','lms','exams']],['Communication',['notices','messages']],['Administration',['compliance']]],
+ teacher:[['My day',['dashboard','attendance','timetable']],['Teaching',['homework','lms','exams','students']],['Communication',['notices','messages','calendar']]],
+ accountant:[['Finance',['dashboard','fees','payroll','expenses','reports']],['Directory',['students','certificates']]],
+ parent:[['Ananya · 8-A',['dashboard','attendance','homework','results','myfees','bustrack','requests','messages','notices','calendar']]],
+ student:[['My school',['dashboard','timetable','homework','lms','results','notices','calendar']]]
+};
+const navLabel=p=>S.lang==='hi'&&HI[p]?HI[p]:P[p][0];
+const COUNTS={admissions:()=>APPS.filter(a=>a.stage<4).length,schools:()=>TENANTS.filter(t=>t.status!=='Active').length};
+
+/* ---------------- state ---------------- */
+const S={lang:'en',bus:2,role:null,page:'dashboard',filter:{},planCycle:'monthly',attCls:'8-A',att:{},examCls:'8-A',examSub:'Mathematics'};
+function navFor(r){return NAV[r].flatMap(g=>g[1])}
+function go(p){if(!navFor(S.role).includes(p))p='dashboard';S.page=p;try{history.replaceState(null,'','#'+p)}catch(e){}render();window.scrollTo(0,0)}
+
+/* ---------------- shell ---------------- */
+function render(){
+ const app=$('#app');
+ if(!S.role){app.innerHTML=loginView();bindLogin();return}
+ const me=ME[S.role];const items=navFor(S.role);
+ const side=`<aside class="side" aria-label="Main navigation">
+  <div class="brand"><div class="brand-mark">अ</div><span>Akshara</span></div>
+  <div class="tenant"><div class="crest">${S.role==='super'?'A':'G'}</div><div><b>${esc(me.scope)}</b><span>${S.role==='super'?'Platform owner':SCHOOL.board+' · '+SCHOOL.year}</span></div></div>
+  <nav class="nav">${NAV[S.role].map(([g,ps])=>`<div class="nav-group">${g}</div>`+ps.map(p=>{const c=COUNTS[p]?COUNTS[p]():0;return `<a href="#${p}" data-go="${p}" data-tip="${navLabel(p)}" ${S.page===p?'aria-current="page"':''}>${ic(P[p][1])}<span class="lbl">${navLabel(p)}</span>${c?`<span class="count">${c}</span>`:''}</a>`}).join('')).join('')}</nav>
+  <div class="side-foot nav"><a href="#" data-act="logout" data-tip="Sign out">${ic('out')}<span class="lbl">Sign out</span></a></div>
+ </aside>`;
+ const bottom=items.slice(0,4).map(p=>`<a href="#${p}" data-go="${p}" ${S.page===p?'aria-current="page"':''}>${ic(P[p][1])}<span>${navLabel(p).split(' ')[0]}</span></a>`).join('')+`<button data-act="more" ${items.slice(4).includes(S.page)?'aria-current="page"':''}>${ic('grid')}<span>More</span></button>`;
+ app.innerHTML=`<div class="shell">${side}
+ <div class="main">
+  <header class="top">
+   <div class="brand mobile-only"><div class="brand-mark" style="width:30px;height:30px;font-size:16px">अ</div></div>
+   <label class="search">${ic('search')}<input id="gsearch" placeholder="${S.role==='super'?'Search schools, invoices…':'Search students, staff, receipts…'}" aria-label="Search"></label>
+   <span class="spacer"></span>
+   <span class="proto" title="All names and figures are sample data">Prototype · sample data</span>
+   ${S.role==='super'?'':`<label class="iconbtn" style="width:auto;padding:0 6px;gap:4px;display:flex;align-items:center" title="Language">${ic('globe')}<select id="lang" aria-label="Language" style="border:0;background:transparent;font-weight:600;font-size:13px;color:var(--ink-2)"><option value="en" ${S.lang==='en'?'selected':''}>EN</option><option value="hi" ${S.lang==='hi'?'selected':''}>हिन्दी</option><option value="te" ${S.lang==='te'?'selected':''}>తెలుగు</option></select></label>`}
+   <button class="iconbtn" data-act="theme" aria-label="Toggle dark mode">${ic('moon')}</button>
+   <button class="iconbtn" data-act="notif" aria-label="Notifications">${ic('bell')}<span class="dot"></span></button>
+   <button class="me" data-act="switch" aria-label="Switch role"><span class="avatar">${initials(me.name)}</span><span class="who"><b>${esc(me.name)}</b><span>${esc(me.title)}</span></span></button>
+  </header>
+  <main class="content" id="content">${(VIEWS[S.page]||VIEWS.dashboard)()}</main>
+ </div></div>
+ <nav class="bottombar" aria-label="Main navigation">${bottom}</nav>`;
+ bind();
+ (AFTER[S.page]||(()=>{}))();
+}
+
+function bind(){
+ document.querySelectorAll('[data-go]').forEach(a=>a.onclick=e=>{e.preventDefault();closeOverlay();go(a.dataset.go)});
+ document.querySelectorAll('[data-act]').forEach(b=>b.onclick=e=>{e.preventDefault();ACT[b.dataset.act]&&ACT[b.dataset.act](b,e)});
+ const lg=$('#lang');if(lg)lg.onchange=()=>{S.lang=lg.value;render();toast(S.lang==='hi'?'मेनू हिन्दी में':S.lang==='te'?'Telugu pack: menus shown in English in this prototype':'Menus in English')};
+ const gs=$('#gsearch');if(gs)gs.onkeydown=e=>{if(e.key==='Enter'&&gs.value.trim()){const q=gs.value.trim();if(S.role==='super'){S.filter.tq=q;go('schools')}else{S.filter.q=q;go('students')}}};
+}
+
+const ACT={
+ logout(){S.role=null;try{history.replaceState(null,'','#')}catch(e){}render()},
+ switch(){overlay('modal',`<div class="ov-head"><div><h2>Switch role</h2><p class="muted">Try the same school as a different user.</p></div><button class="iconbtn" data-act="close" aria-label="Close">${ic('x')}</button></div><div class="demo-grid">${DEMO.map(d=>`<button class="demo" data-role="${d.r}" ${d.r===S.role?'aria-pressed="true"':''}><b>${d.t}</b><span>${d.n}</span></button>`).join('')}</div>`);
+  document.querySelectorAll('.scrim [data-role]').forEach(b=>b.onclick=()=>{closeOverlay();S.role=b.dataset.role;S.page='dashboard';go('dashboard');toast('Signed in as '+ME[S.role].title)})},
+ theme(){const r=document.documentElement;const dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;r.dataset.theme=dark?'light':'dark'},
+ notif(){overlay('drawer',`<div class="ov-head"><h2>Notifications</h2><button class="iconbtn" data-act="close" aria-label="Close">${ic('x')}</button></div><div class="list">${[['wallet','Fee payment received','Lakshmi Reddy paid ₹18,500 for Diya (6-B). Receipt RCPT-2026-08812.','2 min'],['userplus','New admission enquiry','Neel Kapoor for Class 6 from the website.','1 h'],['check','Attendance submitted','Class 8-A: 28 present, 2 absent.','3 h'],['mega','Announcement sent','“Half-yearly exams start 3 November” reached 1,184 parents.','Yesterday']].map(n=>`<div class="li"><div class="badge-ic" style="background:var(--accent-soft);color:var(--accent)">${ic(n[0])}</div><div style="min-width:0"><b>${n[1]}</b><p class="muted" style="font-size:13.5px">${n[2]}</p></div><span class="when">${n[3]}</span></div>`).join('')}</div>`)},
+ close(){closeOverlay()},
+ more(){const items=navFor(S.role);const el=document.createElement('div');el.innerHTML=`<div class="scrim" data-sheet></div><div class="sheet" role="dialog" aria-label="All sections"><div class="ov-head" style="margin-bottom:10px"><h2>All sections</h2><button class="iconbtn" data-act="close" aria-label="Close">${ic('x')}</button></div><div class="sheet-grid">${items.map(p=>`<a href="#${p}" data-go="${p}" ${S.page===p?'aria-current="page"':''}>${ic(P[p][1])}${navLabel(p)}</a>`).join('')}<a href="#" data-act="switch">${ic('users')}Switch role</a><a href="#" data-act="logout">${ic('out')}Sign out</a></div></div>`;el.id='ov';document.body.appendChild(el);el.querySelector('[data-sheet]').onclick=closeOverlay;bindIn(el)}
+};
+function bindIn(root){root.querySelectorAll('[data-go]').forEach(a=>a.onclick=e=>{e.preventDefault();closeOverlay();go(a.dataset.go)});root.querySelectorAll('[data-act]').forEach(b=>b.onclick=e=>{e.preventDefault();if(b.dataset.act!=='close'&&b.dataset.act!=='switch'&&b.dataset.act!=='logout')return;if(b.dataset.act!=='close')closeOverlay();ACT[b.dataset.act](b,e)})}
+function overlay(kind,html){closeOverlay();const el=document.createElement('div');el.id='ov';el.innerHTML=`<div class="scrim ${kind==='modal'?'center':''}"><div class="${kind}" role="dialog" aria-modal="true">${html}</div></div>`;document.body.appendChild(el);const scrim=el.firstChild;scrim.onclick=e=>{if(e.target===scrim)closeOverlay()};el.querySelectorAll('[data-act="close"]').forEach(b=>b.onclick=closeOverlay);const f=el.querySelector('input,select,textarea,button');f&&f.focus();return el}
+function closeOverlay(){const o=document.getElementById('ov');o&&o.remove()}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeOverlay()});
+let toastT;function toast(msg){document.querySelectorAll('.toast').forEach(t=>t.remove());const t=document.createElement('div');t.className='toast';t.setAttribute('role','status');t.innerHTML=ic('check')+esc(msg);document.body.appendChild(t);clearTimeout(toastT);toastT=setTimeout(()=>t.remove(),2800)}
+
+/* ---------------- login + onboarding ---------------- */
+const DEMO=[{r:'super',t:'Super Admin',n:'kiran@akshara.app'},{r:'admin',t:'School Admin',n:'admin@greenfield.edu'},{r:'principal',t:'Principal',n:'principal@greenfield.edu'},{r:'teacher',t:'Teacher',n:'fatima@greenfield.edu'},{r:'accountant',t:'Accountant',n:'accounts@greenfield.edu'},{r:'parent',t:'Parent',n:'priya.patel@mail.com'},{r:'student',t:'Student',n:'ananya.8a@greenfield.edu'}];
+let pick='admin';
+function loginView(){return `<div class="login">
+ <section class="login-art"><div class="ruled"></div><div class="margin"></div>
+  <div class="brand" style="position:relative"><div class="brand-mark">अ</div>Akshara School Cloud</div>
+  <div style="display:flex;flex-direction:column;gap:16px;position:relative"><h1>Run the whole school from one register.</h1><p>Admissions to report cards, fees to transport. Every school gets its own private space, roles and settings, on desktop, tablet or phone.</p></div>
+  <div class="login-stats"><div><b>11</b><span>modules</span></div><div><b>7</b><span>role dashboards</span></div><div><b>14 days</b><span>free trial</span></div></div>
+ </section>
+ <section class="login-form">
+  <div><p class="eyebrow">Sign in</p><h1 style="margin-top:6px">Welcome back</h1><p class="muted" style="margin-top:6px">This is a clickable prototype. Pick a demo account to explore its dashboard; no password is checked.</p></div>
+  <div class="demo-grid" role="group" aria-label="Demo accounts">${DEMO.map(d=>`<button class="demo" data-pick="${d.r}" aria-pressed="${d.r===pick}"><b>${d.t}</b><span>${d.n}</span></button>`).join('')}</div>
+  <form id="loginf" style="display:flex;flex-direction:column;gap:14px">
+   <div class="field"><label for="lemail">Email</label><input class="input" id="lemail" type="email" value="${DEMO.find(d=>d.r===pick).n}"></div>
+   <div class="field"><label for="lpass">Password</label><input class="input" id="lpass" type="password" value="demo-password"></div>
+   <button class="btn primary" type="submit" style="min-height:46px">Sign in ${ic('arrow')}</button>
+  </form>
+  <p class="muted" style="text-align:center">New school? <a href="#" id="trial" style="color:var(--accent);font-weight:600">Start a 14-day free trial</a></p>
+  <div style="display:flex;justify-content:center"><button class="btn ghost sm" data-theme-t>${ic('moon')}Toggle dark mode</button></div>
+ </section></div>`}
+function bindLogin(){
+ document.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{pick=b.dataset.pick;document.querySelectorAll('[data-pick]').forEach(x=>x.setAttribute('aria-pressed',x===b));$('#lemail').value=DEMO.find(d=>d.r===pick).n});
+ $('#loginf').onsubmit=e=>{e.preventDefault();S.role=pick;go('dashboard');toast('Signed in as '+ME[pick].title)};
+ $('#trial').onclick=e=>{e.preventDefault();onboarding(1)};
+ document.querySelector('[data-theme-t]').onclick=ACT.theme;
+}
+const OB={school:'',city:'',board:'CBSE',students:'300–1,000',admin:'',email:'',plan:'Growth'};
+function onboarding(step){
+ const steps=`<div class="steps">${[1,2,3].map(i=>`<span class="${i<=step?'on':''}"></span>`).join('')}</div>`;
+ let body='';
+ if(step===1)body=`<div><p class="eyebrow">Step 1 of 3</p><h2 style="margin-top:4px">Tell us about your school</h2></div>
+  <div class="field"><label for="ob1">School name</label><input class="input" id="ob1" value="${esc(OB.school)}" placeholder="e.g. Sunrise Public School" required></div>
+  <div class="grid2"><div class="field"><label for="ob2">City</label><input class="input" id="ob2" value="${esc(OB.city)}" placeholder="e.g. Vijayawada"></div>
+  <div class="field"><label for="ob3">Board</label><select class="input" id="ob3">${['CBSE','ICSE','State Board','IB','Cambridge'].map(b=>`<option ${b===OB.board?'selected':''}>${b}</option>`).join('')}</select></div></div>
+  <div class="field"><label for="ob4">Number of students</label><select class="input" id="ob4">${['Under 300','300–1,000','1,000–3,000','Over 3,000'].map(b=>`<option ${b===OB.students?'selected':''}>${b}</option>`).join('')}</select></div>`;
+ if(step===2)body=`<div><p class="eyebrow">Step 2 of 3</p><h2 style="margin-top:4px">Create the admin account</h2></div>
+  <div class="field"><label for="ob5">Your name</label><input class="input" id="ob5" value="${esc(OB.admin)}" placeholder="Full name"></div>
+  <div class="field"><label for="ob6">Work email</label><input class="input" id="ob6" type="email" value="${esc(OB.email)}" placeholder="you@school.edu"></div>
+  <div class="field"><label for="ob7">Password</label><input class="input" id="ob7" type="password" placeholder="At least 10 characters"></div>`;
+ if(step===3)body=`<div><p class="eyebrow">Step 3 of 3</p><h2 style="margin-top:4px">Pick a plan for after the trial</h2><p class="muted">No card needed for the 14-day trial. You can change plans any time.</p></div>
+  <div class="list">${PLANS.map(p=>`<label class="li" style="cursor:pointer;align-items:center"><input type="radio" name="obp" value="${p.n}" ${p.n===OB.plan?'checked':''}><div style="flex:1"><b>${p.n}</b><p class="muted" style="font-size:13px">${p.cap}</p></div><b class="num">${inr(p.m)}<span class="faint" style="font-weight:500">/mo</span></b></label>`).join('')}</div>`;
+ overlay('modal',`<div class="ov-head">${steps}<button class="iconbtn" data-act="close" aria-label="Close">${ic('x')}</button></div><form id="obf" style="display:flex;flex-direction:column;gap:14px">${body}<div style="display:flex;justify-content:space-between;gap:8px">${step>1?`<button type="button" class="btn" id="obback">Back</button>`:'<span></span>'}<button class="btn primary" type="submit">${step<3?'Continue':'Create my school'} ${ic('arrow')}</button></div></form>`);
+ $('#obf').onsubmit=e=>{e.preventDefault();
+  if(step===1){OB.school=$('#ob1').value.trim();OB.city=$('#ob2').value;OB.board=$('#ob3').value;OB.students=$('#ob4').value;if(!OB.school){$('#ob1').focus();$('#ob1').setCustomValidity('Enter the school name');$('#ob1').reportValidity();return}}
+  if(step===2){OB.admin=$('#ob5').value;OB.email=$('#ob6').value}
+  if(step===3){OB.plan=document.querySelector('[name=obp]:checked').value;closeOverlay();TENANTS.unshift({name:OB.school,city:OB.city||'—',plan:OB.plan,students:0,status:'Trial',mrr:0,since:'Oct 2026',renew:'Trial ends 23 Oct'});SCHOOL.name=OB.school;ME.admin.scope=OB.school;if(OB.admin)ME.admin.name=OB.admin;S.role='admin';go('dashboard');toast(OB.school+' is ready. Your trial runs for 14 days.');return}
+  onboarding(step+1)};
+ const bk=$('#obback');if(bk)bk.onclick=()=>onboarding(step-1);
+}
+
+/* ---------------- charts ---------------- */
+function bars(data,{h=200,max,fmt=v=>v,color='var(--accent)',second}={}){
+ const w=640,pl=44,pb=26,pt=12,n=data.length;const mx=max||Math.max(...data.map(d=>Math.max(d.v,d.v2||0)))*1.1;
+ const bw=(w-pl-10)/n;const y=v=>pt+(h-pt-pb)*(1-v/mx);
+ const ticks=[0,.25,.5,.75,1].map(t=>mx*t);
+ return `<div class="chart"><svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Bar chart">${ticks.map(t=>`<line x1="${pl}" x2="${w-6}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line)" stroke-width="1"/><text x="${pl-8}" y="${y(t)+4}" text-anchor="end">${fmt(t)}</text>`).join('')}
+ ${data.map((d,i)=>{const x=pl+i*bw;const inner=second?bw*.32:bw*.5;const x1=x+(bw-(second?inner*2+4:inner))/2;
+  return `<rect x="${x1}" y="${y(d.v)}" width="${inner}" height="${y(0)-y(d.v)}" rx="3" fill="${color}"><title>${d.l}: ${fmt(d.v)}</title></rect>${second?`<rect x="${x1+inner+4}" y="${y(d.v2)}" width="${inner}" height="${y(0)-y(d.v2)}" rx="3" fill="${second}"><title>${d.l}: ${fmt(d.v2)}</title></rect>`:''}<text x="${x+bw/2}" y="${h-8}" text-anchor="middle">${d.l}</text>`}).join('')}</svg></div>`}
+function line(data,{h=200,fmt=v=>v,min,max}={}){
+ const w=640,pl=48,pb=26,pt=14,n=data.length;const mn=min??0,mx=max??Math.max(...data.map(d=>d.v))*1.15;
+ const x=i=>pl+i*(w-pl-16)/(n-1),y=v=>pt+(h-pt-pb)*(1-(v-mn)/(mx-mn));
+ const pts=data.map((d,i)=>`${x(i)},${y(d.v)}`).join(' ');const ticks=[0,.25,.5,.75,1].map(t=>mn+(mx-mn)*t);const last=data[n-1];
+ return `<div class="chart"><svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Line chart">${ticks.map(t=>`<line x1="${pl}" x2="${w-8}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line)"/><text x="${pl-8}" y="${y(t)+4}" text-anchor="end">${fmt(t)}</text>`).join('')}
+ <polygon points="${x(0)},${y(0)} ${pts} ${x(n-1)},${y(0)}" fill="var(--accent)" fill-opacity=".12"/><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"/>
+ ${data.map((d,i)=>`<text x="${x(i)}" y="${h-8}" text-anchor="middle">${d.l}</text>`).join('')}<circle cx="${x(n-1)}" cy="${y(last.v)}" r="5" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/><text x="${x(n-1)-8}" y="${y(last.v)-12}" text-anchor="end" style="fill:var(--ink);font-weight:600">${fmt(last.v)}</text></svg></div>`}
+function donut(parts,label){const tot=parts.reduce((a,p)=>a+p.v,0);let a0=-Math.PI/2;const r=56,cx=70,cy=70;
+ const segs=parts.map(p=>{const a1=a0+p.v/tot*Math.PI*2;const large=a1-a0>Math.PI?1:0;const d=`M${cx+r*Math.cos(a0)} ${cy+r*Math.sin(a0)} A${r} ${r} 0 ${large} 1 ${cx+r*Math.cos(a1)} ${cy+r*Math.sin(a1)}`;a0=a1;return `<path d="${d}" fill="none" stroke="${p.c}" stroke-width="18"/>`}).join('');
+ return `<div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap"><svg viewBox="0 0 140 140" width="140" height="140" role="img" aria-label="${esc(label)}">${segs}<text x="70" y="68" text-anchor="middle" style="font:700 22px var(--f-display);fill:var(--ink)">${label}</text><text x="70" y="88" text-anchor="middle" style="font-size:11px;fill:var(--ink-3)">today</text></svg><div class="list" style="flex:1;min-width:140px">${parts.map(p=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:4px 0;font-size:14px"><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${p.c};margin-right:8px"></i>${p.l}</span><b class="num">${p.v.toLocaleString('en-IN')}</b></div>`).join('')}</div></div>`}
+
+/* ---------------- shared bits ---------------- */
+const head=(t,sub,actions='')=>`<div class="page-head"><div><p class="eyebrow">${esc(sub)}</p><h1 style="margin-top:4px">${t}</h1></div><div class="actions">${actions}</div></div>`;
+const kpi=(l,v,d,up=true)=>`<div class="card kpi"><span class="muted" style="font-size:13px;font-weight:500">${l}</span><span class="v">${v}</span><span class="d ${up===null?'faint':up?'up':'down'}">${d}</span></div>`;
+const pill=(s)=>{const m={Active:'good',Paid:'good',Present:'good',Admitted:'good',Returned:'good',Trial:'info','On leave':'warn',Late:'warn',Due:'warn','Past due':'bad',Suspended:'bad',Absent:'bad',Overdue:'bad',Pending:'neutral',Issued:'good',Approved:'good'};return `<span class="pill ${m[s]||'neutral'}">${esc(s)}</span>`};
+const av=(n,c)=>`<span class="avatar" ${c?`style="background:${c}"`:''}>${initials(n)}</span>`;
+const today='Friday, 9 October 2026';
+
+/* ---------------- views ---------------- */
+const PLANS=[{n:'Starter',m:2499,cap:'Up to 300 students · 1 branch',f:['Students, admissions, attendance','Fees and online receipts','Parent app and notices','Email support'],no:['Transport and library','Custom report cards','API access']},
+ {n:'Growth',m:5999,cap:'Up to 1,500 students · 3 branches',f:['Everything in Starter','Exams, report cards, timetable','Transport, library, inventory','SMS credits: 5,000 / month','Priority support'],no:['API access']},
+ {n:'Enterprise',m:14999,cap:'Unlimited students and branches',f:['Everything in Growth','Custom domain and branding','API access and SSO','Dedicated success manager','Optional dedicated database'],no:[]}];
+
+const VIEWS={
+dashboard(){return ({super:dashSuper,admin:dashSchool,principal:dashSchool,teacher:dashTeacher,accountant:dashAccounts,parent:dashParent,student:dashStudent})[S.role]()},
+
+schools(){const q=(S.filter.tq||'').toLowerCase();const st=S.filter.ts||'All';
+ const rows=TENANTS.filter(t=>(st==='All'||t.status===st)&&(!q||(t.name+t.city).toLowerCase().includes(q)));
+ return head('Schools','Tenants · '+TENANTS.length+' registered',`<button class="btn primary" data-x="addschool">${ic('plus')}Add school</button>`)+
+ `<div class="card"><div class="toolbar"><input class="input" id="tq" placeholder="Search by name or city" value="${esc(S.filter.tq||'')}"><div class="seg" role="group" aria-label="Status">${['All','Active','Trial','Past due','Suspended'].map(s=>`<button data-ts="${s}" aria-pressed="${s===st}">${s}</button>`).join('')}</div></div>
+ <div class="table-wrap"><table><thead><tr><th>School</th><th>Plan</th><th class="r hide-sm">Students</th><th>Status</th><th class="r hide-sm">MRR</th><th class="hide-sm">Renewal</th></tr></thead><tbody>
+ ${rows.map(t=>`<tr class="click" data-tenant="${esc(t.name)}"><td><div class="person"><span class="avatar" style="background:var(--marigold-soft);color:var(--marigold)">${initials(t.name)}</span><div style="min-width:0"><b>${esc(t.name)}</b><span>${esc(t.city)} · since ${t.since}</span></div></div></td><td>${t.plan}</td><td class="r num hide-sm">${t.students.toLocaleString('en-IN')}</td><td>${pill(t.status)}</td><td class="r num hide-sm">${t.mrr?inr(t.mrr):'—'}</td><td class="hide-sm faint">${t.renew}</td></tr>`).join('')||`<tr><td colspan="6" class="empty">No schools match “${esc(q)}”.</td></tr>`}
+ </tbody></table></div></div>`},
+
+plans(){const mrr=TENANTS.reduce((a,t)=>a+t.mrr,0);
+ return head('Plans & billing','Subscriptions')+`<div class="kpis">${kpi('Monthly recurring revenue',inr(mrr),'▲ 8.4% vs September')}${kpi('Paying schools',TENANTS.filter(t=>t.mrr).length,'▲ 2 this month')}${kpi('Trials running',TENANTS.filter(t=>t.status==='Trial').length,'Trial to paid: 41%',null)}${kpi('Failed payments',TENANTS.filter(t=>t.status==='Past due').length,'Retry scheduled 12 Oct',false)}</div>`+
+ `<div class="card"><div class="card-head"><h2>Plan catalogue</h2><span class="faint" style="font-size:13px">Example pricing, GST extra</span></div><div class="plans">${PLANS.map(p=>`<div class="card plan">${p.n==='Growth'?'<span class="tag">Most chosen</span>':''}<div><h2>${p.n}</h2><p class="muted" style="font-size:13px">${p.cap}</p></div><div class="price num">${inr(p.m)}<small> / month</small></div><ul>${p.f.map(f=>`<li>${f}</li>`).join('')}</ul><p class="faint" style="font-size:13px">${TENANTS.filter(t=>t.plan===p.n).length} schools on this plan</p></div>`).join('')}</div></div>`+
+ `<div class="card"><div class="card-head"><h2>Recent invoices</h2></div><div class="table-wrap"><table><thead><tr><th>Invoice</th><th>School</th><th class="hide-sm">Period</th><th class="r">Amount</th><th>Status</th></tr></thead><tbody>${[['INV-2026-1042','Riverdale Senior Secondary','Oct 2026',14999*1.18,'Paid'],['INV-2026-1041','Oakridge Primary','Oct 2026',5999*1.18,'Paid'],['INV-2026-1040','Bright Minds Academy','Oct 2026',2499*1.18,'Past due'],['INV-2026-1039','Greenfield Public School','Oct 2026',5999*1.18,'Paid']].map(r=>`<tr><td class="mono">${r[0]}</td><td>${r[1]}</td><td class="hide-sm faint">${r[2]}</td><td class="r num">${inr(r[3])}</td><td>${pill(r[4])}</td></tr>`).join('')}</tbody></table></div></div>`},
+
+platform(){return head('Platform health','Monitoring')+`<div class="kpis">${kpi('API uptime (30 days)','99.97%','Target 99.9%')}${kpi('p95 response time','184 ms','▼ 22 ms this week')}${kpi('Error rate','0.08%','Within budget',null)}${kpi('DB storage used','412 GB','of 1 TB provisioned',null)}</div>
+ <div class="cols even"><div class="card"><div class="card-head"><h2>Requests per minute, last 12 hours</h2></div>${line([['00',820],['02',410],['04',300],['06',960],['08',4200],['10',5100],['12',4600],['14',3900],['16',2800],['18',1900],['20',1500],['22',1100]].map(a=>({l:a[0],v:a[1]})),{fmt:v=>Math.round(v).toLocaleString('en-IN')})}</div>
+ <div class="card"><div class="card-head"><h2>Services</h2></div><div class="list">${[['API (ECS, 4 tasks)','Active'],['PostgreSQL (RDS Multi-AZ)','Active'],['Redis cache','Active'],['Background jobs (SQS)','Active'],['Email (SES)','Active'],['SMS gateway','Late']].map(s=>`<div class="li" style="align-items:center"><span>${s[0]}</span><span style="margin-left:auto">${s[1]==='Late'?'<span class="pill warn">Degraded</span>':'<span class="pill good">Healthy</span>'}</span></div>`).join('')}</div></div></div>`},
+
+support(){return head('Support','Tickets')+`<div class="card"><div class="table-wrap"><table><thead><tr><th>Ticket</th><th>School</th><th class="hide-sm">Topic</th><th>Priority</th><th class="hide-sm">Opened</th></tr></thead><tbody>${[['#4821','Bright Minds Academy','Card payment failed twice','Overdue','08 Oct'],['#4819','St. Mary’s Convent','Report card layout for Class 12','Pending','07 Oct'],['#4815','Little Lotus Kindergarten','Import students from Excel','Pending','06 Oct'],['#4810','Sunrise International','SMS not delivered to Airtel numbers','Late','04 Oct']].map(r=>`<tr class="click" data-x="ticket"><td class="mono">${r[0]}</td><td>${r[1]}</td><td class="hide-sm">${r[2]}</td><td>${r[3]==='Overdue'?'<span class="pill bad">High</span>':r[3]==='Late'?'<span class="pill warn">Medium</span>':'<span class="pill neutral">Normal</span>'}</td><td class="hide-sm faint">${r[4]}</td></tr>`).join('')}</tbody></table></div></div>`},
+
+students(){const q=(S.filter.q||'').toLowerCase();const c=S.filter.c||'All classes';const f=S.filter.f||'All';
+ let list=STUDENTS;if(S.role==='teacher')list=list.filter(s=>s.cls==='8-A'||s.cls==='9-A');
+ const rows=list.filter(s=>(c==='All classes'||s.cls===c)&&(f==='All'||s.fee===f)&&(!q||(s.name+s.id+s.parent).toLowerCase().includes(q)));
+ return head('Students',S.role==='teacher'?'My classes · 8-A, 9-A':list.length+' enrolled · '+SCHOOL.year,S.role==='admin'?`<button class="btn" data-x="import">${ic('download')}Import</button><button class="btn primary" data-x="addstudent">${ic('plus')}Add student</button>`:'')+
+ `<div class="card"><div class="toolbar"><input class="input" id="sq" placeholder="Search name, ID or parent" value="${esc(S.filter.q||'')}"><select class="input" id="sc" aria-label="Class"><option>All classes</option>${CLASSES.map(k=>`<option ${k===c?'selected':''}>${k}</option>`).join('')}</select><div class="seg" role="group" aria-label="Fee status">${['All','Paid','Due'].map(s=>`<button data-sf="${s}" aria-pressed="${s===f}">${s==='All'?'All fees':s}</button>`).join('')}</div></div>
+ <div class="table-wrap"><table><thead><tr><th>Student</th><th>Class</th><th class="hide-sm">Parent</th><th class="r hide-sm">Attendance</th><th>Fees</th></tr></thead><tbody>
+ ${rows.map(s=>`<tr class="click" data-student="${s.id}"><td><div class="person">${av(s.name)}<div style="min-width:0"><b>${esc(s.name)}</b><span class="mono">${s.id}</span></div></div></td><td>${s.cls}<span class="faint"> · ${s.roll}</span></td><td class="hide-sm">${esc(s.parent)}</td><td class="r num hide-sm" style="color:${s.att<85?'var(--bad)':'inherit'}">${s.att}%</td><td>${pill(s.fee)}${s.due?`<span class="faint num" style="font-size:12.5px;margin-left:6px">${inr(s.due)}</span>`:''}</td></tr>`).join('')||`<tr><td colspan="5" class="empty">No students match these filters.</td></tr>`}
+ </tbody></table></div><p class="faint" style="font-size:13px;margin-top:10px">Showing ${rows.length} of ${list.length}</p></div>`},
+
+admissions(){return head('Admissions','Session 2027–28 intake',`<button class="btn primary" data-x="enquiry">${ic('plus')}New enquiry</button>`)+
+ `<div class="kpis">${kpi('Enquiries this month',42,'▲ 12 vs September')}${kpi('Applications',18,'43% of enquiries',null)}${kpi('Offers accepted',9,'▲ 3 this week')}${kpi('Seats left (Class 1)',14,'of 80',null)}</div>
+ <div class="kanban">${STAGES.map((st,i)=>{const cards=APPS.map((a,k)=>({...a,k})).filter(a=>a.stage===i);return `<div class="lane"><div class="lane-h">${st}<span>${cards.length}</span></div>${cards.map(a=>`<div class="kcard"><div class="person">${av(a.name)}<div><b>${esc(a.name)}</b><span>${a.grade}</span></div></div><div class="meta">${a.src} · ${a.date}</div>${i<4?`<button class="btn sm" data-adv="${a.k}">Move to ${STAGES[i+1]} ${ic('arrow')}</button>`:'<span class="pill good">Student record created</span>'}</div>`).join('')||'<p class="faint" style="font-size:13px">No one at this stage</p>'}</div>`}).join('')}</div>`},
+
+staff(){return head('Staff',STAFF.length+' members · today '+STAFF.filter(s=>s.status!=='On leave').length+' in',`<button class="btn" data-x="leave">Leave requests <span class="pill warn" style="margin-left:4px">2</span></button><button class="btn primary" data-x="addstaff">${ic('plus')}Add staff</button>`)+
+ `<div class="card"><div class="table-wrap"><table><thead><tr><th>Name</th><th>Role</th><th class="hide-sm">Department</th><th class="hide-sm">Classes / duty</th><th>Today</th></tr></thead><tbody>${STAFF.map(s=>`<tr><td><div class="person">${av(s.name)}<b>${esc(s.name)}</b></div></td><td>${s.role}</td><td class="hide-sm">${s.dept}</td><td class="hide-sm faint">${s.classes}</td><td>${pill(s.status)}${s.leave!=='—'?`<span class="faint" style="font-size:12.5px;margin-left:6px">${s.leave}</span>`:''}</td></tr>`).join('')}</tbody></table></div></div>`},
+
+classes(){return head('Classes & subjects','Academic year '+SCHOOL.year,`<button class="btn primary" data-x="addclass">${ic('plus')}Add section</button>`)+
+ `<div class="cols three">${CLASSES.map((c,i)=>{const n=[38,36,40,35,30,33,41,39][i];return `<div class="card"><div class="card-head" style="margin-bottom:8px"><h2>Class ${c}</h2><span class="pill neutral">${n} students</span></div><p class="muted" style="font-size:13.5px">Class teacher: <b style="color:var(--ink)">${STAFF[i%5].name}</b></p><p class="faint" style="font-size:13px;margin-top:8px">${SUBJECTS.join(' · ')}</p><div class="bar-track" style="margin-top:12px" title="Seats filled"><div class="bar-fill" style="width:${n/42*100}%"></div></div><p class="faint" style="font-size:12px;margin-top:4px">${n} of 42 seats</p></div>`}).join('')}</div>`},
+
+attendance(){
+ if(S.role==='parent'){const days=['H','P','P','P','P','P','H','H','P','P','A','P','P','H','H','P','P','P','L','P','H','H','P','P','P','P','P','H','H','P','P'];
+  return head('Attendance','Ananya Patel · 8-A')+`<div class="kpis">${kpi('This month','92%','20 of 22 days present',null)}${kpi('This year','96%','▲ above class average')}${kpi('Absent','1 day','10 Sep · fever',null)}${kpi('Late','1 day','19 Sep',null)}</div>
+  <div class="card" style="max-width:560px"><div class="card-head"><h2>September 2026</h2><div class="legend"><span><i style="background:var(--good)"></i>Present</span><span><i style="background:var(--bad)"></i>Absent</span><span><i style="background:var(--warn)"></i>Late</span></div></div><div class="cal">${['M','T','W','T','F','S','S'].map(d=>`<div class="h">${d}</div>`).join('')}${days.slice(0,30).map((d,i)=>`<div class="d ${d}">${i+1}</div>`).join('')}</div></div>`}
+ const list=STUDENTS.filter(s=>s.cls===S.attCls).concat(STUDENTS.filter(s=>s.cls!==S.attCls).slice(0,5).map(s=>({...s,cls:S.attCls})));
+ list.forEach(s=>{if(!S.att[s.id])S.att[s.id]=s.att<85?'A':'P'});
+ const cnt=v=>list.filter(s=>S.att[s.id]===v).length;
+ return head('Attendance',today,`<select class="input" id="attcls" aria-label="Class" style="width:auto">${CLASSES.map(c=>`<option ${c===S.attCls?'selected':''}>${c}</option>`).join('')}</select>`)+
+ `<div class="cols"><div class="card"><div class="card-head"><h2>Class ${S.attCls} · Period 1</h2><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="faint" style="font-size:12.5px">Also captured by RFID gate taps</span><button class="btn sm" data-x="allp">Mark all present</button></div></div>
+ ${list.map(s=>`<div class="att-row"><div class="person">${av(s.name)}<div><b>${esc(s.name)}</b><span>Roll ${s.roll}</span></div></div><div class="att-opts" role="group" aria-label="${esc(s.name)}">${['P','A','L'].map(v=>`<button data-att="${s.id}" data-v="${v}" aria-pressed="${S.att[s.id]===v}" title="${{P:'Present',A:'Absent',L:'Late'}[v]}">${v}</button>`).join('')}</div></div>`).join('')}
+ <div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn primary" data-x="saveatt">Submit attendance</button></div></div>
+ <div class="card" style="align-self:start"><h2 style="margin-bottom:12px">Summary</h2>${donut([{l:'Present',v:cnt('P'),c:'var(--good)'},{l:'Absent',v:cnt('A'),c:'var(--bad)'},{l:'Late',v:cnt('L'),c:'var(--warn)'}],Math.round(cnt('P')/list.length*100)+'%')}<p class="faint" style="font-size:13px;margin-top:12px">Parents of absent students get an SMS and app notification when you submit.</p></div></div>`},
+
+timetable(){const days=['Mon','Tue','Wed','Thu','Fri','Sat'];const times=['08:30','09:15','10:00','10:45','11:00','11:45','12:30'];
+ const C={Mathematics:'#2B6CB0',Science:'#1E6B52',English:'#B7791F',Hindi:'#B83280','Social Studies':'#6B46C1',Computer:'#C05621',Games:'#2C7A7B'};
+ const T={Mathematics:'R. Kumar',Science:'F. Shaikh',English:'S. Pillai',Hindi:'M. Iyer','Social Studies':'A. Joshi',Computer:'K. Rao',Games:'Coach'};
+ const order=['Mathematics','Science','English','Hindi','Social Studies','Computer','Games'];
+ const cell=(d,t)=>{if(t===3)return `<div class="slot brk">Break</div>`;const s=order[(d*2+t+(d%3))%order.length];return `<div class="slot" style="--c:${C[s]}"><b>${s}</b><span>${T[s]}${t===0&&d===3?' · Lab 2':''}</span></div>`};
+ return head('Timetable',S.role==='teacher'?'Fatima Shaikh · week of 5 Oct':'Class 8-A · week of 5 Oct',S.role==='admin'?`<button class="btn">${ic('download')}Export PDF</button><button class="btn primary" data-x="ttedit">Edit periods</button>`:'')+
+ `<div class="card"><div class="table-wrap"><div class="tt"><div></div>${days.map(d=>`<div class="h">${d}</div>`).join('')}${times.map((t,ti)=>`<div class="t">${t}</div>${days.map((d,di)=>cell(di,ti)).join('')}`).join('')}</div></div></div>`},
+
+homework(){const isT=S.role==='teacher';return head('Homework',isT?'Class 8-A':'Ananya · 8-A',isT?`<button class="btn primary" data-x="addhw">${ic('plus')}Assign homework</button>`:'')+
+ `<div class="cols three">${HOMEWORK.map((h,i)=>`<div class="card" style="display:flex;flex-direction:column;gap:10px"><div style="display:flex;justify-content:space-between;gap:8px"><span class="pill info">${h.sub}</span><span class="faint" style="font-size:13px">Due ${h.due}</span></div><h3>${esc(h.t)}</h3>${isT?`<div><div class="bar-track"><div class="bar-fill" style="width:${h.sub_n/h.total*100}%"></div></div><p class="faint" style="font-size:12.5px;margin-top:4px">${h.sub_n} of ${h.total} submitted</p></div>`:`<button class="btn sm" data-hwdone="${i}" style="align-self:flex-start">${h.done?'Submitted ✓':'Mark as submitted'}</button>`}</div>`).join('')}</div>`},
+
+exams(){const studs=STUDENTS.filter(s=>s.cls==='8-A').concat(STUDENTS.slice(0,5)).slice(0,8);const m=MARKS[S.examSub];
+ return head('Exams & results','Unit Test 2 · out of 100',`<button class="btn" data-x="airemark">${ic('spark')}Draft remarks</button><button class="btn" data-x="reportcard">View report card</button><button class="btn primary" data-x="publish">Publish results</button>`)+
+ `<div class="card"><div class="toolbar"><select class="input" id="exsub" aria-label="Subject">${SUBJECTS.map(s=>`<option ${s===S.examSub?'selected':''}>${s}</option>`).join('')}</select><span class="faint" style="font-size:13px">Class 8-A · CBSE 8-point grading</span></div>
+ <div class="table-wrap"><table><thead><tr><th>Student</th><th class="r">Marks</th><th>Grade</th><th class="hide-sm">Remark</th></tr></thead><tbody>${studs.map((s,i)=>`<tr><td><div class="person">${av(s.name)}<b>${esc(s.name)}</b></div></td><td class="r"><input class="input num" style="width:84px;text-align:right;min-height:36px;padding:6px 10px" type="number" min="0" max="100" value="${m[i]}" data-mk="${i}" aria-label="Marks for ${esc(s.name)}"></td><td><span class="grade" id="g${i}">${grade(m[i])}</span></td><td class="hide-sm faint" id="r${i}">${m[i]>=90?'Outstanding':m[i]>=75?'Very good':m[i]>=60?'Good, keep practising':'Needs support'}</td></tr>`).join('')}</tbody></table></div>
+ <p class="faint" style="font-size:13px;margin-top:10px" id="exavg">Class average: <b class="num" style="color:var(--ink)">${Math.round(m.reduce((a,b)=>a+b,0)/m.length)}</b></p></div>`},
+
+results(){return head('Results','Ananya Patel · 8-A')+reportCard()},
+
+fees(){const due=STUDENTS.filter(s=>s.due);const coll=4862500,target=6150000;
+ return head('Fees','Term 2 · '+SCHOOL.year,`<button class="btn" data-x="feestruct">Fee structure</button><button class="btn primary" data-x="collect">${ic('plus')}Collect fee</button>`)+
+ `<div class="kpis">${kpi('Collected this term',inr(coll),Math.round(coll/target*100)+'% of '+inr(target),null)}${kpi('Collected today',inr(184300),'31 receipts')}${kpi('Outstanding',inr(target-coll),due.length+' students with dues',false)}${kpi('Online share','68%','▲ 9 pts vs Term 1')}</div>
+ <div class="cols"><div class="card"><div class="card-head"><h2>Collections by month</h2><div class="legend"><span><i style="background:var(--accent)"></i>Collected</span><span><i style="background:var(--marigold)"></i>Expected</span></div></div>${bars([['Apr',1420],['May',380],['Jun',940],['Jul',1610],['Aug',520],['Sep',880],['Oct',640]].map((a,i)=>({l:a[0],v:a[1]*1000,v2:[1500,420,980,1650,560,940,1040][i]*1000})),{fmt:v=>'₹'+Math.round(v/100000)+'L',second:'var(--marigold)'})}</div>
+ <div class="card"><div class="card-head"><h2>Dues to follow up</h2><button class="btn sm" data-x="remind">Send reminders</button></div><div class="list">${due.map(s=>`<div class="li" style="align-items:center"><div class="person">${av(s.name)}<div><b>${esc(s.name)}</b><span>${s.cls} · ${esc(s.parent)}</span></div></div><div style="margin-left:auto;text-align:right"><b class="num">${inr(s.due)}</b><br><button class="btn sm ghost" style="color:var(--accent);padding:0;min-height:0" data-collect="${s.id}">Collect</button></div></div>`).join('')}</div></div></div>
+ <div class="cols even"><div class="card"><div class="card-head"><h2>Class 8 fee plan 2026–27</h2><span class="faint" style="font-size:13px">3 instalments</span></div><div class="table-wrap"><table><thead><tr><th>Instalment</th><th>Due</th><th class="r">Amount</th></tr></thead><tbody>${[['Term 1','15 Jun',41800],['Term 2','15 Oct',40900],['Term 3','15 Jan',36300]].map(r=>`<tr><td>${r[0]}</td><td class="faint">${r[1]}</td><td class="r num">${inr(r[2])}</td></tr>`).join('')}</tbody></table></div><p class="faint" style="font-size:12.5px;margin-top:8px">Late fee ₹50 per day after the due date. Transport and hostel are billed separately.</p></div>
+ <div class="card"><div class="card-head"><h2>Concessions this year</h2></div><div class="list">${[['RTE 25% quota','58 students','Full waiver, reimbursed by the state'],['Sibling discount','112 students','10% on tuition'],['Staff children','21 students','50% on tuition'],['Merit scholarship','15 students','Approved by the principal']].map(c=>`<div class="li" style="align-items:center"><div><b>${c[0]}</b><p class="faint" style="font-size:13px">${c[2]}</p></div><span class="num" style="margin-left:auto;font-weight:600">${c[1]}</span></div>`).join('')}</div><p class="faint" style="font-size:12.5px;margin-top:8px">Parents pay by UPI, card, net banking or a link on WhatsApp. Payments reconcile automatically.</p></div></div>`},
+
+expenses(){const tot=EXPENSES.reduce((a,e)=>a+e.amt,0);return head('Expenses','October 2026',`<button class="btn primary" data-x="addexp">${ic('plus')}Record expense</button>`)+
+ `<div class="kpis">${kpi('Spent this month',inr(tot),'Budget '+inr(320000),null)}${kpi('Salaries (Sep)',inr(2840000),'Paid 01 Oct',null)}${kpi('Transport',inr(36400),'▼ 4% vs Sep')}${kpi('Pending approvals','2','Principal to approve',null)}</div>
+ <div class="card"><div class="table-wrap"><table><thead><tr><th>Date</th><th>Category</th><th>Item</th><th class="r">Amount</th><th class="hide-sm">Recorded by</th></tr></thead><tbody id="exbody">${EXPENSES.map(e=>`<tr><td class="faint">${e.d}</td><td><span class="pill neutral">${e.cat}</span></td><td>${esc(e.item)}</td><td class="r num">${inr(e.amt)}</td><td class="hide-sm faint">${e.by}</td></tr>`).join('')}</tbody></table></div></div>`},
+
+transport(){return head('Transport','4 routes · 156 students',`<button class="btn primary" data-x="assignroute">${ic('plus')}Assign student</button>`)+
+ `<div class="cols even">${ROUTES.map(r=>`<div class="card"><div class="card-head" style="margin-bottom:10px"><div style="display:flex;align-items:center;gap:10px"><div class="badge-ic" style="background:var(--marigold-soft);color:var(--marigold)">${ic('bus')}</div><div><h2>${r.r}</h2><p class="faint mono">${r.v}</p></div></div><span class="pill good">On route</span></div><dl class="kv"><dt>Driver</dt><dd>${r.drv}</dd><dt>Stops</dt><dd>${r.stops}</dd><dt>Students</dt><dd class="num">${r.stu} of ${r.cap} seats</dd><dt>Monthly fee</dt><dd class="num">${inr(1800+r.stops*50)}</dd></dl><div class="bar-track" style="margin-top:12px"><div class="bar-fill" style="width:${r.stu/r.cap*100}%;background:var(--marigold)"></div></div></div>`).join('')}</div>`},
+
+library(){return head('Library & inventory','Books and assets',`<button class="btn" data-x="issue">Issue book</button><button class="btn primary" data-x="addbook">${ic('plus')}Add book</button>`)+
+ `<div class="kpis">${kpi('Titles','2,418','6,930 copies',null)}${kpi('Issued now','312','18 overdue',false)}${kpi('Lab assets','146','3 need repair',null)}${kpi('Purchase orders','2 open','₹48,600',null)}</div>
+ <div class="card"><div class="table-wrap"><table><thead><tr><th>Title</th><th class="hide-sm">Category</th><th class="r">Copies</th><th class="r">Available</th></tr></thead><tbody>${BOOKS.map(b=>`<tr><td><b style="font-weight:600">${esc(b.t)}</b><br><span class="faint" style="font-size:12.5px">${esc(b.a)}</span></td><td class="hide-sm">${b.cat}</td><td class="r num">${b.copies}</td><td class="r num">${b.copies-b.out===0?'<span class="pill bad">None</span>':b.copies-b.out}</td></tr>`).join('')}</tbody></table></div></div>`},
+
+notices(){const can=['admin','principal','teacher'].includes(S.role);return head('Announcements',can?'Reach parents, students and staff':'From your school',can?`<button class="btn primary" data-x="compose">${ic('plus')}New announcement</button>`:'')+
+ `<div class="card"><div class="list">${NOTICES.map(n=>`<div class="li"><div class="badge-ic" style="background:var(--marigold-soft);color:var(--marigold)">${ic('mega')}</div><div style="min-width:0;flex:1"><b>${esc(n.t)}</b><p class="muted" style="font-size:14px;margin-top:2px">${esc(n.b)}</p><p class="faint" style="font-size:12.5px;margin-top:6px">${esc(n.to)} · ${esc(n.by)}</p></div><span class="when">${n.d}</span></div>`).join('')}</div></div>`},
+
+reports(){return head('Reports','Analytics',`<button class="btn">${ic('download')}Export Excel</button>`)+
+ `<div class="cols even"><div class="card"><div class="card-head"><h2>Average attendance by class</h2></div>${bars(CLASSES.map((c,i)=>({l:c,v:[94,91,89,93,96,88,90,92][i]})),{max:100,fmt:v=>Math.round(v)+'%'})}</div>
+ <div class="card"><div class="card-head"><h2>Unit Test 2 average by subject</h2></div>${bars(SUBJECTS.map(s=>({l:s.split(' ')[0].slice(0,7),v:Math.round(MARKS[s].reduce((a,b)=>a+b,0)/8)})),{max:100,fmt:v=>Math.round(v),color:'var(--marigold)'})}</div></div>
+ <div class="card"><div class="card-head"><h2>Ready-made reports</h2></div><div class="cols three">${[['Daily attendance register','check'],['Fee defaulters list','wallet'],['Class-wise result analysis','award'],['Staff attendance and leave','brief'],['Transport route manifest','bus'],['Income vs expense','chart']].map(r=>`<button class="btn" style="justify-content:flex-start" data-x="report">${ic(r[1])}${r[0]}</button>`).join('')}</div></div>`},
+
+subscription(){const y=S.planCycle==='yearly';return head('Subscription','Greenfield Public School')+
+ `<div class="card" style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center"><div><p class="eyebrow">Current plan</p><h2 style="margin-top:4px">Growth · monthly</h2><p class="muted">1,240 of 1,500 students used · renews 14 April 2027 · UPI AutoPay</p></div><div style="flex:1 1 220px;max-width:320px"><div class="bar-track"><div class="bar-fill" style="width:${1240/1500*100}%"></div></div><p class="faint" style="font-size:12.5px;margin-top:4px">83% of student limit</p></div></div>
+ <div style="display:flex;justify-content:center"><div class="seg" role="group" aria-label="Billing cycle"><button data-cyc="monthly" aria-pressed="${!y}">Monthly</button><button data-cyc="yearly" aria-pressed="${y}">Yearly · 2 months free</button></div></div>
+ <div class="plans">${PLANS.map(p=>`<div class="card plan ${p.n==='Growth'?'cur':''}">${p.n==='Growth'?'<span class="tag">Your plan</span>':''}<div><h2>${p.n}</h2><p class="muted" style="font-size:13px">${p.cap}</p></div><div class="price num">${inr(y?p.m*10:p.m)}<small> / ${y?'year':'month'}</small></div><ul>${p.f.map(f=>`<li>${f}</li>`).join('')}${p.no.map(f=>`<li class="no">${f}</li>`).join('')}</ul><button class="btn ${p.n==='Enterprise'?'primary':''}" style="margin-top:auto" data-plan="${p.n}" ${p.n==='Growth'?'disabled':''}>${p.n==='Growth'?'Current plan':p.n==='Starter'?'Downgrade':'Upgrade'}</button></div>`).join('')}</div>
+ <div class="card"><div class="card-head"><h2>Billing history</h2></div><div class="table-wrap"><table><thead><tr><th>Invoice</th><th>Date</th><th class="r">Amount</th><th>Status</th><th></th></tr></thead><tbody>${['Oct','Sep','Aug'].map((m,i)=>`<tr><td class="mono">INV-2026-${1039-i*31}</td><td>01 ${m} 2026</td><td class="r num">${inr(5999*1.18)}</td><td>${pill('Paid')}</td><td class="r"><button class="btn sm ghost" data-x="invoice">${ic('download')}PDF</button></td></tr>`).join('')}</tbody></table></div></div>`},
+
+settings(){return head('Settings','School profile and preferences')+
+ `<div class="tabs" role="group">${['School profile','Branches','Academic year','Roles & permissions','Notifications'].map((t,i)=>`<button aria-pressed="${(S.filter.st||0)===i}" data-stab="${i}">${t}</button>`).join('')}</div>`+
+ [()=>`<form class="card" id="setf" style="display:flex;flex-direction:column;gap:14px;max-width:760px"><div class="grid2"><div class="field"><label for="s1">School name</label><input class="input" id="s1" value="${esc(SCHOOL.name)}"></div><div class="field"><label for="s2">Short code</label><input class="input" id="s2" value="GPS"></div><div class="field"><label for="s3">Board</label><select class="input" id="s3"><option>CBSE</option><option>ICSE</option><option>State Board</option></select></div><div class="field"><label for="s4">City</label><input class="input" id="s4" value="Hyderabad"></div><div class="field"><label for="s5">Office phone</label><input class="input" id="s5" value="+91 40 2354 8821"></div><div class="field"><label for="s6">Office email</label><input class="input" id="s6" value="office@greenfield.edu"></div></div><div class="field"><label for="s7">Address</label><textarea class="input" id="s7" rows="2">Plot 14, Road No. 3, Banjara Hills, Hyderabad 500034</textarea></div><div><button class="btn primary">Save changes</button></div></form>`,
+ ()=>`<div class="cols even">${[['Banjara Hills (main)','Classes LKG–12 · 1,040 students'],['Kondapur','Classes LKG–5 · 200 students']].map(b=>`<div class="card"><h2>${b[0]}</h2><p class="muted">${b[1]}</p></div>`).join('')}</div>`,
+ ()=>`<div class="card"><div class="list">${[['2026–27','1 Apr 2026 – 31 Mar 2027','Active'],['2025–26','1 Apr 2025 – 31 Mar 2026','Closed']].map(a=>`<div class="li" style="align-items:center"><div><b>${a[0]}</b><p class="faint" style="font-size:13px">${a[1]}</p></div><span style="margin-left:auto">${a[2]==='Active'?pill('Active'):'<span class="pill neutral">Closed</span>'}</span></div>`).join('')}</div><button class="btn" style="margin-top:12px" data-x="promote">Start 2027–28 and promote students</button></div>`,
+ ()=>`<div class="card"><div class="table-wrap"><table><thead><tr><th>Permission</th>${['Admin','Principal','Teacher','Accountant','Parent'].map(r=>`<th style="text-align:center">${r}</th>`).join('')}</tr></thead><tbody>${[['Manage students',1,1,0,0,0],['Mark attendance',1,1,1,0,0],['Enter marks',1,1,1,0,0],['Collect fees',1,0,0,1,0],['View fee reports',1,1,0,1,0],['Send announcements',1,1,1,0,0],['View own child',0,0,0,0,1]].map(r=>`<tr><td>${r[0]}</td>${r.slice(1).map((v,i)=>`<td style="text-align:center"><input type="checkbox" ${v?'checked':''} aria-label="${r[0]} for role ${i+1}"></td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`,
+ ()=>`<div class="card" style="display:flex;flex-direction:column;gap:12px;max-width:640px">${[['Absent alert to parents on WhatsApp and app',1],['Absent alert by SMS when WhatsApp fails',1],['Fee reminder 3 days before due date',1],['Daily attendance summary to principal',1],['Homework notification to students',0]].map((n,i)=>`<label style="display:flex;justify-content:space-between;gap:12px;align-items:center"><span>${n[0]}</span><input type="checkbox" id="nt${i}" ${n[1]?'checked':''} style="width:20px;height:20px;accent-color:var(--accent)"></label>`).join('')}</div>`][S.filter.st||0]()},
+
+myfees(){const paid=S.filter.paid;return head('Fees','Ananya Patel · 8-A')+
+ `<div class="cols"><div class="card"><div class="card-head"><h2>Term 2 fees</h2>${paid?pill('Paid'):pill('Due')}</div><div class="table-wrap"><table><tbody>${[['Tuition fee',38500],['Computer lab',2400],['Transport (Route 3, Oct–Dec)',5400],['Sibling discount',-3850]].map(r=>`<tr><td>${r[0]}</td><td class="r num" style="${r[1]<0?'color:var(--good)':''}">${r[1]<0?'– '+inr(-r[1]):inr(r[1])}</td></tr>`).join('')}<tr><td><b>Total</b></td><td class="r num"><b>${inr(42450)}</b></td></tr></tbody></table></div>
+ <p class="faint" style="font-size:13px;margin:10px 0 14px">Due by 15 October 2026. A late fee of ₹50 per day applies after the due date.</p>${paid?`<button class="btn" data-x="rcpt">${ic('receipt')}View receipt</button>`:`<button class="btn primary" data-x="pay" style="min-height:46px">Pay ${inr(42450)} now</button>`}</div>
+ <div class="card" style="align-self:start"><h2 style="margin-bottom:10px">Payment history</h2><div class="list">${[['Term 1','12 Jun 2026',41800],['Admission kit','02 Apr 2026',6500]].map(p=>`<div class="li" style="align-items:center"><div><b>${p[0]}</b><p class="faint" style="font-size:13px">${p[1]}</p></div><b class="num" style="margin-left:auto">${inr(p[2])}</b></div>`).join('')}</div></div></div>`},
+frontoffice(){return head('Front office',today,`<button class="btn" data-x="gatepass">${ic('door')}Early pickup pass</button><button class="btn primary" data-x="visitor">${ic('plus')}Check in visitor</button>`)+
+ `<div class="kpis">${kpi('Visitors today',VISITORS.length+18,VISITORS.filter(v=>v.out==='—').length+' inside now',null)}${kpi('Early pickups','4','All verified by parent OTP',null)}${kpi('Late arrivals','12','Parents notified by app',null)}${kpi('Calls logged','7','3 admission enquiries',null)}</div>
+ <div class="card"><div class="card-head"><h2>Visitor log</h2><span class="faint" style="font-size:13px">Photo and phone captured at the gate</span></div><div class="table-wrap"><table><thead><tr><th>Visitor</th><th class="hide-sm">Purpose</th><th class="hide-sm">Meeting</th><th>In</th><th>Out</th><th></th></tr></thead><tbody>${VISITORS.map((v,i)=>`<tr><td><div class="person">${av(v.name)}<div><b>${esc(v.name)}</b><span class="mono">${v.phone}</span></div></div></td><td class="hide-sm">${esc(v.purpose)}</td><td class="hide-sm">${esc(v.meet)}</td><td class="mono">${v.in}</td><td class="mono">${v.out}</td><td class="r">${v.out==='—'?`<button class="btn sm" data-vout="${i}">Check out</button>`:'<span class="pill neutral">Left</span>'}</td></tr>`).join('')}</tbody></table></div></div>`},
+
+certificates(){return head('Certificates & ID cards','Each document carries a QR code anyone can verify',`<button class="btn primary" data-x="gencert">${ic('plus')}Issue certificate</button>`)+
+ `<div class="cols three">${[['Transfer certificate (TC)','CBSE format, with APAAR ID','id'],['Bonafide / study certificate','For passports, scholarships, banks','receipt'],['Fee paid certificate','For income-tax 80C claims','wallet'],['Character certificate','On leaving or on request','award'],['Student ID cards','Print-ready sheets with photo and QR','id'],['Staff ID cards','With blood group and emergency contact','brief']].map(c=>`<button class="card" data-x="gencert" style="width:100%;text-align:left;display:flex;gap:12px;align-items:flex-start;cursor:pointer"><span class="badge-ic" style="background:var(--accent-soft);color:var(--accent)">${ic(c[2])}</span><span><h3>${c[0]}</h3><span class="faint" style="font-size:13px">${c[1]}</span></span></button>`).join('')}</div>
+ <div class="card"><div class="card-head"><h2>Recent requests</h2></div><div class="table-wrap"><table><thead><tr><th>Number</th><th>Student</th><th>Type</th><th class="hide-sm">Requested by</th><th>Status</th></tr></thead><tbody>${CERTS.map(c=>`<tr><td class="mono">${c.no}</td><td>${esc(c.s)}</td><td>${c.t}</td><td class="hide-sm faint">${c.by}</td><td>${pill(c.st)}</td></tr>`).join('')}</tbody></table></div></div>`},
+
+hostel(){return head('Hostel','Boys’ and girls’ blocks',`<button class="btn" data-x="outpass">Outing requests <span class="pill warn" style="margin-left:4px">3</span></button><button class="btn primary" data-x="allot">${ic('plus')}Allot room</button>`)+
+ `<div class="kpis">${kpi('Beds occupied','152 / 180','84% occupancy',null)}${kpi('Night roll call','150 / 152','2 on approved leave',null)}${kpi('Hostel fees due',inr(186000),'9 boarders',false)}${kpi('Mess rating','4.2 / 5','96 student reviews',null)}</div>
+ <div class="cols"><div class="card"><div class="card-head"><h2>Blocks</h2></div><div class="table-wrap"><table><thead><tr><th>Block</th><th class="hide-sm">Warden</th><th class="r">Rooms</th><th>Occupancy</th></tr></thead><tbody>${[['Ganga (boys)','Suresh Babu',30,76,90],['Kaveri (girls)','Lalitha Devi',24,62,72],['Godavari (juniors)','Anil Kumar',10,14,18]].map(b=>`<tr><td><b style="font-weight:600">${b[0]}</b></td><td class="hide-sm">${b[1]}</td><td class="r num">${b[2]}</td><td style="min-width:140px"><div class="bar-track"><div class="bar-fill" style="width:${b[3]/b[4]*100}%"></div></div><span class="faint num" style="font-size:12px">${b[3]} of ${b[4]} beds</span></td></tr>`).join('')}</tbody></table></div></div>
+ <div class="card"><div class="card-head"><h2>Mess menu · Friday</h2><span class="pill info">Veg</span></div><dl class="kv"><dt>Breakfast</dt><dd>Idli, sambar, coconut chutney, milk</dd><dt>Lunch</dt><dd>Rice, dal, bhindi fry, curd, chapati</dd><dt>Snacks</dt><dd>Sprouts chaat, lemon tea</dd><dt>Dinner</dt><dd>Veg pulao, raita, paneer curry, fruit</dd></dl><p class="faint" style="font-size:12.5px;margin-top:10px">7 boarders with food allergies are flagged to the kitchen.</p></div></div>`},
+
+health(){return head('Health & safety','Infirmary, medical records and safety checks',`<button class="btn primary" data-x="infirmary">${ic('plus')}Log infirmary visit</button>`)+
+ `<div class="kpis">${kpi('Infirmary visits today',INFIRM.length,'Parents informed for all',null)}${kpi('Medical alerts','38 students','Asthma 12 · allergies 19 · other 7',null)}${kpi('Annual health check','86%','1,066 of 1,240 done',null)}${kpi('Last fire drill','18 Sep','Evacuated in 3 min 40 s',null)}</div>
+ <div class="cols"><div class="card"><div class="card-head"><h2>Infirmary log</h2></div><div class="table-wrap"><table><thead><tr><th>Time</th><th>Student</th><th class="hide-sm">Complaint</th><th>Action</th></tr></thead><tbody>${INFIRM.map(v=>`<tr><td class="mono">${v.t}</td><td>${esc(v.s)}<br><span class="faint" style="font-size:12.5px">${v.c}</span></td><td class="hide-sm">${esc(v.p)}</td><td>${esc(v.a)}</td></tr>`).join('')}</tbody></table></div></div>
+ <div class="card"><div class="card-head"><h2>Safety and child protection</h2></div><div class="list">${[['Fire NOC','Valid till 31 Jan 2027',1],['CCTV coverage','64 cameras · 30-day retention',1],['POCSO committee','Met 12 Sep · no open cases',1],['Staff police verification','62 of 64 done',0],['Bus GPS and speed limit','All 4 buses · 40 km/h cap',1]].map(x=>`<div class="li" style="align-items:center"><div><b>${x[0]}</b><p class="faint" style="font-size:13px">${x[1]}</p></div><span style="margin-left:auto">${x[2]?'<span class="pill good">OK</span>':'<span class="pill warn">2 pending</span>'}</span></div>`).join('')}</div></div></div>`},
+
+calendar(){const ev={2:['Gandhi Jayanti','H'],10:['PTM · Class 8','E'],14:['Sports day','E'],28:['Hall tickets issued','E'],31:['Science exhibition','E']};for(let d=17;d<=25;d++)ev[d]=['Dasara holidays','H'];
+ const cells='<div></div>'.repeat(3)+Array.from({length:31},(_,i)=>{const d=i+1,e=ev[d],sun=d%7===4;return `<div class="mday ${e?e[1]:''} ${sun?'sun':''} ${d===9?'today':''}"><b>${d}</b>${e?`<span>${e[0]}</span>`:''}</div>`}).join('');
+ return head('Calendar & events','October 2026 · '+SCHOOL.year,['admin','principal'].includes(S.role)?`<button class="btn primary" data-x="addevent">${ic('plus')}Add event</button>`:'')+
+ `<div class="cols"><div class="card"><div class="mcal">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>`<div class="h">${d}</div>`).join('')}${cells}</div><div class="legend" style="margin-top:12px"><span><i style="background:var(--bad-soft);border:1px solid var(--bad)"></i>Holiday</span><span><i style="background:var(--info-soft);border:1px solid var(--info)"></i>Event</span><span><i style="border:2px solid var(--accent)"></i>Today</span></div></div>
+ <div class="card"><div class="card-head"><h2>Coming up</h2></div><div class="list">${[['10 Oct','PTM for Class 8','9:30 to 12:30 · book a slot in the app'],['14 Oct','Annual sports day','Parents welcome from 8:00'],['17–25 Oct','Dasara holidays','School reopens Monday 26 Oct'],['28 Oct','Hall tickets issued','Fees must be clear'],['3 Nov','Half-yearly exams begin','Timetable under Exams']].map(e=>`<div class="li"><span class="mono" style="width:72px;flex:none;color:var(--accent);font-weight:500">${e[0]}</span><div><b>${e[1]}</b><p class="faint" style="font-size:13px">${e[2]}</p></div></div>`).join('')}</div>${S.role==='parent'?`<button class="btn primary" data-go="requests" style="margin-top:12px">Book a PTM slot</button>`:''}</div></div>`},
+
+payroll(){return head('Payroll','September 2026 · 64 staff',`<button class="btn" data-x="payslips">${ic('download')}Payslips</button><button class="btn primary" data-x="runpay">Run October payroll</button>`)+
+ `<div class="kpis">${kpi('Gross salary',inr(2840000),'64 staff',null)}${kpi('Provident fund',inr(268800),'Challan due 15 Oct',null)}${kpi('TDS deducted',inr(96400),'Form 24Q due 31 Oct',null)}${kpi('Net paid',inr(2398600),'Bank transfer 01 Oct',null)}</div>
+ <div class="card"><div class="card-head"><h2>Salary register (6 of 64)</h2><span class="faint" style="font-size:13px">PF 12% of basic · ESI 0.75% when gross ≤ ₹21,000 · professional tax ₹200</span></div><div class="table-wrap"><table><thead><tr><th>Staff</th><th class="r">Basic</th><th class="r hide-sm">Allowances</th><th class="r hide-sm">Deductions</th><th class="r">Net pay</th><th>Status</th></tr></thead><tbody>${PAY.map(r=>{const g=r.basic+r.allow,pf=Math.round(r.basic*.12),esi=g<=21000?Math.round(g*.0075):0,ded=pf+esi+200+r.tds;return `<tr><td><div class="person">${av(r.n)}<div><b>${esc(r.n)}</b><span>${r.role}</span></div></div></td><td class="r num">${inr(r.basic)}</td><td class="r num hide-sm">${inr(r.allow)}</td><td class="r num hide-sm" title="PF ${inr(pf)} · ESI ${inr(esi)} · PT ₹200 · TDS ${inr(r.tds)}">${inr(ded)}</td><td class="r num"><b>${inr(g-ded)}</b></td><td>${pill('Paid')}</td></tr>`}).join('')}</tbody></table></div></div>`},
+
+lms(){if(S.role==='student')return head('Online learning','Class 8-A')+
+ `<div class="cols"><div class="card"><div class="card-head"><h2>Study material</h2></div><div class="list">${MATERIAL.map(m=>`<div class="li" style="align-items:center"><div class="badge-ic" style="background:var(--info-soft);color:var(--info)">${ic(m.k==='Video'?'play':'book')}</div><div style="min-width:0"><b>${esc(m.t)}</b><p class="faint" style="font-size:13px">${m.sub} · ${m.k} · ${m.meta}</p></div><button class="btn sm" style="margin-left:auto" data-x="openmat">Open</button></div>`).join('')}</div></div>
+ <div class="card" style="align-self:start;display:flex;flex-direction:column;gap:10px"><span class="pill info" style="align-self:flex-start">Online test</span><h2>Science: Combustion and Flame</h2><p class="muted">3 questions · 5 minutes · marked instantly</p><button class="btn primary" data-x="quiz">Start test</button>${S.quiz!=null?`<p class="faint" style="font-size:13px">Last attempt: ${S.quiz} of 3</p>`:''}</div></div>`;
+ return head('Lessons & e-learning','Class 8-A · syllabus '+SCHOOL.year,`<button class="btn" data-x="qbank">Question bank</button><button class="btn primary" data-x="addlesson">${ic('plus')}Add lesson plan</button>`)+
+ `<div class="cols"><div class="card"><div class="card-head"><h2>Syllabus coverage</h2><span class="faint" style="font-size:13px">Planned by today: 48%</span></div>${SUBJECTS.map((s,i)=>{const v=[52,44,39,55,47,61][i];return `<div style="display:grid;grid-template-columns:minmax(0,120px) 1fr 44px;gap:10px;align-items:center;padding:6px 0"><span style="font-size:14px">${s}</span><div class="bar-track"><div class="bar-fill" style="width:${v}%;${v<45?'background:var(--warn)':''}"></div></div><span class="num faint" style="text-align:right;font-size:13px">${v}%</span></div>`}).join('')}<p class="faint" style="font-size:12.5px;margin-top:8px">Amber bars are behind plan. The principal sees this for every class.</p></div>
+ <div class="card"><div class="card-head"><h2>This week’s lesson plans</h2></div><div class="list">${[['Science','Combustion: types of fuel, calorific value',1],['Mathematics','Linear equations in one variable',1],['English','Letter to the editor: format and tone',0]].map(l=>`<div class="li" style="align-items:center"><div style="min-width:0"><b>${l[0]}</b><p class="faint" style="font-size:13px">${l[1]}</p></div><span style="margin-left:auto">${l[2]?'<span class="pill good">Approved</span>':'<span class="pill neutral">Awaiting HOD</span>'}</span></div>`).join('')}</div></div></div>
+ <div class="card"><div class="card-head"><h2>Material shared with 8-A</h2></div><div class="cols three">${MATERIAL.map(m=>`<div class="li" style="border:0;padding:6px 0"><div class="badge-ic" style="background:var(--info-soft);color:var(--info)">${ic(m.k==='Video'?'play':'book')}</div><div style="min-width:0"><b style="font-size:14px">${esc(m.t)}</b><p class="faint" style="font-size:12.5px">${m.sub} · ${m.meta}</p></div></div>`).join('')}</div></div>`},
+
+compliance(){return head('Compliance & audit','Government reporting, data protection and audit trail',`<button class="btn" data-x="udise">${ic('download')}UDISE+ export</button>`)+
+ `<div class="kpis">${kpi('APAAR IDs linked','1,102 / 1,240','138 waiting for parent consent',null)}${kpi('RTE 25% seats','58 / 60','Entry class · 2 open for lottery',null)}${kpi('Parent data consent','96%','Recorded for DPDP Act 2023',null)}${kpi('Last backup','02:00 today','Restore tested 01 Oct',null)}</div>
+ <div class="cols"><div class="card"><div class="card-head"><h2>Audit trail</h2><span class="faint" style="font-size:13px">Every change is logged and cannot be edited</span></div><div class="table-wrap"><table><thead><tr><th>Time</th><th>Who</th><th>What</th></tr></thead><tbody>${AUDIT.map(a=>`<tr><td class="mono faint">${a[0]}</td><td style="white-space:nowrap">${a[1]}</td><td>${a[2]}</td></tr>`).join('')}</tbody></table></div></div>
+ <div class="card"><div class="card-head"><h2>Filings and renewals</h2></div><div class="list">${[['UDISE+ 2026–27 data','Due 31 Oct','Pending'],['CBSE OASIS update','Submitted 30 Sep','Done'],['Fire NOC renewal','Due 31 Jan 2027','Upcoming'],['Building safety certificate','Valid till Mar 2028','Done'],['Data breach response drill','Last run 15 Aug','Done']].map(x=>`<div class="li" style="align-items:center"><div><b>${x[0]}</b><p class="faint" style="font-size:13px">${x[1]}</p></div><span style="margin-left:auto">${x[2]==='Done'?'<span class="pill good">Done</span>':x[2]==='Pending'?'<span class="pill warn">Pending</span>':'<span class="pill neutral">Upcoming</span>'}</span></div>`).join('')}</div></div></div>`},
+
+messages(){const C=S.role==='parent'?CONV_P:CONV_S;const ci=Math.min(S.conv||0,C.length-1);const conv=C[ci];
+ return head('Messages',S.role==='parent'?'Talk to Ananya’s teachers':'Parents and staff')+
+ `<div class="card chatbox"><div class="convlist">${C.map((c,i)=>`<button data-conv="${i}" class="conv" ${i===ci?'aria-current="true"':''}>${av(c.who)}<span style="min-width:0;flex:1"><b style="font-size:14px;display:block">${esc(c.who)}</b><span class="faint" style="font-size:12.5px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.msgs.at(-1)[1])}</span></span>${c.unread?`<span class="unread">${c.unread}</span>`:''}</button>`).join('')}</div>
+ <div class="chatpane"><div style="padding:12px 16px;border-bottom:1px solid var(--line)"><b>${esc(conv.who)}</b><p class="faint" style="font-size:12.5px">${esc(conv.sub)}</p></div>
+ <div id="thread">${conv.msgs.map(m=>`<div class="bub ${m[0]?'mine':''}">${esc(m[1])}<small>${m[2]}</small></div>`).join('')}</div>
+ <form id="msgf" style="display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)"><input class="input" id="msgin" placeholder="Write a message" autocomplete="off" aria-label="Message"><button class="btn primary">Send</button></form></div></div>
+ <p class="faint" style="font-size:12.5px">Phone numbers stay private on both sides. Messages sent after 7 pm reach teachers the next morning.</p>`},
+
+bustrack(){const stops=['Depot','Jubilee Hills Check Post','Road No. 36','KBR Park','Film Nagar','Your stop: Road No. 12','School'];const at=Math.min(S.bus,stops.length-1);
+ const pts=[[40,170],[130,110],[220,60],[310,140],[400,100],[500,60],[600,130]];const away=5-at;
+ return head('Bus tracking','Route 3 · TS09 UB 5523 · driver Prakash Yadav')+
+ `<div class="cols"><div class="card"><div class="card-head"><h2>${away>0?`${away} stop${away>1?'s':''} away · about ${away*4} min`:away===0?'The bus is at your stop':'Reached school at 08:12'}</h2><button class="btn sm" data-x="busnext">Refresh location</button></div>
+ <div class="chart"><svg viewBox="0 0 640 220" role="img" aria-label="Route 3 map"><rect width="640" height="220" rx="10" fill="var(--surface-2)"/>
+ <polyline points="${pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="var(--line)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+ <polyline points="${pts.slice(0,at+1).map(p=>p.join(',')).join(' ')}" fill="none" stroke="var(--marigold)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+ ${pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="${i===5?9:6}" fill="${i===5?'var(--accent)':'var(--surface)'}" stroke="${i<=at?'var(--marigold)':'var(--ink-3)'}" stroke-width="2.5"/><text x="${p[0]}" y="${p[1]+(i%2?-18:30)}" text-anchor="middle" style="font-size:15px;${i===5?'fill:var(--ink);font-weight:600':''}">${['Depot','Jubilee Hills','Road 36','KBR Park','Film Nagar','Your stop','School'][i]}</text>`).join('')}
+ <g transform="translate(${pts[at][0]-17},${pts[at][1]-13})"><rect width="34" height="26" rx="6" fill="var(--ink)"/><text x="17" y="17" text-anchor="middle" style="fill:var(--bg);font-weight:700;font-size:10px">BUS</text></g></svg></div></div>
+ <div class="card"><div class="card-head"><h2>Today</h2><span class="pill good">32 km/h</span></div><div class="list">${stops.map((s,i)=>`<div class="li" style="align-items:center;padding:8px 0"><span class="mono faint" style="width:44px">${['07:20','07:26','07:31','07:36','07:40','07:44','08:12'][i]}</span><span style="${i===5?'font-weight:600':''}">${s}</span><span style="margin-left:auto">${i<at?'<span class="pill neutral">Passed</span>':i===at?'<span class="pill info">Bus here</span>':''}</span></div>`).join('')}</div><p class="faint" style="font-size:12.5px;margin-top:10px">Ananya taps her ID card when boarding and leaving. You get a notification each time.</p><button class="btn" data-x="calldriver" style="margin-top:10px">Call driver (number hidden)</button></div></div>`},
+
+requests(){return head('Leave & PTM','Ananya Patel · 8-A')+
+ `<div class="cols even"><form class="card" id="lvf" style="display:flex;flex-direction:column;gap:14px"><h2>Apply for leave</h2><div class="grid2"><div class="field"><label for="l1">From</label><input class="input" id="l1" type="date" value="2026-10-13"></div><div class="field"><label for="l2">To</label><input class="input" id="l2" type="date" value="2026-10-14"></div></div><div class="field"><label for="l3">Reason</label><select class="input" id="l3"><option>Family function</option><option>Illness</option><option>Medical appointment</option><option>Other</option></select></div><div class="field"><label for="l4">Note to the class teacher</label><textarea class="input" id="l4" rows="2"></textarea></div><button class="btn primary" style="align-self:flex-start">Send request</button>
+ <div class="list">${LEAVES.map(l=>`<div class="li" style="align-items:center"><div><b>${l.d}</b><p class="faint" style="font-size:13px">${esc(l.r)}</p></div><span style="margin-left:auto">${pill(l.st)}</span></div>`).join('')}</div></form>
+ <div class="card" style="display:flex;flex-direction:column;gap:14px"><div><h2>Book a PTM slot</h2><p class="muted">Saturday 10 October · Fatima Shaikh, Class 8-A</p></div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px">${PTM.map((t,i)=>t[1]?`<button class="btn sm" disabled style="opacity:.45;text-decoration:line-through">${t[0]}</button>`:`<button class="btn sm ${S.ptm===i?'primary':''}" data-ptm="${i}" aria-pressed="${S.ptm===i}">${t[0]}</button>`).join('')}</div><p class="faint" style="font-size:13px">${S.ptm!=null?'Booked for '+PTM[S.ptm][0]+'. You will get a reminder the evening before.':'Struck-out slots are taken.'}</p>
+ <h2 style="margin-top:6px">Other requests</h2><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-x="reqcert">Bonafide certificate</button><button class="btn" data-x="reqcert">Fee certificate (80C)</button><button class="btn" data-x="reqcert">Transfer certificate</button></div></div></div>`}
+
+};
+
+/* --------- role dashboards --------- */
+function dashSuper(){const mrr=TENANTS.reduce((a,t)=>a+t.mrr,0);return head('Good morning, Kiran',today,`<button class="btn" data-go="platform">${ic('shield')}Platform health</button>`)+
+ `<div class="kpis">${kpi('Active schools',TENANTS.filter(t=>t.status==='Active').length,'▲ 2 this month')}${kpi('Students on platform',TENANTS.reduce((a,t)=>a+t.students,0).toLocaleString('en-IN'),'▲ 6.1% vs Sep')}${kpi('MRR',inr(mrr),'▲ 8.4% vs Sep')}${kpi('Churn (90 days)','1.8%','1 cancellation',false)}</div>
+ <div class="cols"><div class="card"><div class="card-head"><h2>Monthly recurring revenue</h2><span class="faint" style="font-size:13px">Last 8 months</span></div>${line([['Mar',38],['Apr',44],['May',47],['Jun',52],['Jul',55],['Aug',61],['Sep',67],['Oct',Math.round(mrr/1000)]].map(a=>({l:a[0],v:a[1]*1000})),{fmt:v=>'₹'+Math.round(v/1000)+'k'})}</div>
+ <div class="card"><div class="card-head"><h2>Needs attention</h2></div><div class="list">${TENANTS.filter(t=>t.status!=='Active').map(t=>`<div class="li click" style="align-items:center;cursor:pointer" data-tenant="${esc(t.name)}"><div style="min-width:0"><b>${esc(t.name)}</b><p class="faint" style="font-size:13px">${t.renew}</p></div><span style="margin-left:auto">${pill(t.status)}</span></div>`).join('')}</div></div></div>
+ <div class="card"><div class="card-head"><h2>Schools by plan</h2></div>${donut(PLANS.map((p,i)=>({l:p.n,v:TENANTS.filter(t=>t.plan===p.n).length,c:['var(--marigold)','var(--accent)','var(--info)'][i]})),String(TENANTS.length))}</div>`}
+
+function dashSchool(){const pr=S.role==='principal';return head(pr?'Good morning, Dr. Shankar':'Good morning, '+ME.admin.name.split(' ')[0],today+' · '+SCHOOL.name,`<button class="btn" data-go="notices">${ic('mega')}Announce</button>${pr?'':`<button class="btn primary" data-x="addstudent">${ic('plus')}Add student</button>`}`)+
+ `<div class="kpis">${kpi('Students',STUDENTS.length>24?STUDENTS.length:'1,240','▲ 38 since April')}${kpi('Attendance today','93.4%','1,158 present · 82 absent',null)}${kpi('Fees collected (Term 2)','79%',inr(4862500)+' of '+inr(6150000),null)}${kpi('Staff present','61 / 64','2 on leave, 1 late',null)}</div>
+ <div class="cols"><div class="card"><div class="card-head"><h2>Attendance, last 10 school days</h2><span class="pill good">Above 90% target</span></div>${line(['24','25','26','29','30','1','3','6','7','8'].map((d,i)=>({l:d,v:[92.1,93.4,90.8,94.2,93.9,91.5,92.7,94.8,93.1,93.4][i]})),{fmt:v=>v.toFixed(0)+'%',min:80,max:100})}</div>
+ <div class="card"><div class="card-head"><h2>Today</h2></div><div class="list">${[['userplus','3 new admission enquiries','admissions'],['wallet','₹1,84,300 collected in 31 receipts','fees'],['brief','2 leave requests waiting','staff'],['award','Unit Test 2 marks: 5 of 6 subjects entered','exams'],['bus','All 4 buses checked in','transport']].filter(x=>!pr||x[2]!=='fees'&&x[2]!=='admissions'&&x[2]!=='transport').map(x=>`<a class="li" href="#${x[2]}" data-go="${x[2]}" style="text-decoration:none;color:inherit;align-items:center"><div class="badge-ic" style="background:var(--accent-soft);color:var(--accent)">${ic(x[0])}</div><span>${x[1]}</span><span style="margin-left:auto;color:var(--ink-3)">${ic('arrow')}</span></a>`).join('')}</div></div></div>
+ <div class="cols even"><div class="card"><div class="card-head"><h2>Fee collection by month</h2></div>${bars([['Apr',1420],['May',380],['Jun',940],['Jul',1610],['Aug',520],['Sep',880],['Oct',640]].map(a=>({l:a[0],v:a[1]*1000})),{fmt:v=>'₹'+Math.round(v/100000)+'L'})}</div>
+ <div class="card"><div class="card-head"><h2>Students who may need support</h2><span class="pill warn">${ic('spark')}Early warning</span></div><div class="list">${STUDENTS.filter(s=>s.att<85).map(s=>`<div class="li click" data-student="${s.id}" style="align-items:center;cursor:pointer"><div class="person">${av(s.name)}<div><b>${esc(s.name)}</b><span>${s.cls} · attendance ${s.att}% · Maths down 11 marks</span></div></div></div>`).join('')}</div><p class="faint" style="font-size:12.5px;margin-top:8px">Flagged from attendance and marks trends. A teacher reviews each one.</p></div></div>
+ <div style="display:grid"><div class="card"><div class="card-head"><h2>Latest announcements</h2><a href="#notices" data-go="notices" style="color:var(--accent);font-weight:600;font-size:13.5px">See all</a></div><div class="list">${NOTICES.slice(0,3).map(n=>`<div class="li"><div style="min-width:0"><b>${esc(n.t)}</b><p class="faint" style="font-size:13px">${esc(n.to)}</p></div><span class="when">${n.d}</span></div>`).join('')}</div></div></div>`}
+
+function dashTeacher(){return head('Good morning, Fatima',today+' · 5 periods today',`<button class="btn primary" data-go="attendance">${ic('check')}Take attendance</button>`)+
+ `<div class="kpis">${kpi('Class 8-A attendance','28 / 30','Submitted 08:42',null)}${kpi('Homework to check','22','Science · due today',null)}${kpi('Marks pending','1 subject','Unit Test 2 closes 12 Oct',false)}${kpi('Leave balance','9 days','Casual 4 · Sick 5',null)}</div>
+ <div class="cols"><div class="card"><div class="card-head"><h2>Today’s periods</h2></div><div class="list">${[['08:30','Science','8-A','Lab 2'],['09:15','Science','9-A','Room 204'],['10:00','Free period','',''],['11:00','Science','8-A','Room 108'],['12:30','Science','10-A','Room 210']].map((p,i)=>`<div class="li" style="align-items:center"><span class="mono faint" style="width:48px">${p[0]}</span><div><b>${p[1]}</b>${p[2]?`<span class="faint"> · ${p[2]}</span>`:''}<p class="faint" style="font-size:13px">${p[3]||'Staff room'}</p></div>${i===3?'<span class="pill info" style="margin-left:auto">Next</span>':i<3?'<span class="pill neutral" style="margin-left:auto">Done</span>':''}</div>`).join('')}</div></div>
+ <div class="card"><div class="card-head"><h2>Class 8-A at a glance</h2></div>${bars(SUBJECTS.map(s=>({l:s.split(' ')[0].slice(0,7),v:Math.round(MARKS[s].reduce((a,b)=>a+b,0)/8)})),{max:100,fmt:v=>Math.round(v)})}<p class="faint" style="font-size:13px;margin-top:8px">Unit Test 2 class average by subject</p></div></div>`}
+
+function dashAccounts(){return VIEWS.fees().replace('<h1 style="margin-top:4px">Fees</h1>','<h1 style="margin-top:4px">Good morning, Mohan</h1>')}
+
+function dashParent(){return head('Hello, Priya',today)+
+ `<div class="card" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap"><span class="avatar" style="width:56px;height:56px;font-size:20px;background:var(--marigold-soft);color:var(--marigold)">AP</span><div style="flex:1;min-width:180px"><h2>Ananya Patel</h2><p class="muted">Class 8-A · Roll 4 · Class teacher Fatima Shaikh</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><span class="pill good">Present today · 08:21</span><a href="#bustrack" data-go="bustrack" class="pill info" style="text-decoration:none">Bus reached school 08:12</a></div></div>
+ <div class="kpis">${kpi('Attendance this year','96%','▲ above class average')}${kpi('Unit Test 2','91.5%','Rank 3 of 30')}${kpi('Fees due',inr(42450),'by 15 Oct',false)}${kpi('Homework due','2','Next: Maths, 12 Oct',null)}</div>
+ <div class="cols"><div class="card"><div class="card-head"><h2>Unit Test 2 marks</h2><a href="#results" data-go="results" style="color:var(--accent);font-weight:600;font-size:13.5px">Report card</a></div>${bars(SUBJECTS.map(s=>({l:s.split(' ')[0].slice(0,7),v:MARKS[s][3]})),{max:100,fmt:v=>Math.round(v)})}</div>
+ <div class="card" style="display:flex;flex-direction:column;gap:12px"><h2>Pay fees</h2><p class="muted">Term 2 fees of <b class="num" style="color:var(--ink)">${inr(42450)}</b> are due on 15 October.</p><button class="btn primary" data-go="myfees">Pay now</button><h2 style="margin-top:8px">Latest notice</h2><p><b>${NOTICES[0].t}</b></p><p class="muted" style="font-size:14px">${NOTICES[0].b}</p></div></div>`}
+
+function dashStudent(){return head('Hi, Ananya',today)+
+ `<div class="kpis">${kpi('Attendance','96%','Keep it up')}${kpi('Homework due','2','Maths on Monday',null)}${kpi('Next exam','3 Nov','Half-yearly',null)}${kpi('Library books','1','Return by 14 Oct',null)}</div>
+ <div class="cols"><div class="card"><div class="card-head"><h2>Today’s timetable</h2></div><div class="list">${[['08:30','Science','Lab 2'],['09:15','Mathematics','Room 108'],['10:00','English','Room 108'],['11:00','Hindi','Room 108'],['11:45','Computer','Lab 1']].map(p=>`<div class="li" style="align-items:center"><span class="mono faint" style="width:48px">${p[0]}</span><b>${p[1]}</b><span class="faint" style="margin-left:auto;font-size:13px">${p[2]}</span></div>`).join('')}</div></div>
+ <div class="card"><div class="card-head"><h2>Homework</h2><a href="#homework" data-go="homework" style="color:var(--accent);font-weight:600;font-size:13.5px">All</a></div><div class="list">${HOMEWORK.map(h=>`<div class="li"><span class="pill info">${h.sub}</span><div style="min-width:0"><p style="font-size:14px">${esc(h.t)}</p><p class="faint" style="font-size:12.5px">Due ${h.due}</p></div></div>`).join('')}</div></div></div>`}
+
+function reportCard(){const tot=SUBJECTS.reduce((a,s)=>a+MARKS[s][3],0);return `<div class="rc"><div class="rc-head"><div><p style="opacity:.8;font-size:12px;letter-spacing:.08em;text-transform:uppercase">${esc(SCHOOL.name)} · ${SCHOOL.board}</p><h2 style="margin-top:4px">Progress report · Unit Test 2</h2></div><div style="text-align:right"><b>Ananya Patel</b><p style="opacity:.85;font-size:13px">8-A · Roll 4 · GPS-2421</p></div></div>
+ <div class="rc-body"><div class="table-wrap" style="margin:0"><table><thead><tr><th>Subject</th><th class="r">Marks</th><th>Grade</th><th class="hide-sm">Class avg</th></tr></thead><tbody>${SUBJECTS.map(s=>`<tr><td>${s}</td><td class="r num">${MARKS[s][3]} / 100</td><td><span class="grade">${grade(MARKS[s][3])}</span></td><td class="hide-sm faint num">${Math.round(MARKS[s].reduce((a,b)=>a+b,0)/8)}</td></tr>`).join('')}<tr><td><b>Total</b></td><td class="r num"><b>${tot} / 600</b></td><td><span class="grade">${grade(tot/6)}</span></td><td class="hide-sm faint">Rank 3 of 30</td></tr></tbody></table></div>
+ <div><h3 style="margin-bottom:8px">Holistic progress (NEP 2020)</h3><div class="table-wrap" style="margin:0"><table><thead><tr><th>Area</th><th>Grade</th><th class="hide-sm">Observation</th></tr></thead><tbody>${[['Art and music','A','Confident in group singing'],['Sports and fitness','B','Improved 600 m run by 40 s'],['Life skills and values','A','Leads the class eco club'],['Self-assessment','—','“I want to get better at Hindi writing.”']].map(r=>`<tr><td>${r[0]}</td><td>${r[1]==='—'?'<span class="faint">—</span>':`<span class="grade">${r[1]}</span>`}</td><td class="hide-sm faint">${r[2]}</td></tr>`).join('')}</tbody></table></div></div>
+ <dl class="kv"><dt>Attendance</dt><dd>96% (118 of 123 days)</dd><dt>Teacher’s remark</dt><dd>Ananya is curious and thorough. Encourage more reading in Hindi.</dd></dl><div style="display:flex;justify-content:flex-end"><button class="btn sm" data-x="pdf">${ic('download')}Download PDF</button></div></div></div>`}
+
+/* ---------------- per-page wiring ---------------- */
+const X={
+ addstudent(){overlay('modal',`<div class="ov-head"><h2>Add student</h2><button class="iconbtn" data-act="close" aria-label="Close">${ic('x')}</button></div><form id="asf" style="display:flex;flex-direction:column;gap:14px"><div class="grid2"><div class="field"><label for="a1">Full name</label><input class="input" id="a1" required placeholder="e.g. Ishaan Verma"></div><div class="field"><label for="a2">Class</label><select class="input" id="a2">${CLASSES.map(c=>`<option>${c}</option>`).join('')}</select></div><div class="field"><label for="a3">Date of birth</label><input class="input" id="a3" type="date" value="2013-05-14"></div><div class="field"><label for="a4">Gender</label><select class="input" id="a4"><option>Male</option><option>Female</option><option>Other</option></select></div><div class="field"><label for="a5">Parent / guardian</label><input class="input" id="a5" required placeholder="Full name"></div><div class="field"><label for="a6">Parent mobile</label><input class="input" id="a6" type="tel" placeholder="+91"></div></div><div class="field"><label for="a7">Documents</label><input class="input" id="a7" type="file" multiple></div><div style="display:flex;justify-content:flex-end;gap:8px"><button type="button" class="btn" data-act="close">Cancel</button><button class="btn primary">Save student</button></div></form>`);
+  $('#asf').onsubmit=e=>{e.preventDefault();const s={id:'GPS-'+(2600+STUDENTS.length),name:$('#a1').value.trim(),cls:$('#a2').value,roll:31,parent:$('#a5').value.trim(),phone:$('#a6').value,att:100,fee:'Due',due:42450,transport:'—'};STUDENTS.unshift(s);closeOverlay();S.filter={};go('students');toast(s.name+' added to '+s.cls+'. Parent login sent by SMS.')}},
+ enquiry(){overlay('modal',`<div class="ov-head"><h2>New enquiry</h2><button class="iconbtn" data-act="close" aria-label="Close">${ic('x')}</button></div><form id="enf" style="display:flex;flex-direction:column;gap:14px"><div class="field"><label for="e1">Child’s name</label><input class="input" id="e1" required></div><div class="grid2"><div class="field"><label for="e2">Applying for</label><select class="input" id="e2">${['LKG','UKG','Class 1','Class 2','Class 3','Class 5','Class 6','Class 8','Class 9'].map(c=>`<option>${c}</option>`).join('')}</select></div><div class="field"><label for="e3">Source</label><select class="input" id="e3"><option>Walk-in</option><option>Website</option><option>Referral</option><option>Facebook</option></select></div></div><div style="display:flex;justify-content:flex-end"><button class="btn primary">Add to pipeline</button></div></form>`);
+  $('#enf').onsubmit=e=>{e.preventDefault();APPS.unshift({name:$('#e1').value,grade:$('#e2').value,stage:0,date:'09 Oct',src:$('#e3').value});closeOverlay();render();toast('Enquiry added')}},
+ collect(b,id){const s=STUDENTS.find(x=>x.id===id)||STUDENTS.find(x=>x.due);overlay('modal',`<div class="ov-head"><div><h2>Collect fee</h2><p class="muted">${esc(s.name)} · ${s.cls}</p></div><button class="iconbtn" data-act="close" aria-label="Close">${ic('x')}</button></div><form id="cff" style="display:flex;flex-direction:column;gap:14px"><div class="field"><label for="c0">Student</label><select class="input" id="c0">${STUDENTS.filter(x=>x.due).map(x=>`<option value="${x.id}" ${x.id===s.id?'selected':''}>${esc(x.name)} · ${x.cls} · ${inr(x.due)} due</option>`).join('')}</select></div><div class="grid2"><div class="field"><label for="c1">Amount (₹)</label><input class="input num" id="c1" type="number" min="1" value="${s.due}"></div><div class="field"><label for="c2">Mode</label><select class="input" id="c2"><option>Cash</option><option>UPI</option><option>Card</option><option>Cheque</option><option>Bank transfer</option></select></div></div><div class="field"><label for="c3">Reference (optional)</label><input class="input" id="c3" placeholder="UPI ref / cheque no."></div><div style="display:flex;justify-content:flex-end;gap:8px"><button type="button" class="btn" data-act="close">Cancel</button><button class="btn primary">Collect and issue receipt</button></div></form>`);
+  $('#c0').onchange=()=>{const t=STUDENTS.find(x=>x.id===$('#c0').value);$('#c1').value=t.due};
+  $('#cff').onsubmit=e=>{e.preventDefault();const t=STUDENTS.find(x=>x.id===$('#c0').value);const amt=+$('#c1').value;t.due=Math.max(0,t.due-amt);if(!t.due)t.fee='Paid';receipt(t.name,t.cls,amt,$('#c2').value)}},
+ pay(){overlay('modal',`<div class="ov-head"><div><h2>Pay ${inr(42450)}</h2><p class="muted">Sandbox payment · no money moves</p></div><button class="iconbtn" data-act="close" aria-label="Close">${ic('x')}</button></div><div class="seg" role="group" id="pm">${['UPI','Card','Net banking'].map((m,i)=>`<button data-pm="${m}" aria-pressed="${i===0}">${m}</button>`).join('')}</div><form id="payf" style="display:flex;flex-direction:column;gap:14px"><div class="field"><label for="p1">UPI ID</label><input class="input" id="p1" value="priya.patel@okbank"></div><button class="btn primary" style="min-height:46px">Pay securely</button><p class="faint" style="font-size:12.5px;text-align:center">${ic('shield','i')} Payments go through the gateway; the school never sees card details.</p></form>`);
+  document.querySelectorAll('[data-pm]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-pm]').forEach(x=>x.setAttribute('aria-pressed',x===b));$('label[for=p1]').textContent=b.dataset.pm==='UPI'?'UPI ID':b.dataset.pm==='Card'?'Card number':'Bank';$('#p1').value=b.dataset.pm==='UPI'?'priya.patel@okbank':b.dataset.pm==='Card'?'4111 1111 1111 1111':'State Bank of India'});
+  $('#payf').onsubmit=e=>{e.preventDefault();const btn=e.target.querySelector('button');btn.textContent='Processing…';btn.disabled=true;setTimeout(()=>{S.filter.paid=true;receipt('Ananya Patel','8-A',42450,'UPI (sandbox)');},900)}},
+ rcpt(){receipt('Ananya Patel','8-A',42450,'UPI (sandbox)')},
+ reportcard(){overlay('modal',`<div class="ov-head"><h2>Report card preview</h2><button class="iconbtn" data-act="close" aria-label="Close">${ic('x')}</button></div>${reportCard()}`).querySelector('.modal').style.width='min(680px,100%)'},
+ compose(){overlay('modal',`<div class="ov-head"><h2>New announcement</h2><button class="iconbtn" data-act="close" aria-label="Close">${ic('x')}</button></div><form id="nf" style="display:flex;flex-direction:column;gap:14px"><div class="field"><label for="n1">Title</label><input class="input" id="n1" required placeholder="e.g. School closed on Friday"></div><div class="field"><label for="n2">Message</label><textarea class="input" id="n2" rows="4" required></textarea></div><div class="grid2"><div class="field"><label for="n3">Send to</label><select class="input" id="n3"><option>Everyone</option><option>All parents</option><option>Parents · Class 8</option><option>Staff only</option></select></div><div class="field"><label>Channels</label><div style="display:flex;gap:12px;align-items:center;min-height:42px;flex-wrap:wrap"><label><input type="checkbox" checked> App</label><label><input type="checkbox" checked> WhatsApp</label><label><input type="checkbox"> SMS</label><label><input type="checkbox"> Email</label></div></div></div><div style="display:flex;justify-content:flex-end"><button class="btn primary">Send announcement</button></div></form>`);
+  $('#nf').onsubmit=e=>{e.preventDefault();NOTICES.unshift({t:$('#n1').value,b:$('#n2').value,to:$('#n3').value,d:'Just now',by:ME[S.role].title});closeOverlay();render();toast('Announcement sent')}},
+ addhw(){overlay('modal',`<div class="ov-head"><h2>Assign homework</h2><button class="iconbtn" data-act="close" aria-label="Close">${ic('x')}</button></div><form id="hf" style="display:flex;flex-direction:column;gap:14px"><div class="grid2"><div class="field"><label for="h1">Subject</label><select class="input" id="h1">${SUBJECTS.map(s=>`<option>${s}</option>`).join('')}</select></div><div class="field"><label for="h2">Due date</label><input class="input" id="h2" type="date" value="2026-10-14"></div></div><div class="field"><label for="h3">Task</label><textarea class="input" id="h3" rows="3" required></textarea></div><div class="field"><label for="h4">Attachment</label><input class="input" id="h4" type="file"></div><div style="display:flex;justify-content:flex-end"><button class="btn primary">Assign to 8-A</button></div></form>`);
+  $('#hf').onsubmit=e=>{e.preventDefault();const d=$('#h2').value;HOMEWORK.unshift({sub:$('#h1').value,cls:'8-A',t:$('#h3').value,due:d?Number(d.slice(8))+' '+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][Number(d.slice(5,7))-1]:'—',sub_n:0,total:30});closeOverlay();render();toast('Homework assigned. 30 students notified.')}},
+ addexp(){overlay('modal',`<div class="ov-head"><h2>Record expense</h2><button class="iconbtn" data-act="close" aria-label="Close">${ic('x')}</button></div><form id="xf" style="display:flex;flex-direction:column;gap:14px"><div class="field"><label for="x1">Item</label><input class="input" id="x1" required></div><div class="grid2"><div class="field"><label for="x2">Category</label><select class="input" id="x2"><option>Utilities</option><option>Maintenance</option><option>Supplies</option><option>Transport</option><option>Events</option></select></div><div class="field"><label for="x3">Amount (₹)</label><input class="input num" id="x3" type="number" min="1" required></div></div><div class="field"><label for="x4">Bill / invoice</label><input class="input" id="x4" type="file"></div><div style="display:flex;justify-content:flex-end"><button class="btn primary">Save expense</button></div></form>`);
+  $('#xf').onsubmit=e=>{e.preventDefault();EXPENSES.unshift({d:'09 Oct',cat:$('#x2').value,item:$('#x1').value,amt:+$('#x3').value,by:ME[S.role].name});closeOverlay();render();toast('Expense recorded')}},
+ addschool(){ACT.logout();onboarding(1)},
+ allp(){document.querySelectorAll('[data-att]').forEach(b=>S.att[b.dataset.att]='P');render()},
+ saveatt(){const ab=Object.entries(S.att).filter(([k,v])=>v==='A').length;toast('Attendance saved for '+S.attCls+'. '+ab+' absence alerts sent to parents on WhatsApp.')},
+ publish(){toast('Results published. Parents can see them in the app.')},
+ remind(){toast('Reminders sent to '+STUDENTS.filter(s=>s.due).length+' parents by SMS and app')},
+ promote(){overlay('modal',`<div class="ov-head"><h2>Start 2027–28?</h2><button class="iconbtn" data-act="close" aria-label="Close">${ic('x')}</button></div><p class="muted">Students in Classes LKG–11 move up one class. Class 12 students are marked as graduated. You can review the list before anything is saved.</p><div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn" data-act="close">Cancel</button><button class="btn primary" id="okp">Review promotion list</button></div>`);$('#okp').onclick=()=>{closeOverlay();toast('Promotion list prepared for review')}},
+ visitor(){overlay('modal',`<div class="ov-head"><h2>Check in visitor</h2><button class="iconbtn" data-act="close" aria-label="Close">${ic('x')}</button></div><form id="vf" style="display:flex;flex-direction:column;gap:14px"><div class="grid2"><div class="field"><label for="v1">Name</label><input class="input" id="v1" required></div><div class="field"><label for="v2">Mobile</label><input class="input" id="v2" type="tel" required placeholder="+91"></div><div class="field"><label for="v3">Purpose</label><select class="input" id="v3"><option>Parent meeting</option><option>Admission enquiry</option><option>Fee payment</option><option>Delivery / vendor</option><option>Other</option></select></div><div class="field"><label for="v4">Meeting</label><input class="input" id="v4" placeholder="Staff member or office"></div></div><div class="field"><label for="v5">Photo or ID</label><input class="input" id="v5" type="file" accept="image/*"></div><div style="display:flex;justify-content:flex-end"><button class="btn primary">Check in and print pass</button></div></form>`);
+  $('#vf').onsubmit=e=>{e.preventDefault();const ph=$('#v2').value.replace(/\s/g,'');VISITORS.push({name:$('#v1').value,phone:ph.slice(0,5)+'•••• '+ph.slice(-5),purpose:$('#v3').value,meet:$('#v4').value||'Front desk',in:'11:34',out:'—'});closeOverlay();render();toast('Visitor pass printed. The host has been notified.')}},
+ gatepass(){overlay('modal',`<div class="ov-head"><div><h2>Early pickup pass</h2><p class="muted">The parent confirms with a one-time code sent to their phone.</p></div><button class="iconbtn" data-act="close" aria-label="Close">${ic('x')}</button></div><form id="gpf" style="display:flex;flex-direction:column;gap:14px"><div class="field"><label for="g1">Student</label><select class="input" id="g1">${STUDENTS.slice(0,10).map(x=>`<option>${esc(x.name)} · ${x.cls}</option>`).join('')}</select></div><div class="grid2"><div class="field"><label for="g2">Picked up by</label><select class="input" id="g2"><option>Father</option><option>Mother</option><option>Authorised guardian</option></select></div><div class="field"><label for="g3">Code from parent</label><input class="input mono" id="g3" inputmode="numeric" maxlength="6" placeholder="6 digits" value="482913"></div></div><div style="display:flex;justify-content:flex-end;gap:8px"><button type="button" class="btn" id="g4">Resend code</button><button class="btn primary">Verify and issue pass</button></div></form>`);
+  $('#g4').onclick=()=>toast('Code sent to the registered mobile');$('#gpf').onsubmit=e=>{e.preventDefault();closeOverlay();toast('Code verified. Gate pass GP-0418 issued.')}},
+ gencert(){overlay('modal',`<div class="ov-head"><h2>Issue certificate</h2><button class="iconbtn" data-act="close" aria-label="Close">${ic('x')}</button></div><form id="cgf" style="display:flex;flex-direction:column;gap:14px"><div class="field"><label for="cg1">Student</label><select class="input" id="cg1">${STUDENTS.map(x=>`<option>${esc(x.name)}</option>`).join('')}</select></div><div class="grid2"><div class="field"><label for="cg2">Type</label><select class="input" id="cg2"><option>Bonafide</option><option>Transfer certificate</option><option>Fee paid (80C)</option><option>Character</option><option>ID card</option></select></div><div class="field"><label for="cg3">Purpose</label><input class="input" id="cg3" placeholder="e.g. Passport application"></div></div><p class="faint" style="font-size:12.5px">A transfer certificate is blocked while fees or library books are pending.</p><div style="display:flex;justify-content:flex-end"><button class="btn primary">Generate PDF</button></div></form>`);
+  $('#cgf').onsubmit=e=>{e.preventDefault();const t=$('#cg2').value;const no={'Bonafide':'BC','Transfer certificate':'TC','Fee paid (80C)':'FC','Character':'CC','ID card':'ID'}[t]+'-2026-0'+(389+CERTS.length);CERTS.unshift({no,s:$('#cg1').value,t,by:ME[S.role].title,st:'Issued'});closeOverlay();render();toast(no+' generated with a verification QR code')}},
+ runpay(){overlay('modal',`<div class="ov-head"><h2>Run October payroll?</h2><button class="iconbtn" data-act="close" aria-label="Close">${ic('x')}</button></div><p class="muted">Staff attendance and approved leave from 1 to 31 October are applied. Salaries are calculated with PF, ESI, professional tax and TDS. Nothing is paid until you approve the bank transfer file.</p><div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn" data-act="close">Cancel</button><button class="btn primary" id="okpay">Calculate payroll</button></div>`);$('#okpay').onclick=()=>{closeOverlay();toast('October payroll calculated. Review it, then approve the bank file.')}},
+ quiz(){const Q=[['Which zone of a candle flame is the hottest?',['Innermost dark zone','Middle luminous zone','Outermost non-luminous zone'],2],['The lowest temperature at which a substance catches fire is its',['Boiling point','Ignition temperature','Melting point'],1],['Which gas is needed for burning?',['Nitrogen','Carbon dioxide','Oxygen'],2]];
+  overlay('modal',`<div class="ov-head"><div><h2>Science: Combustion and Flame</h2><p class="muted">3 questions · marked instantly</p></div><button class="iconbtn" data-act="close" aria-label="Close">${ic('x')}</button></div><form id="qf" style="display:flex;flex-direction:column;gap:16px">${Q.map((q,i)=>`<fieldset style="border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:0"><legend style="font-weight:600;padding:0 6px">${i+1}. ${q[0]}</legend>${q[1].map((o,j)=>`<label style="display:flex;gap:8px;padding:5px 0;align-items:center" id="q${i}o${j}"><input type="radio" name="q${i}" value="${j}" required> ${o}</label>`).join('')}</fieldset>`).join('')}<div style="display:flex;justify-content:flex-end"><button class="btn primary" id="qsub">Submit answers</button></div></form>`);
+  $('#qf').onsubmit=e=>{e.preventDefault();let sc=0;Q.forEach((q,i)=>{const v=+document.querySelector(`[name=q${i}]:checked`).value;if(v===q[2])sc++;$('#q'+i+'o'+q[2]).style.color='var(--good)';$('#q'+i+'o'+q[2]).style.fontWeight='600';if(v!==q[2])$('#q'+i+'o'+v).style.color='var(--bad)';});S.quiz=sc;const b=$('#qsub');b.textContent='You scored '+sc+' of 3 · Close';b.type='button';b.onclick=()=>{closeOverlay();render()}}},
+ busnext(){S.bus=S.bus>=6?2:S.bus+1;render();if(S.bus===5)toast('The bus is at your stop')},
+ calldriver(){toast('Connecting through a masked number. Neither side sees the other’s phone number.')},
+ reqcert(){toast('Request sent to the front office. The PDF will appear in the app.')},
+ airemark(){const m=MARKS[S.examSub];const sub=S.examSub;document.querySelectorAll('[id^="r"]').forEach(td=>{const i=+td.id.slice(1);if(isNaN(i))return;const v=m[i];td.textContent=v>=90?`Excellent command of ${sub}. Ready for olympiad-level problems.`:v>=75?`Strong in ${sub}. Revise mistakes in the last test to reach the top band.`:v>=60?`Steady progress in ${sub}. More practice with worksheets will help.`:`Finding ${sub} difficult. Suggest remedial sessions and a parent meeting.`});toast('Draft remarks written. Review and edit them before publishing.')},
+ ticket(){toast('Ticket opened (not built in this prototype)')}
+};
+function receipt(name,cls,amt,mode){const no='RCPT-2026-'+String(8813+Math.floor(amt%97));overlay('modal',`<div class="ov-head"><div><h2>Payment received</h2><p class="muted">Receipt sent to the parent by SMS and email.</p></div><button class="iconbtn" data-act="close" aria-label="Close">${ic('x')}</button></div><div class="receipt"><div class="row"><b>${esc(SCHOOL.name)}</b><span class="mono">${no}</span></div><div class="row"><span class="muted">Student</span><span>${esc(name)} · ${cls}</span></div><div class="row"><span class="muted">Date</span><span>09 Oct 2026, 11:32</span></div><div class="row"><span class="muted">Mode</span><span>${esc(mode)}</span></div><div class="row tot"><span>Amount paid</span><span class="num">${inr(amt)}</span></div></div><div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn" data-x2="pdf">${ic('download')}Download PDF</button><button class="btn primary" data-act="close">Done</button></div>`);
+ document.querySelector('[data-x2]').onclick=()=>toast('PDF receipts are generated by the server in the real app');
+ document.querySelectorAll('#ov [data-act="close"]').forEach(b=>b.onclick=()=>{closeOverlay();render()})}
+
+function studentDrawer(id){const s=STUDENTS.find(x=>x.id===id);if(!s)return;let tab=0;
+ const draw=()=>{const el=overlay('drawer',`<div class="ov-head"><div class="person">${av(s.name)}<div><h2>${esc(s.name)}</h2><span class="mono">${s.id} · ${s.cls} · Roll ${s.roll}</span></div></div><button class="iconbtn" data-act="close" aria-label="Close">${ic('x')}</button></div>
+ <div class="tabs">${['Profile','Attendance','Fees','Marks'].map((t,i)=>`<button data-dt="${i}" aria-pressed="${i===tab}">${t}</button>`).join('')}</div>
+ ${[`<dl class="kv"><dt>Parent</dt><dd>${esc(s.parent)}</dd><dt>Mobile</dt><dd class="mono">${esc(s.phone||'—')}</dd><dt>Transport</dt><dd>${s.transport}</dd><dt>Admitted</dt><dd>April 2022</dd><dt>Documents</dt><dd>Birth certificate · TC · Aadhaar (masked)</dd></dl>`,
+   `<div class="kpis" style="grid-template-columns:1fr 1fr">${kpi('This year',s.att+'%','',null)}${kpi('Absences',Math.round((100-s.att)*1.2)+' days','',null)}</div>`,
+   `<dl class="kv"><dt>Term 2 total</dt><dd class="num">${inr(42450)}</dd><dt>Paid</dt><dd class="num">${inr(42450-s.due)}</dd><dt>Balance</dt><dd class="num">${s.due?inr(s.due):'Nil'}</dd></dl>${s.due&&['admin','accountant'].includes(S.role)?`<button class="btn primary" id="dcol">Collect ${inr(s.due)}</button>`:''}`,
+   bars(SUBJECTS.map((sub,i)=>({l:sub.split(' ')[0].slice(0,7),v:MARKS[sub][(s.roll+i)%8]})),{max:100,fmt:v=>Math.round(v)})][tab]}`);
+  el.querySelectorAll('[data-dt]').forEach(b=>b.onclick=()=>{tab=+b.dataset.dt;draw()});const dc=el.querySelector('#dcol');if(dc)dc.onclick=()=>X.collect(null,s.id)};draw()}
+function tenantDrawer(name){const t=TENANTS.find(x=>x.name===name);if(!t)return;const el=overlay('drawer',`<div class="ov-head"><div><p class="eyebrow">Tenant</p><h2 style="margin-top:4px">${esc(t.name)}</h2><p class="muted">${esc(t.city)} · since ${t.since}</p></div><button class="iconbtn" data-act="close" aria-label="Close">${ic('x')}</button></div>${pill(t.status)}
+ <dl class="kv"><dt>Plan</dt><dd>${t.plan}</dd><dt>Students</dt><dd class="num">${t.students.toLocaleString('en-IN')}</dd><dt>MRR</dt><dd class="num">${t.mrr?inr(t.mrr):'—'}</dd><dt>Renewal</dt><dd>${t.renew}</dd><dt>Data region</dt><dd>ap-south-1 (Mumbai)</dd><dt>Storage</dt><dd>${(t.students*0.004).toFixed(1)} GB of files</dd></dl>
+ <div style="display:flex;gap:8px;flex-wrap:wrap">${t.status==='Trial'?'<button class="btn primary" data-ta="Trial extended by 7 days">Extend trial 7 days</button>':''}${t.status==='Past due'?'<button class="btn primary" data-ta="Payment retry scheduled">Retry payment</button>':''}${t.status==='Suspended'?'<button class="btn primary" data-ta="School reactivated">Reactivate</button>':'<button class="btn danger" data-ta="School suspended. Users are signed out.">Suspend</button>'}<button class="btn" data-ta="Support session opened with audit log entry">Open support session</button></div>
+ <p class="faint" style="font-size:12.5px">Support sessions are read-only and logged in the school’s audit trail.</p>`);
+ el.querySelectorAll('[data-ta]').forEach(b=>b.onclick=()=>{const m=b.dataset.ta;if(m.startsWith('School suspended'))t.status='Suspended';if(m==='School reactivated')t.status='Active';if(m.startsWith('Trial'))t.renew='Trial ends 29 Oct';closeOverlay();render();toast(m)})}
+
+const AFTER={
+ schools(){const q=$('#tq');q.oninput=()=>{S.filter.tq=q.value;const pos=q.selectionStart;render();const n=$('#tq');n.focus();n.setSelectionRange(pos,pos)};document.querySelectorAll('[data-ts]').forEach(b=>b.onclick=()=>{S.filter.ts=b.dataset.ts;render()})},
+ students(){const q=$('#sq');q.oninput=()=>{S.filter.q=q.value;const pos=q.selectionStart;render();const n=$('#sq');n.focus();n.setSelectionRange(pos,pos)};$('#sc').onchange=e=>{S.filter.c=e.target.value;render()};document.querySelectorAll('[data-sf]').forEach(b=>b.onclick=()=>{S.filter.f=b.dataset.sf;render()})},
+ admissions(){document.querySelectorAll('[data-adv]').forEach(b=>b.onclick=()=>{const a=APPS[+b.dataset.adv];a.stage++;render();toast(a.name+' moved to '+STAGES[a.stage]+(a.stage===4?'. Student record created.':''))})},
+ attendance(){const c=$('#attcls');if(c)c.onchange=e=>{S.attCls=e.target.value;render()};document.querySelectorAll('[data-att]').forEach(b=>b.onclick=()=>{S.att[b.dataset.att]=b.dataset.v;render()})},
+ exams(){$('#exsub').onchange=e=>{S.examSub=e.target.value;render()};document.querySelectorAll('[data-mk]').forEach(inp=>inp.oninput=()=>{let v=Math.max(0,Math.min(100,+inp.value||0));MARKS[S.examSub][+inp.dataset.mk]=v;const i=inp.dataset.mk;$('#g'+i).textContent=grade(v);$('#r'+i).textContent=v>=90?'Outstanding':v>=75?'Very good':v>=60?'Good, keep practising':'Needs support';const m=MARKS[S.examSub];$('#exavg').innerHTML='Class average: <b class="num" style="color:var(--ink)">'+Math.round(m.reduce((a,b)=>a+b,0)/m.length)+'</b> · unsaved changes'})},
+ homework(){document.querySelectorAll('[data-hwdone]').forEach(b=>b.onclick=()=>{HOMEWORK[+b.dataset.hwdone].done=true;render();toast('Marked as submitted')})},
+ subscription(){document.querySelectorAll('[data-cyc]').forEach(b=>b.onclick=()=>{S.planCycle=b.dataset.cyc;render()});document.querySelectorAll('[data-plan]').forEach(b=>b.onclick=()=>{const p=PLANS.find(x=>x.n===b.dataset.plan);const y=S.planCycle==='yearly';overlay('modal',`<div class="ov-head"><h2>${b.textContent.trim()} to ${p.n}?</h2><button class="iconbtn" data-act="close" aria-label="Close">${ic('x')}</button></div><p class="muted">${p.n==='Starter'?'Starter allows 300 students. You have 1,240, so new admissions would be blocked until you upgrade again. Transport and library become read-only.':'New features unlock immediately. You pay the prorated difference today: <b class="num" style="color:var(--ink)">'+inr((y?p.m*10-59990:p.m-5999)*0.6)+'</b> + GST for the rest of this cycle.'}</p><div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn" data-act="close">Keep Growth</button><button class="btn primary" id="okplan">Confirm ${p.n}</button></div>`);$('#okplan').onclick=()=>{closeOverlay();toast('Plan change scheduled (sandbox)')}})},
+ settings(){document.querySelectorAll('[data-stab]').forEach(b=>b.onclick=()=>{S.filter.st=+b.dataset.stab;render()});const f=$('#setf');if(f)f.onsubmit=e=>{e.preventDefault();SCHOOL.name=$('#s1').value;toast('School profile saved')}},
+ frontoffice(){document.querySelectorAll('[data-vout]').forEach(b=>b.onclick=()=>{VISITORS[+b.dataset.vout].out='11:36';render();toast('Visitor checked out')})},
+ messages(){const C=S.role==='parent'?CONV_P:CONV_S;document.querySelectorAll('[data-conv]').forEach(b=>b.onclick=()=>{S.conv=+b.dataset.conv;C[S.conv].unread=0;render()});const th=$('#thread');th.scrollTop=th.scrollHeight;$('#msgf').onsubmit=e=>{e.preventDefault();const v=$('#msgin').value.trim();if(!v)return;C[Math.min(S.conv||0,C.length-1)].msgs.push([1,v,'Now']);render();$('#msgin').focus()}},
+ requests(){$('#lvf').onsubmit=e=>{e.preventDefault();const f=$('#l1').value,t=$('#l2').value;const fmt=x=>x?Number(x.slice(8))+' '+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][Number(x.slice(5,7))-1]:'';LEAVES.unshift({d:fmt(f)+(t&&t!==f?' to '+fmt(t):''),r:$('#l3').value,st:'Pending'});render();toast('Leave request sent to Fatima Shaikh')};document.querySelectorAll('[data-ptm]').forEach(b=>b.onclick=()=>{S.ptm=+b.dataset.ptm;render();toast('PTM slot booked for '+PTM[S.ptm][0])})},
+ myfees(){},
+ dashboard(){AFTER_ALL()}
+};
+function AFTER_ALL(){}
+/* delegated clicks for things rendered in many views */
+document.addEventListener('click',e=>{
+ const x=e.target.closest('[data-x]');if(x&&!x.closest('#ov')||x&&x.closest('#ov')&&x.dataset.x){if(x){const k=x.dataset.x;if(X[k]){e.preventDefault();X[k](x)}else if(k){e.preventDefault();toast({import:'Excel import opens a column-mapping step',feestruct:'Fee structures are set per class and term',leave:'Leave approvals: 2 pending',addstaff:'Staff onboarding form',addclass:'Section added',ttedit:'Drag periods to rearrange (planned)',assignroute:'Pick a student and a stop',issue:'Scan a book barcode to issue',addbook:'Add by ISBN lookup',report:'Report queued. You will get it by email.',invoice:'Invoice PDF downloaded (sandbox)',pdf:'PDF is generated by the server in the real app',outpass:'3 outing requests: approve after parent confirms',allot:'Pick a block, room and bed',infirmary:'Log visit: student, complaint, action, parent informed',addevent:'Add a holiday, exam or event; parents see it at once',payslips:'Payslips emailed to 64 staff (sandbox)',openmat:'Opens in the built-in viewer',qbank:'Question bank: 1,240 questions tagged by chapter and difficulty',addlesson:'Lesson plan form: objectives, activities, resources',udise:'UDISE+ file prepared in the government format'}[k]||'Coming in the full build')}}return}
+ const c=e.target.closest('[data-collect]');if(c){X.collect(null,c.dataset.collect);return}
+ const st=e.target.closest('[data-student]');if(st){studentDrawer(st.dataset.student);return}
+ const tn=e.target.closest('[data-tenant]');if(tn){tenantDrawer(tn.dataset.tenant);return}
+});
+
+/* boot */
+(function(){const h=(location.hash||'').slice(1);if(h&&P[h]){S.role='admin';S.page=navFor('admin').includes(h)?h:'dashboard'}render()})();
+</script>
