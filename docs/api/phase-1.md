@@ -228,3 +228,5 @@ New schemas `academics` (`academic_year`, `school_class`, `section`, `subject`, 
 `students` (`student`, `guardian`, `student_guardian`, `enrollment`). Every table has `tenant_id` and the
 `tenant_isolation` row-level security policy; `RowLevelSecurityCoverageIT` fails the build if a future
 table is missing either.
+
+Attendance and the notifications outbox: [phase-1-attendance.md](phase-1-attendance.md).

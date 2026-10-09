@@ -2,11 +2,14 @@ package com.akshara.shared;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -35,7 +38,11 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
 
     static final List<String> PHASE_ONE_TABLES = List.of("academics.academic_year", "academics.school_class",
             "academics.section", "academics.subject", "academics.class_subject", "students.student",
-            "students.guardian", "students.student_guardian", "students.enrollment");
+            "students.guardian", "students.student_guardian", "students.enrollment",
+            "attendance.register", "attendance.entry", "notifications.message", "notifications.settings");
+
+    /** The last day of the fixtures' current year, 2026-27. */
+    static final LocalDate LAST_DAY = LocalDate.of(2027, 3, 31);
 
     /** Phase 0 foreign keys created before composite tenant keys were required. V1 cannot change. */
     static final Set<String> SINGLE_COLUMN_FK_ALLOWED = Set.of("identity.refresh_token");
@@ -89,7 +96,17 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
                 {"name":"English"}"""), "$.id");
         api.put("/api/academics/classes/" + classId + "/subjects", admin.accessToken(), """
                 {"subjectIds":["%s"]}""".formatted(subject));
-        fixtures.student(admin, section, "RLS-1", "Asha", null, "Lata Rao", "9876501001");
+        String student = fixtures.student(admin, section, "RLS-1", "Asha", null, "Lata Rao", "9876501001");
+        // An absence: a register, its entry and the alert it queues; and the school's message settings.
+        LocalDate day = LocalDate.now(ZoneId.of("Asia/Kolkata"));
+        api.put("/api/attendance/registers/" + section + "/" + (day.isAfter(LAST_DAY) ? LAST_DAY : day),
+                admin.accessToken(), """
+                {"entries":[{"studentId":"%s","status":"ABSENT"}]}""".formatted(student))
+                .andExpect(status().isOk());
+        api.put("/api/notifications/settings", admin.accessToken(), """
+                {"absenceAlertsEnabled":true,"absenceAlertChannel":"SMS","alertLanguage":"en",
+                 "quietHoursEnabled":true,"quietHoursStart":"21:00","quietHoursEnd":"07:00"}""")
+                .andExpect(status().isOk());
         School other = api.signup();
 
         try (Connection app = appConnection(); Connection owner = ownerConnection()) {

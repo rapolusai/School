@@ -1,9 +1,15 @@
 package com.akshara.onboarding;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.ZoneId;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,10 +51,13 @@ class DemoDataSeederIT extends IntegrationTest {
     @Autowired
     PlatformTransactionManager transactionManager;
 
+    @Autowired
+    DemoAttendanceData attendanceData;
+
     @Test
     void seedsADemoSchoolWithClassesAndStudentsOnce() throws Exception {
         DemoDataSeeder seeder = new DemoDataSeeder(provisioning, tenants, users, passwordEncoder, DEMO_PASSWORD,
-                academics, students, transactionManager);
+                academics, students, transactionManager, attendanceData);
         seeder.run(null);
         // A second start leaves the existing demo school alone.
         seeder.run(null);
@@ -99,5 +108,30 @@ class DemoDataSeederIT extends IntegrationTest {
 
         Session frontOffice = api.login(code, "frontoffice" + DemoDataSeeder.DEMO_DOMAIN, DEMO_PASSWORD);
         api.get("/api/students", frontOffice.accessToken()).andExpect(status().isOk());
+
+        // Attendance for the last school days, with Class 5 A left for its class teacher today.
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Kolkata"));
+        if (!today.isAfter(LocalDate.of(2027, 3, 31))) {
+            Session teacher = api.login(code, "teacher" + DemoDataSeeder.DEMO_DOMAIN, DEMO_PASSWORD);
+            api.get("/api/attendance/sections", teacher.accessToken())
+                    .andExpect(jsonPath("$.sections.length()").value(1))
+                    .andExpect(jsonPath("$.sections[0].label").value("Class 5 A"))
+                    .andExpect(jsonPath("$.sections[0].marked").value(false));
+            List<LocalDate> days = DemoAttendanceData.schoolDays(today, LocalDate.of(2026, 6, 1));
+            LocalDate lastMarked = days.get(days.size() - 2);
+            api.get("/api/attendance/registers/" + TestApi.read(api.get("/api/attendance/sections",
+                    teacher.accessToken()), "$.sections[0].sectionId") + "/" + lastMarked, teacher.accessToken())
+                    .andExpect(jsonPath("$.marked").value(true))
+                    .andExpect(jsonPath("$.markedByName").value("Ravi Kumar"));
+            api.get("/api/attendance/today", admin.accessToken()).andExpect(status().isOk());
+            api.get("/api/me/children/" + arjun + "/attendance?month=" + YearMonth.from(lastMarked),
+                    parent.accessToken())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.recentAbsences[*].date", hasItem(lastMarked.toString())));
+            // Absence alerts went through the outbox and the simulated sender.
+            String simulated = TestApi.read(api.get("/api/messages?status=SIMULATED", admin.accessToken()), "$.total");
+            assertThat(Integer.parseInt(simulated)).isPositive();
+            api.get("/api/messages?status=FAILED", admin.accessToken()).andExpect(jsonPath("$.total").value(0));
+        }
     }
 }
