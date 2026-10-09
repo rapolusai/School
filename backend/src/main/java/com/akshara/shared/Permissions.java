@@ -38,6 +38,12 @@ public final class Permissions {
     public static final String LEAVE_APPROVE = "leave.approve";
     /** Marking and correcting any staff member's attendance. */
     public static final String STAFF_ATTENDANCE_MANAGE = "staff_attendance.manage";
+    /** Read one's own notice board and the school calendar. */
+    public static final String NOTICES_READ = "notices.read";
+    /** Approve or reject circulars sent for approval, and address any class, section or role. */
+    public static final String NOTICES_APPROVE = "notices.approve";
+    /** Add, change and remove school calendar entries. */
+    public static final String CALENDAR_MANAGE = "calendar.manage";
 
     public static final String PLATFORM_ADMIN = "platform.admin";
 
@@ -46,7 +52,7 @@ public final class Permissions {
             STUDENTS_READ, STUDENTS_MANAGE, ATTENDANCE_MARK, ATTENDANCE_READ, FEES_READ, FEES_COLLECT,
             EXAMS_MANAGE, NOTICES_SEND, CHILD_VIEW, ACADEMICS_READ, ADMISSIONS_READ, ADMISSIONS_MANAGE,
             ATTENDANCE_MANAGE, MESSAGES_READ, FEES_MANAGE, STAFF_READ, STAFF_MANAGE, LEAVE_REQUEST, LEAVE_APPROVE,
-            STAFF_ATTENDANCE_MANAGE);
+            STAFF_ATTENDANCE_MANAGE, NOTICES_READ, NOTICES_APPROVE, CALENDAR_MANAGE);
 
     private Permissions() {
     }

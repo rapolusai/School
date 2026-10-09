@@ -12,6 +12,7 @@ const GROUP_LABELS: Record<NavGroup, MessageKey> = {
   academics: "nav.group.academics",
   finance: "nav.group.finance",
   staff: "nav.group.staff",
+  communication: "nav.group.communication",
   administration: "nav.group.administration",
   platform: "nav.group.platform",
 };

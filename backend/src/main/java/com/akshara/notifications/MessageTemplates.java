@@ -29,6 +29,14 @@ public final class MessageTemplates {
 
     /** Sent to a student's primary contact when staff ask for an overdue-fee reminder. */
     public static final String FEE_REMINDER = "fees.reminder";
+    /** A circular (announcement) by SMS, WhatsApp or email: its title and the start of its text. */
+    public static final String CIRCULAR = "communication.circular";
+
+    /** A reminder of a school calendar entry (a holiday, exam, PTM or event) a few days before it. */
+    public static final String CALENDAR_REMINDER = "calendar.reminder";
+
+    /** Thanks a family for an enquiry sent through the school's public admissions form. */
+    public static final String ENQUIRY_ACKNOWLEDGEMENT = "admissions.enquiry_ack";
 
     private static final Map<String, Map<String, String>> TEMPLATES = Map.of(
             ABSENCE_ALERT, Map.of(
@@ -45,7 +53,18 @@ public final class MessageTemplates {
                     ENGLISH, "Dear {guardian}, fees of {amount} for {student} at {school} are overdue since {date}. "
                             + "Please pay at the school office or online. Ignore this if you have already paid.",
                     HINDI, "प्रिय {guardian}, {school} में {student} की {amount} फीस {date} से बकाया है। "
-                            + "कृपया विद्यालय कार्यालय में या ऑनलाइन भुगतान करें। यदि आप भुगतान कर चुके हैं, तो इसे अनदेखा करें।"));
+                            + "कृपया विद्यालय कार्यालय में या ऑनलाइन भुगतान करें। यदि आप भुगतान कर चुके हैं, तो इसे अनदेखा करें।"),
+            CIRCULAR, Map.of(
+                    ENGLISH, "Circular from {school}: {title}. {summary}",
+                    HINDI, "{school} का परिपत्र: {title}। {summary}"),
+            CALENDAR_REMINDER, Map.of(
+                    ENGLISH, "Reminder from {school}: {title} on {date}.",
+                    HINDI, "{school} की ओर से अनुस्मारक: {date} को {title}।"),
+            ENQUIRY_ACKNOWLEDGEMENT, Map.of(
+                    ENGLISH, "Thank you for your enquiry at {school} for {child} ({class}). "
+                            + "Our admissions team will contact you soon.",
+                    HINDI, "{school} में {child} ({class}) के प्रवेश के बारे में पूछताछ के लिए धन्यवाद। "
+                            + "हमारी प्रवेश टीम जल्द ही आपसे संपर्क करेगी।"));
 
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{(\\w+)}");
     private static final DateTimeFormatter ENGLISH_DATE = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH);

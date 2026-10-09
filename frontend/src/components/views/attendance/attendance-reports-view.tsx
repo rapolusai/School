@@ -9,7 +9,7 @@ import { attendanceApi, saveTextFile } from "@/lib/attendance-api";
 import { errorMessage } from "@/lib/error-message";
 import { formatPlainDate, todayInIndia } from "@/lib/format";
 import { localeFor, useI18n, type MessageKey } from "@/lib/i18n";
-import type { MonthRegister, SectionDay } from "@/lib/types";
+import type { MonthDay, MonthRegister, SectionDay } from "@/lib/types";
 import { useApiData } from "@/lib/use-api-data";
 import { CountsBar, formatPercent, MarkBadge, MarkLegend, STATUS_LABEL, statusMark } from "./attendance-shared";
 
@@ -227,6 +227,10 @@ export function MonthGrid({ register }: { register: MonthRegister }) {
   const weekday = new Intl.DateTimeFormat(locale, { weekday: "narrow", timeZone: "UTC" });
   const dayLabel = (date: string) => weekday.format(new Date(`${date}T00:00:00Z`));
   const isSunday = (date: string) => new Date(`${date}T00:00:00Z`).getUTCDay() === 0;
+  // Whole-school holidays from the calendar are shaded and left out of the totals.
+  const dayClass = (day: MonthDay | undefined) =>
+    day?.holiday ? "is-holiday" : isSunday(day?.date ?? "") ? "is-sunday" : undefined;
+  const counted = (day: MonthDay) => day.marked && !day.holiday;
 
   return (
     <>
@@ -237,6 +241,16 @@ export function MonthGrid({ register }: { register: MonthRegister }) {
         <span>
           {t("attendance.attendance")}: <b className="num">{formatPercent(register.presentPercent)}</b>
         </span>
+        {register.schoolDays !== undefined ? (
+          <span>
+            {t("attendance.schoolDays")}: <b className="num">{register.schoolDays}</b>
+          </span>
+        ) : null}
+        {register.holidays ? (
+          <span>
+            {t("attendance.holidays")}: <b className="num">{register.holidays}</b>
+          </span>
+        ) : null}
       </div>
       {register.students.length === 0 ? (
         <p className="empty">{t("attendance.noStudents")}</p>
@@ -253,8 +267,8 @@ export function MonthGrid({ register }: { register: MonthRegister }) {
                   <th
                     key={day.date}
                     scope="col"
-                    className={isSunday(day.date) ? "is-sunday" : undefined}
-                    title={formatPlainDate(day.date, locale)}
+                    className={dayClass(day)}
+                    title={[formatPlainDate(day.date, locale), day.holiday].filter(Boolean).join(" · ")}
                   >
                     <span className="block num">{Number(day.date.slice(8))}</span>
                     <span className="block text-[10.5px] font-medium">{dayLabel(day.date)}</span>
@@ -283,7 +297,7 @@ export function MonthGrid({ register }: { register: MonthRegister }) {
                     </span>
                   </th>
                   {student.marks.map((mark, i) => (
-                    <td key={register.days[i]?.date ?? i} className={isSunday(register.days[i]?.date ?? "") ? "is-sunday" : undefined}>
+                    <td key={register.days[i]?.date ?? i} className={dayClass(register.days[i])}>
                       {mark ? <MarkBadge mark={mark} /> : <span className="text-ink-3" aria-hidden="true">·</span>}
                     </td>
                   ))}
@@ -299,7 +313,7 @@ export function MonthGrid({ register }: { register: MonthRegister }) {
                 </th>
                 {register.days.map((day) => (
                   <td key={day.date} className="num">
-                    {day.marked ? day.counts.present + day.counts.late + day.counts.halfDay : ""}
+                    {counted(day) ? day.counts.present + day.counts.late + day.counts.halfDay : ""}
                   </td>
                 ))}
                 <td />
@@ -311,7 +325,7 @@ export function MonthGrid({ register }: { register: MonthRegister }) {
                 </th>
                 {register.days.map((day) => (
                   <td key={day.date} className="num">
-                    {day.marked ? day.counts.absent : ""}
+                    {counted(day) ? day.counts.absent : ""}
                   </td>
                 ))}
                 <td />
@@ -323,7 +337,7 @@ export function MonthGrid({ register }: { register: MonthRegister }) {
                 </th>
                 {register.days.map((day) => (
                   <td key={day.date} className="num text-[11.5px]">
-                    {day.marked && day.presentPercent !== null ? Math.round(day.presentPercent) : ""}
+                    {counted(day) && day.presentPercent !== null ? Math.round(day.presentPercent) : ""}
                   </td>
                 ))}
                 <td className="r num">{register.daysMarked}</td>

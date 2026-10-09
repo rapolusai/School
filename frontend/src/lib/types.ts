@@ -111,3 +111,4 @@ export * from "./types/attendance";
 export * from "./types/notifications";
 export * from "./types/fees";
 export * from "./types/staff";
+export * from "./types/communication";

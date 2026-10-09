@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, BellRing, CheckCheck } from "lucide-react";
+import { BarChart3, BellRing, CalendarOff, CheckCheck } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -211,6 +211,13 @@ export function AttendanceView({
           ) : null}
         </div>
 
+        {day?.holiday ? (
+          <div className="alert alert-info mb-3" data-testid="attendance-holiday">
+            <CalendarOff size={18} aria-hidden="true" className="mt-0.5 flex-none" />
+            <span>{t("attendance.holiday", { name: day.holiday })}</span>
+          </div>
+        ) : null}
+
         {sections.error ? (
           <ErrorState error={sections.error} onRetry={sections.reload} />
         ) : !day ? (
@@ -332,7 +339,9 @@ export function AttendanceView({
                     </button>
                   </div>
                 ) : (
-                  <p className="mt-3 text-[13px] text-ink-3">{t("attendance.readOnly")}</p>
+                  <p className="mt-3 text-[13px] text-ink-3">
+                    {view.holiday ? t("attendance.holiday", { name: view.holiday }) : t("attendance.readOnly")}
+                  </p>
                 )}
               </>
             )}

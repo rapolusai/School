@@ -2,6 +2,7 @@ package com.akshara.notifications;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -114,6 +115,22 @@ public class MessageLogService {
                 m.getRecipientName(), m.getTemplateKey(), m.getLanguage(), m.getBody(), m.getStatus(), m.getAttempts(),
                 m.getSentAt(), m.getStatus() == MessageStatus.QUEUED ? m.getNextAttemptAt() : null, m.getLastError(),
                 m.getFallbackChannel(), m.getRelatedType(), m.getRelatedId(), m.getRelatedLabel());
+    }
+
+    /**
+     * How many messages about one thing (for example a circular) there are per channel and status, for delivery
+     * summaries. Channels and statuses without messages are left out.
+     */
+    public Map<Channel, Map<MessageStatus, Long>> countsFor(UUID relatedId) {
+        TenantContext.require();
+        Map<Channel, Map<MessageStatus, Long>> counts = new EnumMap<>(Channel.class);
+        entityManager.createQuery("select m.channel, m.status, count(m) from Message m where m.relatedId = :related "
+                + "group by m.channel, m.status", Object[].class)
+                .setParameter("related", relatedId)
+                .getResultList()
+                .forEach(r -> counts.computeIfAbsent((Channel) r[0], c -> new EnumMap<>(MessageStatus.class))
+                        .put((MessageStatus) r[1], ((Number) r[2]).longValue()));
+        return counts;
     }
 
     static String escapeLike(String value) {

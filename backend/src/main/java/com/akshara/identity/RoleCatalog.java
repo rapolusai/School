@@ -20,16 +20,16 @@ public final class RoleCatalog {
             new RoleTemplate("PRINCIPAL", "Principal", List.of(DASHBOARD_VIEW, USERS_READ, ROLES_READ, AUDIT_READ,
                     STUDENTS_READ, ATTENDANCE_READ, FEES_READ, EXAMS_MANAGE, NOTICES_SEND, ACADEMICS_READ,
                     ADMISSIONS_READ, ADMISSIONS_MANAGE, ATTENDANCE_MANAGE, MESSAGES_READ, STAFF_READ, LEAVE_REQUEST,
-                    LEAVE_APPROVE)),
+                    LEAVE_APPROVE, NOTICES_READ, NOTICES_APPROVE, CALENDAR_MANAGE)),
             new RoleTemplate("TEACHER", "Teacher", List.of(DASHBOARD_VIEW, STUDENTS_READ, ATTENDANCE_MARK,
-                    ATTENDANCE_READ, EXAMS_MANAGE, NOTICES_SEND, ACADEMICS_READ, LEAVE_REQUEST)),
+                    ATTENDANCE_READ, EXAMS_MANAGE, NOTICES_SEND, ACADEMICS_READ, LEAVE_REQUEST, NOTICES_READ)),
             new RoleTemplate("ACCOUNTANT", "Accountant", List.of(DASHBOARD_VIEW, STUDENTS_READ, FEES_READ,
-                    FEES_COLLECT, ACADEMICS_READ, FEES_MANAGE, LEAVE_REQUEST)),
+                    FEES_COLLECT, ACADEMICS_READ, FEES_MANAGE, LEAVE_REQUEST, NOTICES_READ)),
             // Front office handles admissions paperwork, so it may add and edit student records.
             new RoleTemplate("FRONT_OFFICE", "Front office", List.of(DASHBOARD_VIEW, STUDENTS_READ, STUDENTS_MANAGE,
-                    ACADEMICS_READ, ADMISSIONS_READ, ADMISSIONS_MANAGE, LEAVE_REQUEST)),
-            new RoleTemplate("PARENT", "Parent", List.of(DASHBOARD_VIEW, CHILD_VIEW)),
-            new RoleTemplate("STUDENT", "Student", List.of(DASHBOARD_VIEW)));
+                    ACADEMICS_READ, ADMISSIONS_READ, ADMISSIONS_MANAGE, LEAVE_REQUEST, NOTICES_READ)),
+            new RoleTemplate("PARENT", "Parent", List.of(DASHBOARD_VIEW, CHILD_VIEW, NOTICES_READ)),
+            new RoleTemplate("STUDENT", "Student", List.of(DASHBOARD_VIEW, NOTICES_READ)));
 
     /** Every role except the family roles (Parent, Student) belongs to the school's staff. */
     public static boolean isStaffRole(String code) {

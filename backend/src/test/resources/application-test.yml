@@ -19,6 +19,10 @@ akshara:
     gateway: sandbox
     sandbox:
       secret: test-only-sandbox-secret-not-for-real-use
+  communication:
+    scheduler:
+      # Tests run the communication scheduler themselves, for their own school only.
+      enabled: false
 logging:
   level:
     com.akshara: INFO

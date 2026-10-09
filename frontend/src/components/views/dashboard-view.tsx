@@ -30,6 +30,7 @@ import type { Tenant } from "@/lib/types";
 import { useApiData } from "@/lib/use-api-data";
 import { AdmissionsCard } from "./admissions/admissions-card";
 import { AttendanceTodayCard, MarkAttendanceCards } from "./attendance/attendance-cards";
+import { NoticesCard, UpcomingCard } from "./communication/dashboard-cards";
 import { MyChildren, MyClass } from "./my-children";
 import { StaffDashboardCards } from "./staff/staff-cards";
 
@@ -120,6 +121,7 @@ export function DashboardView() {
   const isStudent = me?.roles.includes("STUDENT") ?? false;
   const canAttendanceToday = hasPermission(me, PERMISSIONS.attendanceManage);
   const canMarkOwn = hasPermission(me, PERMISSIONS.attendanceMark) && !canAttendanceToday;
+  const canNotices = hasPermission(me, PERMISSIONS.noticesRead);
 
   const users = useApiData(canUsers ? "users" : null, api.listUsers);
   const roles = useApiData(canRoles ? "roles" : null, api.listRoles);
@@ -145,6 +147,13 @@ export function DashboardView() {
       {canMarkOwn ? <MarkAttendanceCards /> : null}
       {canAttendanceToday ? <AttendanceTodayCard /> : null}
       <StaffDashboardCards />
+
+      {canNotices ? (
+        <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
+          <NoticesCard />
+          <UpcomingCard />
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
         {canUsers ? (

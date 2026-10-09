@@ -45,6 +45,8 @@ export type SectionsForDay = {
   academicYear: AttendanceYearRef | null;
   canMark: boolean;
   sections: SectionDay[];
+  /** The whole-school holiday on this date, if any (docs/api/phase-1-communication.md): nothing can be marked. */
+  holiday?: string | null;
 };
 
 export type RegisterEntry = {
@@ -75,6 +77,8 @@ export type RegisterView = {
   unmarked: number;
   presentPercent: number | null;
   entries: RegisterEntry[];
+  /** The whole-school holiday on this date, if any: the register cannot be changed. */
+  holiday?: string | null;
 };
 
 export type SaveRegisterRequest = { entries: { studentId: string; status: AttendanceStatus }[] };
@@ -87,7 +91,14 @@ export type SaveRegisterResult = {
   alertsCancelled: number;
 };
 
-export type MonthDay = { date: PlainDate; marked: boolean; counts: AttendanceCounts; presentPercent: number | null };
+export type MonthDay = {
+  date: PlainDate;
+  marked: boolean;
+  counts: AttendanceCounts;
+  presentPercent: number | null;
+  /** A whole-school holiday: left out of the month's totals even if it was marked before. */
+  holiday?: string | null;
+};
 
 export type MonthStudent = {
   studentId: string;
@@ -114,6 +125,10 @@ export type MonthRegister = {
   daysMarked: number;
   counts: AttendanceCounts;
   presentPercent: number | null;
+  /** Mondays to Saturdays less whole-school holidays. */
+  schoolDays?: number;
+  /** Whole-school holiday days in the month. */
+  holidays?: number;
 };
 
 export type DayMark = { date: PlainDate; status: AttendanceStatus };

@@ -128,6 +128,23 @@ public class NotificationQueue {
         return skipped;
     }
 
+    /**
+     * Marks every message about one thing (see {@link Related}) that has not been sent yet as skipped, for example
+     * when a circular is withdrawn. Messages already sent stay as they are. Returns how many were skipped.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public int skipRelated(String relatedType, UUID relatedId, String reason) {
+        TenantContext.require();
+        int skipped = 0;
+        for (Message m : messages.queuedAbout(relatedType, relatedId)) {
+            if (m.skip(reason)) {
+                skipped++;
+            }
+        }
+        messages.flush();
+        return skipped;
+    }
+
     /** The dedupe key of the fallback message created when the first channel fails. */
     static String fallbackKey(String dedupeKey, Channel channel) {
         return dedupeKey == null ? null : dedupeKey + ":" + channel.name().toLowerCase(Locale.ROOT);

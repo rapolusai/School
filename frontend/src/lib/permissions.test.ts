@@ -60,10 +60,11 @@ describe("navFor", () => {
       "roles",
       "audit",
       "messages",
+      "notices",
     ]);
   });
 
-  it("gives a principal attendance, read access to students, setup, fees, users, roles and audit, and messages", () => {
+  it("gives a principal attendance, read access to students, setup, fees, users, roles and audit, messages and circulars", () => {
     expect(keys(PRINCIPAL)).toEqual([
       "dashboard",
       "attendance",
@@ -74,6 +75,7 @@ describe("navFor", () => {
       "roles",
       "audit",
       "messages",
+      "notices",
     ]);
   });
 
@@ -86,8 +88,8 @@ describe("navFor", () => {
     expect(navFor(accountant).find((item) => item.key === "fees")?.group).toBe("finance");
   });
 
-  it("gives a teacher the dashboard, attendance, students and school setup", () => {
-    expect(keys(TEACHER)).toEqual(["dashboard", "attendance", "students", "setup"]);
+  it("gives a teacher the dashboard, attendance, students, school setup and circulars", () => {
+    expect(keys(TEACHER)).toEqual(["dashboard", "attendance", "students", "setup", "notices"]);
   });
 
   it("gives front office students and setup without administration", () => {
