@@ -1,10 +1,13 @@
 import {
   Building2,
+  CalendarDays,
   ClipboardList,
   ClipboardCheck,
   GraduationCap,
   LayoutDashboard,
+  Megaphone,
   MessageSquareText,
+  Newspaper,
   School,
   ScrollText,
   ShieldCheck,
@@ -14,7 +17,7 @@ import {
 import type { MessageKey } from "./i18n/en";
 import type { Me } from "./types";
 
-/** Permission codes from docs/api/phase-0.md, phase-1.md and phase-1-attendance.md. */
+/** Permission codes from docs/api/phase-0.md, phase-1.md, phase-1-attendance.md and phase-1-communication.md. */
 export const PERMISSIONS = {
   dashboardView: "dashboard.view",
   usersRead: "users.read",
@@ -33,9 +36,13 @@ export const PERMISSIONS = {
   attendanceMark: "attendance.mark",
   attendanceManage: "attendance.manage",
   messagesRead: "messages.read",
+  noticesSend: "notices.send",
+  noticesRead: "notices.read",
+  noticesApprove: "notices.approve",
+  calendarManage: "calendar.manage",
 } as const;
 
-export type NavGroup = "overview" | "academics" | "administration" | "platform";
+export type NavGroup = "overview" | "academics" | "communication" | "administration" | "platform";
 
 export type NavItem = {
   key: string;
@@ -130,6 +137,33 @@ export const NAV_ITEMS: readonly NavItem[] = [
     icon: MessageSquareText,
     permission: PERMISSIONS.messagesRead,
     group: "administration",
+  },
+  {
+    key: "board",
+    href: "/app/board",
+    labelKey: "nav.board",
+    shortLabelKey: "nav.board.short",
+    icon: Newspaper,
+    permission: PERMISSIONS.noticesRead,
+    group: "communication",
+  },
+  {
+    key: "notices",
+    href: "/app/notices",
+    labelKey: "nav.notices",
+    shortLabelKey: "nav.notices.short",
+    icon: Megaphone,
+    permission: PERMISSIONS.noticesSend,
+    group: "communication",
+  },
+  {
+    key: "calendar",
+    href: "/app/calendar",
+    labelKey: "nav.calendar",
+    shortLabelKey: "nav.calendar.short",
+    icon: CalendarDays,
+    permission: PERMISSIONS.noticesRead,
+    group: "communication",
   },
   {
     key: "schools",
