@@ -11,6 +11,10 @@ akshara:
       name: Test Platform Admin
   demo:
     enabled: false
+  payments:
+    gateway: sandbox
+    sandbox:
+      secret: test-only-sandbox-secret-not-for-real-use
 logging:
   level:
     com.akshara: INFO

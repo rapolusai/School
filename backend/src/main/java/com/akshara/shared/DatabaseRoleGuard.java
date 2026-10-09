@@ -42,8 +42,8 @@ public class DatabaseRoleGuard implements ApplicationRunner {
             return "current role is a superuser or has BYPASSRLS";
         }
         Integer owned = jdbc.queryForObject(
-                "select count(*) from pg_tables where schemaname in ('identity', 'audit', 'academics', 'students')"
-                        + " and tableowner = current_user",
+                "select count(*) from pg_tables where schemaname in ('identity', 'audit', 'academics', 'students',"
+                        + " 'fees') and tableowner = current_user",
                 Integer.class);
         if (owned != null && owned > 0) {
             return "current role owns " + owned + " school tables";

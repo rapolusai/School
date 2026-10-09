@@ -31,7 +31,8 @@ import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWrite
 public class SecurityConfig {
 
     static final String[] PUBLIC_POSTS = {
-        "/api/public/signup", "/api/auth/login", "/api/auth/refresh", "/api/auth/logout", "/api/platform/auth/login"
+        "/api/public/signup", "/api/auth/login", "/api/auth/refresh", "/api/auth/logout", "/api/platform/auth/login",
+        "/api/public/payments/webhook/*"
     };
 
     @Bean

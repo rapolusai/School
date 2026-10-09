@@ -2,6 +2,8 @@ package com.akshara.shared;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -14,6 +16,8 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import com.akshara.support.FeeFixtures;
+import com.akshara.support.FeeFixtures.Heads;
 import com.akshara.support.IntegrationTest;
 import com.akshara.support.SchoolFixtures;
 import com.akshara.support.TestApi;
@@ -35,7 +39,11 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
 
     static final List<String> PHASE_ONE_TABLES = List.of("academics.academic_year", "academics.school_class",
             "academics.section", "academics.subject", "academics.class_subject", "students.student",
-            "students.guardian", "students.student_guardian", "students.enrollment");
+            "students.guardian", "students.student_guardian", "students.enrollment", "fees.fee_head",
+            "fees.fee_structure", "fees.fee_instalment", "fees.fee_instalment_share", "fees.late_fee_rule",
+            "fees.concession", "fees.concession_head", "fees.student_due", "fees.receipt_counter", "fees.receipt",
+            "fees.payment_allocation", "fees.late_fee_waiver", "fees.payment_order", "fees.gateway_event",
+            "fees.fee_reminder");
 
     /** Phase 0 foreign keys created before composite tenant keys were required. V1 cannot change. */
     static final Set<String> SINGLE_COLUMN_FK_ALLOWED = Set.of("identity.refresh_token");
@@ -82,14 +90,15 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         School school = api.signup();
         Session admin = api.login(school);
         SchoolFixtures fixtures = new SchoolFixtures(api);
-        fixtures.currentYear(admin);
+        String yearId = fixtures.currentYear(admin);
         String classId = fixtures.schoolClass(admin, "Class 1");
         String section = fixtures.section(admin, classId, "A", 30);
         String subject = TestApi.read(api.post("/api/academics/subjects", admin.accessToken(), """
                 {"name":"English"}"""), "$.id");
         api.put("/api/academics/classes/" + classId + "/subjects", admin.accessToken(), """
                 {"subjectIds":["%s"]}""".formatted(subject));
-        fixtures.student(admin, section, "RLS-1", "Asha", null, "Lata Rao", "9876501001");
+        String student = fixtures.student(admin, section, "RLS-1", "Asha", null, "Lata Rao", "9876501001");
+        feeRecords(admin, yearId, classId, student);
         School other = api.signup();
 
         try (Connection app = appConnection(); Connection owner = ownerConnection()) {
@@ -105,7 +114,12 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
                 try (PreparedStatement update = app.prepareStatement(
                         "update " + table + " set tenant_id = tenant_id where tenant_id = ?")) {
                     update.setObject(1, school.tenantId());
-                    assertThat(update.executeUpdate()).as(table).isZero();
+                    if (canUpdateTenantId(app, table)) {
+                        assertThat(update.executeUpdate()).as(table).isZero();
+                    } else {
+                        // Append-only tables (ledgers, receipts) cannot be updated by the runtime role at all.
+                        assertThatThrownBy(update::executeUpdate).as(table).hasMessageContaining("permission denied");
+                    }
                 }
                 reset(app);
             }
@@ -179,6 +193,40 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
                     insert.executeUpdate();
                 }
             }).isInstanceOf(SQLException.class).hasMessageContaining("foreign key");
+        }
+    }
+
+    /** One row in every fee table: setup, dues, a payment, a waiver, an online order with its event, a reminder. */
+    private void feeRecords(Session admin, String yearId, String classId, String student) throws Exception {
+        FeeFixtures fees = new FeeFixtures(api, mvc);
+        Heads heads = fees.defaultHeads(admin);
+        fees.publishedStructure(admin, yearId, classId, heads);
+        api.put("/api/fees/late-fee-rule", admin.accessToken(), """
+                {"mode":"FLAT","graceDays":1,"flatPaise":5000}""").andExpect(status().isOk());
+        api.post("/api/fees/concessions", admin.accessToken(), """
+                {"studentId":"%s","type":"SIBLING","mode":"PERCENT","percent":5,"headIds":["%s"],"reason":"Sibling"}"""
+                .formatted(student, heads.tuition())).andExpect(status().isCreated());
+        fees.cash(admin, student, 1_000_00);
+        List<String> instalments = fees.instalmentIds(admin, student);
+        api.post("/api/fees/students/" + student + "/late-fee-waivers", admin.accessToken(), """
+                {"instalmentId":"%s","reason":"Kind"}""".formatted(instalments.getFirst())).andExpect(status().isOk());
+        String order = TestApi.read(api.post("/api/fees/students/" + student + "/orders", admin.accessToken(), """
+                {"instalmentIds":["%s"]}""".formatted(instalments.get(1))).andExpect(status().isCreated()),
+                "$.gatewayOrderId");
+        api.post("/api/payments/sandbox/orders/" + order + "/complete", admin.accessToken(), """
+                {"outcome":"FAILURE"}""").andExpect(status().isOk());
+        api.post("/api/fees/reminders", admin.accessToken(), """
+                {"studentIds":["%s"]}""".formatted(student)).andExpect(jsonPath("$.requested").value(1));
+    }
+
+    private static boolean canUpdateTenantId(Connection connection, String table) throws SQLException {
+        try (PreparedStatement s = connection.prepareStatement(
+                "select has_column_privilege(current_user, ?, 'tenant_id', 'UPDATE')")) {
+            s.setString(1, table);
+            try (ResultSet rs = s.executeQuery()) {
+                rs.next();
+                return rs.getBoolean(1);
+            }
         }
     }
 
