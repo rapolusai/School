@@ -1,10 +1,12 @@
 import {
+  Activity,
   Building2,
   ClipboardList,
   ClipboardCheck,
   GraduationCap,
   LayoutDashboard,
   MessageSquareText,
+  ReceiptIndianRupee,
   School,
   ScrollText,
   ShieldCheck,
@@ -15,7 +17,7 @@ import {
 import type { MessageKey } from "./i18n/en";
 import type { Me } from "./types";
 
-/** Permission codes from docs/api/phase-0.md, phase-1.md and phase-1-attendance.md. */
+/** Permission codes from docs/api/phase-0.md, phase-1.md, phase-1-attendance.md and phase-1-billing.md. */
 export const PERMISSIONS = {
   dashboardView: "dashboard.view",
   usersRead: "users.read",
@@ -37,6 +39,7 @@ export const PERMISSIONS = {
   feesRead: "fees.read",
   feesCollect: "fees.collect",
   feesManage: "fees.manage",
+  billingRead: "billing.read",
 } as const;
 
 export type NavGroup = "overview" | "academics" | "finance" | "administration" | "platform";
@@ -109,6 +112,15 @@ export const NAV_ITEMS: readonly NavItem[] = [
     group: "finance",
   },
   {
+    key: "billing",
+    href: "/app/billing",
+    labelKey: "nav.billing",
+    shortLabelKey: "nav.billing.short",
+    icon: ReceiptIndianRupee,
+    permission: PERMISSIONS.billingRead,
+    group: "finance",
+  },
+  {
     key: "users",
     href: "/app/users",
     labelKey: "nav.users",
@@ -150,6 +162,24 @@ export const NAV_ITEMS: readonly NavItem[] = [
     labelKey: "nav.schools",
     shortLabelKey: "nav.schools.short",
     icon: Building2,
+    permission: PERMISSIONS.platformAdmin,
+    group: "platform",
+  },
+  {
+    key: "platformBilling",
+    href: "/app/platform/billing",
+    labelKey: "nav.platformBilling",
+    shortLabelKey: "nav.platformBilling.short",
+    icon: ReceiptIndianRupee,
+    permission: PERMISSIONS.platformAdmin,
+    group: "platform",
+  },
+  {
+    key: "platformHealth",
+    href: "/app/platform/health",
+    labelKey: "nav.platformHealth",
+    shortLabelKey: "nav.platformHealth.short",
+    icon: Activity,
     permission: PERMISSIONS.platformAdmin,
     group: "platform",
   },

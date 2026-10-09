@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { BrandMark } from "@/components/brand";
 import { LanguageSelect, ThemeToggle } from "@/components/preferences";
+import { BillingBanner } from "@/components/views/billing/billing-banner";
 import { useAuth } from "@/lib/auth";
 import { roleLabel, useI18n } from "@/lib/i18n";
 import { navFor } from "@/lib/permissions";
@@ -76,6 +77,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <UserMenu me={me} roleLabel={primaryRole} onSignOut={signOut} />
         </header>
         <main id="main" className="content" tabIndex={-1}>
+          <BillingBanner pathname={pathname} />
           {children}
         </main>
       </div>

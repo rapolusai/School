@@ -112,8 +112,8 @@ describe("navFor", () => {
     expect(keys(PARENT)).toEqual(["dashboard"]);
   });
 
-  it("gives a platform admin only Schools", () => {
-    expect(keys(PLATFORM_ADMIN)).toEqual(["schools"]);
+  it("gives a platform admin only the platform items: Schools, Billing and Platform health", () => {
+    expect(keys(PLATFORM_ADMIN)).toEqual(["schools", "platformBilling", "platformHealth"]);
   });
 
   it("returns nothing when signed out", () => {
