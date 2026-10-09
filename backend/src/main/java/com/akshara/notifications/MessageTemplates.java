@@ -24,12 +24,28 @@ public final class MessageTemplates {
     /** Sent to a student's primary contact when the student is first marked absent on a day. */
     public static final String ABSENCE_ALERT = "attendance.absence";
 
+    /** Sent to a student's primary contact when homework is set for the student's section (if the school opts in). */
+    public static final String HOMEWORK_ASSIGNED = "homework.assigned";
+
+    /** Sent the evening before homework is due, to the contacts of students who have not submitted it. */
+    public static final String HOMEWORK_DUE = "homework.due";
+
     private static final Map<String, Map<String, String>> TEMPLATES = Map.of(
             ABSENCE_ALERT, Map.of(
                     ENGLISH, "Dear {guardian}, {student} ({class}) was marked absent at {school} on {date}. "
                             + "Please contact the school if this is unexpected.",
                     HINDI, "प्रिय {guardian}, {student} ({class}) को {date} को {school} में अनुपस्थित दर्ज किया गया है। "
-                            + "यदि यह अपेक्षित नहीं है, तो कृपया विद्यालय से संपर्क करें।"));
+                            + "यदि यह अपेक्षित नहीं है, तो कृपया विद्यालय से संपर्क करें।"),
+            HOMEWORK_ASSIGNED, Map.of(
+                    ENGLISH, "Dear {guardian}, new {subject} homework for {student} ({class}) at {school}: {title}. "
+                            + "Due on {date}.",
+                    HINDI, "प्रिय {guardian}, {school} में {student} ({class}) के लिए {subject} का नया गृहकार्य: "
+                            + "{title}। जमा करने की अंतिम तिथि {date} है।"),
+            HOMEWORK_DUE, Map.of(
+                    ENGLISH, "Dear {guardian}, {student} ({class}) has not yet submitted the {subject} homework "
+                            + "\"{title}\" due on {date} at {school}.",
+                    HINDI, "प्रिय {guardian}, {student} ({class}) ने {school} का {subject} गृहकार्य \"{title}\" अभी "
+                            + "तक जमा नहीं किया है। अंतिम तिथि {date} है।"));
 
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{(\\w+)}");
     private static final DateTimeFormatter ENGLISH_DATE = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH);

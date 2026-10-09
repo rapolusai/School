@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -18,7 +19,15 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
+import com.akshara.audit.AuditService.Actor;
+import com.akshara.files.FileUploads;
+import com.akshara.homework.HomeworkScope;
+import com.akshara.homework.HomeworkService;
+import com.akshara.homework.HomeworkService.HomeworkInput;
+import com.akshara.homework.HomeworkViews.HomeworkDetail;
+import com.akshara.homework.StudentHomeworkService;
 import com.akshara.support.IntegrationTest;
 import com.akshara.support.SchoolFixtures;
 import com.akshara.support.TestApi;
@@ -42,7 +51,16 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
             "academics.section", "academics.subject", "academics.class_subject", "students.student",
             "students.guardian", "students.student_guardian", "students.enrollment", "admissions.application",
             "admissions.application_guardian", "admissions.timeline_entry", "admissions.assessment_slot",
-            "attendance.register", "attendance.entry", "notifications.message", "notifications.settings");
+            "attendance.register", "attendance.entry", "notifications.message", "notifications.settings",
+            "files.stored_file", "timetable.settings", "timetable.period", "timetable.teacher_assignment",
+            "timetable.slot", "timetable.teacher_absence", "timetable.substitution", "homework.homework",
+            "homework.homework_section", "homework.submission", "homework.settings");
+
+    @Autowired
+    HomeworkService homework;
+
+    @Autowired
+    StudentHomeworkService learners;
 
     /** The last day of the fixtures' current year, 2026-27. */
     static final LocalDate LAST_DAY = LocalDate.of(2027, 3, 31);
@@ -118,6 +136,7 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
                 {"absenceAlertsEnabled":true,"absenceAlertChannel":"SMS","alertLanguage":"en",
                  "quietHoursEnabled":true,"quietHoursStart":"21:00","quietHoursEnd":"07:00"}""")
                 .andExpect(status().isOk());
+        timetableAndHomework(school, admin, section, subject, student, day.isAfter(LAST_DAY) ? LAST_DAY : day);
         School other = api.signup();
 
         try (Connection app = appConnection(); Connection owner = ownerConnection()) {
@@ -208,6 +227,52 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
                 }
             }).isInstanceOf(SQLException.class).hasMessageContaining("foreign key");
         }
+    }
+
+    /**
+     * A bell schedule (every day a working day, so any date works), a teacher's period with an absence and its
+     * substitute, and homework with a file answered by a student with a file.
+     */
+    private void timetableAndHomework(School school, Session admin, String section, String subject, String student,
+            LocalDate day) throws Exception {
+        String domain = "@" + school.code() + ".akshara.test";
+        String teacher = api.createUser(admin, "Ravi Kumar", "ravi" + domain, List.of("TEACHER"));
+        String substitute = api.createUser(admin, "Sita Devi", "sita" + domain, List.of("TEACHER"));
+        api.put("/api/timetable/bell-schedule", admin.accessToken(), """
+                {"workingDays":["MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY","SATURDAY","SUNDAY"],
+                 "weekday":[{"label":"Period 1","startsAt":"08:30","endsAt":"09:10"}]}""")
+                .andExpect(status().isOk());
+        api.post("/api/timetable/assignments", admin.accessToken(), """
+                {"sectionId":"%s","subjectId":"%s","teacherId":"%s","periodsPerWeek":5}"""
+                .formatted(section, subject, teacher)).andExpect(status().isCreated());
+        api.put("/api/timetable/sections/" + section, admin.accessToken(), """
+                {"slots":[{"day":"%s","period":1,"subjectId":"%s"}]}""".formatted(day.getDayOfWeek(), subject))
+                .andExpect(status().isOk());
+        api.post("/api/timetable/substitutions/absences", admin.accessToken(), """
+                {"date":"%s","teacherId":"%s"}""".formatted(day, teacher)).andExpect(status().isCreated());
+        api.put("/api/timetable/substitutions", admin.accessToken(), """
+                {"date":"%s","sectionId":"%s","period":1,"teacherId":"%s"}""".formatted(day, section, substitute))
+                .andExpect(status().isOk());
+        api.put("/api/homework/settings", admin.accessToken(), """
+                {"remindersEnabled":true}""").andExpect(status().isOk());
+        api.post("/api/students/" + student + "/sign-in", admin.accessToken(), """
+                {"mode":"CREATE","email":"%s","password":"%s"}""".formatted("asha" + domain, TestApi.PASSWORD))
+                .andExpect(status().isOk());
+        UUID studentUser = UUID.fromString(TestApi.read(api.get("/api/me",
+                api.login(school.code(), "asha" + domain, TestApi.PASSWORD).accessToken()), "$.id"));
+        Instant at = day.atTime(10, 0).atZone(ZoneId.of("Asia/Kolkata")).toInstant();
+        Actor by = new Actor(null, "Test");
+        TenantContext.runAs(school.tenantId(), () -> {
+            HomeworkDetail hw = homework.create(HomeworkScope.WHOLE_SCHOOL, new HomeworkInput(
+                    List.of(UUID.fromString(section)), UUID.fromString(subject), "Reading", "Page 4", day, day, true),
+                    by, at, day);
+            homework.addAttachment(HomeworkScope.WHOLE_SCHOOL, hw.id(), FileUploads.check("sheet.txt",
+                    "Read page 4.".getBytes(StandardCharsets.UTF_8), "file"), by, day);
+            learners.submit(studentUser, hw.id(), "Done", List.of(), List.of(FileUploads.check("answer.txt",
+                    "I read it.".getBytes(StandardCharsets.UTF_8), "files")), new Actor(studentUser, "Asha"),
+                    at.plusSeconds(3600));
+            return null;
+        });
     }
 
     private static List<TableInfo> tables() throws SQLException {

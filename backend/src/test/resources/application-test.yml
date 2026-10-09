@@ -15,6 +15,10 @@ akshara:
     dispatch:
       # Tests run the dispatcher themselves, for their own school only.
       enabled: false
+  homework:
+    reminders:
+      # Tests run the homework reminder job themselves.
+      enabled: false
 logging:
   level:
     com.akshara: INFO

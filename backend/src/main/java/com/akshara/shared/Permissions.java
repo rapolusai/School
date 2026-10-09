@@ -27,6 +27,15 @@ public final class Permissions {
     public static final String ADMISSIONS_MANAGE = "admissions.manage";
     /** The log of SMS, WhatsApp and email messages the school has sent. */
     public static final String MESSAGES_READ = "messages.read";
+    /** See the bell schedule, section and teacher timetables and who is free (every member of staff). */
+    public static final String TIMETABLE_READ = "timetable.read";
+    /** Change the bell schedule, teacher assignments and timetables, and arrange substitutions. */
+    public static final String TIMETABLE_MANAGE = "timetable.manage";
+    /**
+     * Assign and review homework. Together with timetable.manage it covers every section; on its own it covers the
+     * sections and subjects the person teaches (teacher assignments) and the sections they are class teacher of.
+     */
+    public static final String HOMEWORK_MANAGE = "homework.manage";
 
     public static final String PLATFORM_ADMIN = "platform.admin";
 
@@ -34,7 +43,7 @@ public final class Permissions {
             DASHBOARD_VIEW, USERS_READ, USERS_MANAGE, ROLES_READ, AUDIT_READ, SETTINGS_MANAGE,
             STUDENTS_READ, STUDENTS_MANAGE, ATTENDANCE_MARK, ATTENDANCE_READ, FEES_READ, FEES_COLLECT,
             EXAMS_MANAGE, NOTICES_SEND, CHILD_VIEW, ACADEMICS_READ, ADMISSIONS_READ, ADMISSIONS_MANAGE,
-            ATTENDANCE_MANAGE, MESSAGES_READ);
+            ATTENDANCE_MANAGE, MESSAGES_READ, TIMETABLE_READ, TIMETABLE_MANAGE, HOMEWORK_MANAGE);
 
     private Permissions() {
     }

@@ -3,6 +3,7 @@ package com.akshara.onboarding;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -58,10 +59,13 @@ class DemoDataSeederIT extends IntegrationTest {
     @Autowired
     DemoAttendanceData attendanceData;
 
+    @Autowired
+    DemoTimetableHomeworkData timetableHomeworkData;
+
     @Test
     void seedsADemoSchoolWithClassesAndStudentsOnce() throws Exception {
         DemoDataSeeder seeder = new DemoDataSeeder(provisioning, tenants, users, passwordEncoder, DEMO_PASSWORD,
-                academics, students, transactionManager, admissions, attendanceData);
+                academics, students, transactionManager, admissions, attendanceData, timetableHomeworkData);
         seeder.run(null);
         // A second start leaves the existing demo school alone.
         seeder.run(null);
@@ -157,5 +161,28 @@ class DemoDataSeederIT extends IntegrationTest {
             assertThat(Integer.parseInt(simulated)).isPositive();
             api.get("/api/messages?status=FAILED", admin.accessToken()).andExpect(jsonPath("$.total").value(0));
         }
+        // Timetables: Class 5 A and Class 2 A complete and clash-free, Class 5 B partly done.
+        api.get("/api/timetable/clashes", admin.accessToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.clashes.length()").value(0))
+                .andExpect(jsonPath("$.warnings.length()").value(0))
+                .andExpect(jsonPath("$.sectionsChecked").value(3));
+        api.get("/api/timetable/bell-schedule", admin.accessToken())
+                .andExpect(jsonPath("$.weekdayPeriods").value(8))
+                .andExpect(jsonPath("$.saturdayPeriods").value(5));
+        Session ravi = api.login(code, "teacher" + DemoDataSeeder.DEMO_DOMAIN, DEMO_PASSWORD);
+        api.get("/api/timetable/me", ravi.accessToken())
+                .andExpect(jsonPath("$.slots.length()")
+                        .value(8 + 8 + DemoTimetableHomeworkData.CLASS_5B_MATHS.length));
+        // Homework: ten items for Class 5 A, four answered by Arjun.
+        api.get("/api/me/homework", student.accessToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sectionLabel").value("Class 5 A"))
+                .andExpect(jsonPath("$.items.length()").value(DemoTimetableHomeworkData.HOMEWORK.size()))
+                .andExpect(jsonPath("$.items[?(@.status != 'PENDING')]", hasSize(4)));
+        api.get("/api/me/children/" + arjun + "/homework", parent.accessToken())
+                .andExpect(jsonPath("$.items.length()").value(DemoTimetableHomeworkData.HOMEWORK.size()));
+        api.get("/api/homework?when=all", ravi.accessToken())
+                .andExpect(jsonPath("$.total").value(DemoTimetableHomeworkData.HOMEWORK.size()));
     }
 }

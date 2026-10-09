@@ -18,6 +18,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
@@ -46,6 +49,19 @@ public class ApiExceptionHandler {
     @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
     ResponseEntity<ProblemDetail> handleUnreadable(Exception e) {
         return problem(HttpStatus.BAD_REQUEST, "Bad request", "The request could not be read.", Map.of());
+    }
+
+    /** An upload larger than spring.servlet.multipart.max-file-size or max-request-size (see application.yml). */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    ResponseEntity<ProblemDetail> handleTooLarge(MaxUploadSizeExceededException e) {
+        return problem(HttpStatus.CONTENT_TOO_LARGE, "File too large", "Files can be at most 5 MB each.",
+                Map.of("file", "Files can be at most 5 MB each."));
+    }
+
+    @ExceptionHandler({MultipartException.class, MissingServletRequestPartException.class})
+    ResponseEntity<ProblemDetail> handleMultipart(Exception e) {
+        return problem(HttpStatus.BAD_REQUEST, "Check the file", "Attach a file and try again.",
+                Map.of("file", "Attach a file and try again."));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

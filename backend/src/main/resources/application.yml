@@ -27,6 +27,13 @@ spring:
   threads:
     virtual:
       enabled: true
+  servlet:
+    multipart:
+      # Uploads (homework attachments and submissions): 5 MB per file, a few files per request. The files module
+      # checks the same 5 MB limit and the file type itself; these are the container's hard limits.
+      max-file-size: 5MB
+      max-request-size: 26MB
+      file-size-threshold: 1MB
 
 server:
   shutdown: graceful
@@ -66,6 +73,12 @@ akshara:
       # Sends queued messages (absence alerts). Only the simulated sender exists for now: nothing leaves the system.
       enabled: ${NOTIFICATIONS_DISPATCH_ENABLED:true}
       interval: ${NOTIFICATIONS_DISPATCH_INTERVAL:PT15S}
+  homework:
+    reminders:
+      # The evening before homework is due, parents of students who have not submitted get a reminder (only in schools
+      # that switched homework reminders on). Runs hourly from 17:00 to 20:00 India time; each homework is done once.
+      enabled: ${HOMEWORK_REMINDERS_ENABLED:true}
+      cron: ${HOMEWORK_REMINDERS_CRON:0 0 17-20 * * *}
 
 ---
 # In AWS the API never holds the owner password: migrations run as a separate one-off task (profile "migrate").
@@ -92,4 +105,7 @@ spring:
 akshara:
   notifications:
     dispatch:
+      enabled: false
+  homework:
+    reminders:
       enabled: false
