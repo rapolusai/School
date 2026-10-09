@@ -9,7 +9,7 @@ import { timetableApi } from "@/lib/timetable-api";
 import type { FamilyTimetable } from "@/lib/types";
 import { useApiData, type ApiData } from "@/lib/use-api-data";
 import { cellKey } from "./timetable-logic";
-import { DayPeriods, SlotChip, WeekGrid } from "./timetable-shared";
+import { DayPeriods, SlotChip, subjectColours, WeekGrid } from "./timetable-shared";
 
 /** A student's section timetable: today first, then the week. Read only. */
 export function FamilyTimetableBody({ data }: { data: ApiData<FamilyTimetable> }) {
@@ -20,6 +20,7 @@ export function FamilyTimetableBody({ data }: { data: ApiData<FamilyTimetable> }
   if (!view) return <LoadingRows rows={6} />;
   if (!view.sectionId) return <p className="empty">{t("timetable.family.noSection")}</p>;
   const byKey = new Map(view.slots.map((s) => [cellKey(s.day, s.period), s]));
+  const colours = subjectColours(view.slots.map((s) => s.subjectName));
   return (
     <div className="flex flex-col gap-3.5" data-testid="family-timetable">
       <section className="card" aria-labelledby="tt-family-today">
@@ -34,7 +35,7 @@ export function FamilyTimetableBody({ data }: { data: ApiData<FamilyTimetable> }
         {!view.workingDay ? (
           <p className="text-sm text-ink-2">{t("timetable.closedToday")}</p>
         ) : (
-          <DayPeriods periods={view.todayPeriods} emptyLabel={t("timetable.family.noClasses")} />
+          <DayPeriods periods={view.todayPeriods} showSection={false} emptyLabel={t("timetable.family.noClasses")} />
         )}
       </section>
       <section className="card" aria-labelledby="tt-family-week">
@@ -51,7 +52,7 @@ export function FamilyTimetableBody({ data }: { data: ApiData<FamilyTimetable> }
             cell={(day, period) => {
               const slot = byKey.get(cellKey(day, period));
               return slot ? (
-                <SlotChip title={slot.subjectName} sub={slot.teacherName} room={slot.room} colourKey={slot.subjectId} />
+                <SlotChip title={slot.subjectName} sub={slot.teacherName} room={slot.room} colour={colours.get(slot.subjectName)} />
               ) : null;
             }}
           />

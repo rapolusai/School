@@ -1397,7 +1397,7 @@ export const en = {
   "homework.submission.title": "Handed in",
   "homework.submission.waiting": "Waiting for your teacher to review it. You can still change it.",
   "homework.submission.reviewed": "Reviewed",
-  "homework.submission.redo": "Your teacher asked for it again",
+  "homework.submission.redo": "The teacher asked for it again",
   "homework.card.title": "Homework due",
   "homework.card.childTitle": "Homework due · {name}",
   "homework.card.due.one": "1 to hand in",

@@ -107,12 +107,15 @@ export function WeekGrid({
   caption,
   today,
   testId,
+  wide = false,
 }: {
   bells: BellSchedule;
   cell: (day: WeekDay, period: number) => React.ReactNode;
   caption: string;
   today?: WeekDay;
   testId?: string;
+  /** Roomier columns (the editor's cells hold a select and a room field). */
+  wide?: boolean;
 }) {
   const { t } = useI18n();
   const phone = useIsPhone();
@@ -154,7 +157,7 @@ export function WeekGrid({
   const rows = gridRows(bells);
   return (
     <div className="table-wrap" data-testid={testId}>
-      <table className="tt-table">
+      <table className={wide ? "tt-table tt-table-wide" : "tt-table"}>
         <caption className="sr-only">{caption}</caption>
         <thead>
           <tr>
@@ -214,11 +217,13 @@ export function WeekGrid({
 
 const SLOT_COLOURS = 7;
 
-/** A steady colour (0–6) for a subject, so it looks the same in every grid. Pure. */
-export function slotColour(key: string): number {
-  let hash = 0;
-  for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
-  return hash % SLOT_COLOURS;
+/**
+ * A colour (0–6) for each subject of one grid, in alphabetical order, so neighbouring subjects
+ * differ. Pure.
+ */
+export function subjectColours(names: Iterable<string>): Map<string, number> {
+  const sorted = [...new Set(names)].sort((a, b) => a.localeCompare(b));
+  return new Map(sorted.map((name, i) => [name, i % SLOT_COLOURS]));
 }
 
 /** A period's subject and who teaches it, inside a grid cell. */
@@ -227,18 +232,18 @@ export function SlotChip({
   sub,
   room,
   tone,
-  colourKey,
+  colour,
 }: {
   title: string;
   sub?: string | null;
   room?: string | null;
   tone?: "warn" | "bad" | "info";
-  /** Colours the chip by subject (ignored when a tone is given). */
-  colourKey?: string;
+  /** The subject's colour from subjectColours (ignored when a tone is given). */
+  colour?: number;
 }) {
-  const colour = tone ? ` tt-slot-${tone}` : colourKey ? ` tt-c${slotColour(colourKey)}` : "";
+  const shade = tone ? ` tt-slot-${tone}` : colour !== undefined ? ` tt-c${colour}` : "";
   return (
-    <span className={`tt-slot${colour}`}>
+    <span className={`tt-slot${shade}`}>
       <b>{title}</b>
       {sub ? <span>{sub}</span> : null}
       {room ? <span className="tt-room">{room}</span> : null}
@@ -251,11 +256,17 @@ export function DayPeriods({
   periods,
   emptyLabel,
   showBreaks = true,
+  showTeacher = true,
+  showSection = true,
   testId,
 }: {
   periods: DayPeriod[];
   emptyLabel: string;
   showBreaks?: boolean;
+  /** Name who teaches each class (off for a teacher's own day). */
+  showTeacher?: boolean;
+  /** Name the section of each class (off for a student's own section). */
+  showSection?: boolean;
   testId?: string;
 }) {
   const { t } = useI18n();
@@ -286,9 +297,7 @@ export function DayPeriods({
                   <span className="min-w-0">
                     <b className="text-ink">{e.subjectName}</b>
                     <span className="text-ink-2">
-                      {" · "}
-                      {e.sectionLabel}
-                      {e.room ? ` · ${e.room}` : ""}
+                      {[showSection ? e.sectionLabel : null, e.room].filter(Boolean).map((part) => ` · ${part}`).join("")}
                     </span>
                   </span>
                   {e.kind === "SUBSTITUTION" ? (
@@ -299,7 +308,7 @@ export function DayPeriods({
                         ? t("timetable.day.coveredBy", { name: e.substituteName })
                         : t("timetable.day.notCovered")}
                     </Pill>
-                  ) : e.teacherName ? (
+                  ) : showTeacher && e.teacherName ? (
                     <span className="text-[12.5px] text-ink-3">{e.teacherName}</span>
                   ) : null}
                 </div>

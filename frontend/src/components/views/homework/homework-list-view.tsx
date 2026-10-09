@@ -127,7 +127,7 @@ export function HomeworkListView() {
 
       <section className="card">
         <div className="toolbar">
-          <div className="seg" role="radiogroup" aria-label={t("homework.when")}>
+          <div className="seg basis-full sm:basis-auto" role="radiogroup" aria-label={t("homework.when")}>
             {HOMEWORK_WHEN.map((w) => (
               <label key={w}>
                 <input
@@ -144,10 +144,11 @@ export function HomeworkListView() {
               </label>
             ))}
           </div>
-          <label className="field min-w-0 flex-1 sm:max-w-[220px]">
+          <label className="field min-w-[140px] flex-1 sm:max-w-[220px]">
             <span className="sr-only">{t("homework.section")}</span>
             <select
               className="input"
+              name="section"
               value={sectionId}
               onChange={(e) => {
                 setSectionId(e.target.value);
@@ -163,10 +164,11 @@ export function HomeworkListView() {
               ))}
             </select>
           </label>
-          <label className="field min-w-0 flex-1 sm:max-w-[220px]">
+          <label className="field min-w-[140px] flex-1 sm:max-w-[220px]">
             <span className="sr-only">{t("homework.subject")}</span>
             <select
               className="input"
+              name="subject"
               value={subjectId}
               onChange={(e) => {
                 setSubjectId(e.target.value);

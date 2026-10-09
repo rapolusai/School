@@ -10,7 +10,7 @@ import type { BellSchedule, TeacherTimetable, WeekDay } from "@/lib/types";
 import { useApiData } from "@/lib/use-api-data";
 import { ClashList } from "./clashes-panel";
 import { cellKey, periodsOf, workingDays } from "./timetable-logic";
-import { DAY_LABEL, DayPeriods, SlotChip, WeekGrid } from "./timetable-shared";
+import { DAY_LABEL, DayPeriods, SlotChip, subjectColours, WeekGrid } from "./timetable-shared";
 
 /** A teacher's week: the section, subject and room of each period. */
 export function TeacherWeek({ view, today }: { view: TeacherTimetable; today?: WeekDay }) {
@@ -20,6 +20,8 @@ export function TeacherWeek({ view, today }: { view: TeacherTimetable; today?: W
     const key = cellKey(slot.day, slot.period);
     byKey.set(key, [...(byKey.get(key) ?? []), slot]);
   }
+  // One colour per section: a teacher usually has one or two subjects but many classes.
+  const colours = subjectColours(view.slots.map((s) => s.sectionLabel));
   return (
     <WeekGrid
       bells={view.bells}
@@ -38,7 +40,7 @@ export function TeacherWeek({ view, today }: { view: TeacherTimetable; today?: W
                 sub={s.subjectName}
                 room={s.room}
                 tone={slots.length > 1 ? "bad" : undefined}
-                colourKey={s.subjectId}
+                colour={colours.get(s.sectionLabel)}
               />
             ))}
           </span>
@@ -193,7 +195,12 @@ export function MyTimetablePanel() {
         ) : !day.data.workingDay ? (
           <p className="text-sm text-ink-2">{t("timetable.closedToday")}</p>
         ) : (
-          <DayPeriods periods={day.data.periods} emptyLabel={t("timetable.mine.noClasses")} testId="my-day" />
+          <DayPeriods
+            periods={day.data.periods}
+            showTeacher={false}
+            emptyLabel={t("timetable.mine.noClasses")}
+            testId="my-day"
+          />
         )}
       </section>
       <section className="card" aria-labelledby="tt-my-week">

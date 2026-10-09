@@ -52,7 +52,13 @@ export function TodayClassesCard() {
       ) : (
         <>
           {data.absent ? <Pill tone="warn">{t("timetable.mine.away")}</Pill> : null}
-          <DayPeriods periods={data.periods} showBreaks={false} emptyLabel={t("timetable.mine.noClasses")} />
+          <DayPeriods
+            periods={data.periods}
+            showBreaks={false}
+            showTeacher={false}
+            emptyLabel={t("timetable.mine.noClasses")}
+            testId="today-classes-list"
+          />
         </>
       )}
     </CardShell>
@@ -76,7 +82,12 @@ export function StudentTodayCard() {
       ) : !view.workingDay ? (
         <p className="text-sm text-ink-2">{t("timetable.closedToday")}</p>
       ) : (
-        <DayPeriods periods={view.todayPeriods} showBreaks={false} emptyLabel={t("timetable.family.noClasses")} />
+        <DayPeriods
+          periods={view.todayPeriods}
+          showBreaks={false}
+          showSection={false}
+          emptyLabel={t("timetable.family.noClasses")}
+        />
       )}
     </CardShell>
   );

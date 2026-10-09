@@ -20,6 +20,7 @@ function DueCard({
   allHref,
   hrefFor,
   testId,
+  timetableHref,
 }: {
   id: string;
   title: string;
@@ -27,6 +28,8 @@ function DueCard({
   allHref: string;
   hrefFor: (homeworkId: string) => string;
   testId: string;
+  /** A parent's way to the child's timetable (students have their own card). */
+  timetableHref?: string;
 }) {
   const { t } = useI18n();
   const view = data.data;
@@ -49,10 +52,18 @@ function DueCard({
       ) : (
         <LearnerHomeworkRows items={todo.slice(0, CARD_ROWS)} today={view.today} hrefFor={(row) => hrefFor(row.id)} />
       )}
-      <Link href={allHref} className="link mt-auto inline-flex items-center gap-1 text-[13.5px]">
-        {t("homework.card.all")}
-        <ArrowRight size={16} aria-hidden="true" />
-      </Link>
+      <div className="mt-auto flex flex-wrap gap-x-5 gap-y-1">
+        <Link href={allHref} className="link inline-flex items-center gap-1 text-[13.5px]">
+          {t("homework.card.all")}
+          <ArrowRight size={16} aria-hidden="true" />
+        </Link>
+        {timetableHref ? (
+          <Link href={timetableHref} className="link inline-flex items-center gap-1 text-[13.5px]">
+            {t("timetable.open")}
+            <ArrowRight size={16} aria-hidden="true" />
+          </Link>
+        ) : null}
+      </div>
     </section>
   );
 }
@@ -86,6 +97,7 @@ function ChildDueCard({ child }: { child: Child }) {
       allHref={`/app/homework${query}`}
       hrefFor={(homeworkId) => `/app/homework/${encodeURIComponent(homeworkId)}${query}`}
       testId="child-homework-due"
+      timetableHref={`/app/timetable${query}`}
     />
   );
 }

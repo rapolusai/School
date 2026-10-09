@@ -28,9 +28,13 @@ const GROUP_LABEL: Record<Group, MessageKey> = {
   all: "homework.learner.all",
 };
 
-/** Still to do: nothing handed in yet, or sent back for another try. Pure, exported for tests. */
-export function isToDo(row: Pick<StudentHomeworkRow, "status">): boolean {
-  return row.status === "PENDING" || row.status === "NEEDS_REDO";
+/**
+ * Still to do: sent back for another try, or nothing handed in yet (homework handed in at school
+ * drops off once its due date has passed). Pure, exported for tests.
+ */
+export function isToDo(row: Pick<StudentHomeworkRow, "status" | "onlineSubmission" | "overdue">): boolean {
+  if (row.status === "NEEDS_REDO") return true;
+  return row.status === "PENDING" && (row.onlineSubmission || !row.overdue);
 }
 
 /** Homework in a group, soonest due first for work still to do and newest first otherwise. Pure. */
@@ -411,7 +415,7 @@ export function LearnerHomeworkDetail({
   }
 
   const sub = detail.submission;
-  const open = isToDo({ status: sub?.status ?? "PENDING" });
+  const open = isToDo({ status: sub?.status ?? "PENDING", onlineSubmission: detail.onlineSubmission, overdue: detail.overdue });
   return (
     <>
       {back}

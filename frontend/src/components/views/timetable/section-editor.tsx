@@ -19,12 +19,13 @@ import {
   toCells,
   type Grid,
 } from "./timetable-logic";
-import { cellName, SlotChip, WeekGrid } from "./timetable-shared";
+import { cellName, SlotChip, subjectColours, WeekGrid } from "./timetable-shared";
 
 /** A section's week, read only: subject, teacher and room in each period. */
 export function SectionGrid({ view, today }: { view: SectionTimetable; today?: WeekDay }) {
   const { t } = useI18n();
   const byKey = new Map(view.slots.map((s) => [cellKey(s.day, s.period), s]));
+  const colours = subjectColours(view.subjects.map((s) => s.subjectName));
   return (
     <WeekGrid
       bells={view.bells}
@@ -34,7 +35,7 @@ export function SectionGrid({ view, today }: { view: SectionTimetable; today?: W
       cell={(day, period) => {
         const slot = byKey.get(cellKey(day, period));
         return slot ? (
-          <SlotChip title={slot.subjectName} sub={slot.teacherName} room={slot.room} colourKey={slot.subjectId} />
+          <SlotChip title={slot.subjectName} sub={slot.teacherName} room={slot.room} colour={colours.get(slot.subjectName)} />
         ) : null;
       }}
     />
@@ -134,6 +135,7 @@ export function SectionEditor({
         bells={view.bells}
         caption={t("timetable.sectionCaption", { section: view.label })}
         testId="section-editor"
+        wide
         cell={(day, period) => {
           const key = cellKey(day, period);
           const cell = grid[key];
