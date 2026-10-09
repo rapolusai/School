@@ -44,6 +44,15 @@ public final class Permissions {
     public static final String NOTICES_APPROVE = "notices.approve";
     /** Add, change and remove school calendar entries. */
     public static final String CALENDAR_MANAGE = "calendar.manage";
+    /** See the bell schedule, section and teacher timetables and who is free (every member of staff). */
+    public static final String TIMETABLE_READ = "timetable.read";
+    /** Change the bell schedule, teacher assignments and timetables, and arrange substitutions. */
+    public static final String TIMETABLE_MANAGE = "timetable.manage";
+    /**
+     * Assign and review homework. Together with timetable.manage it covers every section; on its own it covers the
+     * sections and subjects the person teaches (teacher assignments) and the sections they are class teacher of.
+     */
+    public static final String HOMEWORK_MANAGE = "homework.manage";
 
     public static final String PLATFORM_ADMIN = "platform.admin";
 
@@ -52,7 +61,8 @@ public final class Permissions {
             STUDENTS_READ, STUDENTS_MANAGE, ATTENDANCE_MARK, ATTENDANCE_READ, FEES_READ, FEES_COLLECT,
             EXAMS_MANAGE, NOTICES_SEND, CHILD_VIEW, ACADEMICS_READ, ADMISSIONS_READ, ADMISSIONS_MANAGE,
             ATTENDANCE_MANAGE, MESSAGES_READ, FEES_MANAGE, STAFF_READ, STAFF_MANAGE, LEAVE_REQUEST, LEAVE_APPROVE,
-            STAFF_ATTENDANCE_MANAGE, NOTICES_READ, NOTICES_APPROVE, CALENDAR_MANAGE);
+            STAFF_ATTENDANCE_MANAGE, NOTICES_READ, NOTICES_APPROVE, CALENDAR_MANAGE, TIMETABLE_READ, TIMETABLE_MANAGE,
+            HOMEWORK_MANAGE);
 
     private Permissions() {
     }

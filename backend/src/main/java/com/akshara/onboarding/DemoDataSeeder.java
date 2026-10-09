@@ -67,12 +67,14 @@ public class DemoDataSeeder implements ApplicationRunner {
     private final DemoFeesData fees;
     private final DemoStaffData staffData;
     private final DemoCommunicationData communicationData;
+    private final DemoTimetableHomeworkData timetableHomeworkData;
 
     public DemoDataSeeder(SchoolProvisioning provisioning, TenantDirectory tenants, UserService users,
             PasswordEncoder passwordEncoder, @Value("${akshara.demo.password:}") String password,
             AcademicsService academics, StudentService students, PlatformTransactionManager transactionManager,
             AdmissionsService admissions, DemoAttendanceData attendanceData, DemoFeesData fees,
-            DemoStaffData staffData, DemoCommunicationData communicationData) {
+            DemoStaffData staffData, DemoCommunicationData communicationData,
+            DemoTimetableHomeworkData timetableHomeworkData) {
         this.provisioning = provisioning;
         this.tenants = tenants;
         this.users = users;
@@ -86,6 +88,7 @@ public class DemoDataSeeder implements ApplicationRunner {
         this.fees = fees;
         this.staffData = staffData;
         this.communicationData = communicationData;
+        this.timetableHomeworkData = timetableHomeworkData;
     }
 
     @Override
@@ -118,6 +121,9 @@ public class DemoDataSeeder implements ApplicationRunner {
         log.info("Seeded {} demo attendance registers", attendanceData.seed(school.tenant().id(), userIds));
         TenantContext.runAs(school.tenant().id(), () -> tx.execute(status -> fees.seed(
                 new Actor(userIds.get("accounts" + DEMO_DOMAIN), "Meena Reddy"))));
+        // Timetables first: their subject teachers then get staff profiles with everyone else.
+        log.info("Seeded demo timetables and homework: {}",
+                timetableHomeworkData.seed(school.tenant().id(), userIds, hash));
         log.info("Seeded {} demo staff profiles",
                 staffData.seed(school.tenant().id(), userIds, school.adminUserId(), hash));
         log.info("Seeded {} demo circulars and the calendar", communicationData.seed(school.tenant().id(), userIds));

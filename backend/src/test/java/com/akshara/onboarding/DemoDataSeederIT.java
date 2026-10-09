@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -74,11 +75,14 @@ class DemoDataSeederIT extends IntegrationTest {
     @Autowired
     DemoCommunicationData communicationData;
 
+    @Autowired
+    DemoTimetableHomeworkData timetableHomeworkData;
+
     @Test
     void seedsADemoSchoolWithClassesAndStudentsOnce() throws Exception {
         DemoDataSeeder seeder = new DemoDataSeeder(provisioning, tenants, users, passwordEncoder, DEMO_PASSWORD,
                 academics, students, transactionManager, admissions, attendanceData, demoFees, staffData,
-                communicationData);
+                communicationData, timetableHomeworkData);
         seeder.run(null);
         // A second start leaves the existing demo school alone.
         seeder.run(null);
@@ -221,8 +225,10 @@ class DemoDataSeederIT extends IntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         assertThat(JsonPath.<Integer>read(overview, "$.overdueStudents")).isBetween(5, 15);
 
-        // Staff records: every demo staff member has a profile, plus the extra teachers.
-        int staffCount = DemoDataSeeder.PEOPLE.size() - 2 + 1 + DemoStaffData.EXTRA_TEACHERS;
+        // Staff records: every demo staff member has a profile, plus the extra teachers and the timetable's subject
+        // teachers.
+        int staffCount = DemoDataSeeder.PEOPLE.size() - 2 + 1 + DemoStaffData.EXTRA_TEACHERS
+                + DemoTimetableHomeworkData.TEACHERS.size();
         api.get("/api/staff?size=100", admin.accessToken())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(staffCount))
@@ -273,5 +279,28 @@ class DemoDataSeederIT extends IntegrationTest {
                 .andExpect(jsonPath("$.entries[?(@.title == 'Staff meeting')]").isEmpty());
         api.get("/api/calendar/entries", principal.accessToken())
                 .andExpect(jsonPath("$.entries[*].title", hasItem("Staff meeting")));
+        // Timetables: Class 5 A and Class 2 A complete and clash-free, Class 5 B partly done.
+        api.get("/api/timetable/clashes", admin.accessToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.clashes.length()").value(0))
+                .andExpect(jsonPath("$.warnings.length()").value(0))
+                .andExpect(jsonPath("$.sectionsChecked").value(3));
+        api.get("/api/timetable/bell-schedule", admin.accessToken())
+                .andExpect(jsonPath("$.weekdayPeriods").value(8))
+                .andExpect(jsonPath("$.saturdayPeriods").value(5));
+        Session ravi = api.login(code, "teacher" + DemoDataSeeder.DEMO_DOMAIN, DEMO_PASSWORD);
+        api.get("/api/timetable/me", ravi.accessToken())
+                .andExpect(jsonPath("$.slots.length()")
+                        .value(8 + 8 + DemoTimetableHomeworkData.CLASS_5B_MATHS.length));
+        // Homework: ten items for Class 5 A, four answered by Arjun.
+        api.get("/api/me/homework", student.accessToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sectionLabel").value("Class 5 A"))
+                .andExpect(jsonPath("$.items.length()").value(DemoTimetableHomeworkData.HOMEWORK.size()))
+                .andExpect(jsonPath("$.items[?(@.status != 'PENDING')]", hasSize(4)));
+        api.get("/api/me/children/" + arjun + "/homework", parent.accessToken())
+                .andExpect(jsonPath("$.items.length()").value(DemoTimetableHomeworkData.HOMEWORK.size()));
+        api.get("/api/homework?when=all", ravi.accessToken())
+                .andExpect(jsonPath("$.total").value(DemoTimetableHomeworkData.HOMEWORK.size()));
     }
 }

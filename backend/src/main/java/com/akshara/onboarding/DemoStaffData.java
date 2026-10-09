@@ -37,6 +37,8 @@ import com.akshara.staff.StaffForms.DepartmentFields;
 import com.akshara.staff.StaffForms.LeaveApplication;
 import com.akshara.staff.StaffForms.ProfileFields;
 import com.akshara.staff.StaffService;
+import com.akshara.staff.StaffService.StaffQuery;
+import com.akshara.staff.StaffService.StaffRow;
 
 /**
  * The demo school's staff records: departments (three with heads who approve their staff's leave), profiles for every
@@ -149,6 +151,15 @@ class DemoStaffData {
                     t.designation(), departmentIds.get(t.department()), t.type(), t.joined(), t.mobile(),
                     t.qualifications(), null, null), passwordHash, admin).userId();
             ids.put(email(t.mailbox()), id);
+            created++;
+        }
+        // Other teachers already signed up (the timetable's subject teachers) get a plain profile too.
+        int next = 301;
+        for (StaffRow row : staff.list(new StaffQuery(null, null, null, null, true, null, 0, 100)).items()) {
+            staff.saveProfile(row.userId(), new ProfileFields("AKS-" + next, "Subject Teacher",
+                    departmentIds.get("Secondary"), EmploymentType.PERMANENT, LocalDate.of(2021, 6, 1),
+                    "98480103" + String.format("%02d", next - 300), null, null, null), admin);
+            next++;
             created++;
         }
         HEADS.forEach((department, mailbox) -> departments.update(departmentIds.get(department),

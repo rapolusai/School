@@ -38,6 +38,12 @@ public final class MessageTemplates {
     /** Thanks a family for an enquiry sent through the school's public admissions form. */
     public static final String ENQUIRY_ACKNOWLEDGEMENT = "admissions.enquiry_ack";
 
+    /** Sent to a student's primary contact when homework is set for the student's section (if the school opts in). */
+    public static final String HOMEWORK_ASSIGNED = "homework.assigned";
+
+    /** Sent the evening before homework is due, to the contacts of students who have not submitted it. */
+    public static final String HOMEWORK_DUE = "homework.due";
+
     private static final Map<String, Map<String, String>> TEMPLATES = Map.of(
             ABSENCE_ALERT, Map.of(
                     ENGLISH, "Dear {guardian}, {student} ({class}) was marked absent at {school} on {date}. "
@@ -64,7 +70,17 @@ public final class MessageTemplates {
                     ENGLISH, "Thank you for your enquiry at {school} for {child} ({class}). "
                             + "Our admissions team will contact you soon.",
                     HINDI, "{school} में {child} ({class}) के प्रवेश के बारे में पूछताछ के लिए धन्यवाद। "
-                            + "हमारी प्रवेश टीम जल्द ही आपसे संपर्क करेगी।"));
+                            + "हमारी प्रवेश टीम जल्द ही आपसे संपर्क करेगी।"),
+            HOMEWORK_ASSIGNED, Map.of(
+                    ENGLISH, "Dear {guardian}, new {subject} homework for {student} ({class}) at {school}: {title}. "
+                            + "Due on {date}.",
+                    HINDI, "प्रिय {guardian}, {school} में {student} ({class}) के लिए {subject} का नया गृहकार्य: "
+                            + "{title}। जमा करने की अंतिम तिथि {date} है।"),
+            HOMEWORK_DUE, Map.of(
+                    ENGLISH, "Dear {guardian}, {student} ({class}) has not yet submitted the {subject} homework "
+                            + "\"{title}\" due on {date} at {school}.",
+                    HINDI, "प्रिय {guardian}, {student} ({class}) ने {school} का {subject} गृहकार्य \"{title}\" अभी "
+                            + "तक जमा नहीं किया है। अंतिम तिथि {date} है।"));
 
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{(\\w+)}");
     private static final DateTimeFormatter ENGLISH_DATE = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH);
