@@ -66,6 +66,12 @@ akshara:
       # Sends queued messages (absence alerts). Only the simulated sender exists for now: nothing leaves the system.
       enabled: ${NOTIFICATIONS_DISPATCH_ENABLED:true}
       interval: ${NOTIFICATIONS_DISPATCH_INTERVAL:PT15S}
+  payments:
+    # Online fee payments. Only the sandbox gateway exists; it makes no network calls. Its secret signs sandbox
+    # payments and webhooks (a random one is made at startup when empty). Real gateway keys come from Secrets Manager.
+    gateway: ${PAYMENTS_GATEWAY:sandbox}
+    sandbox:
+      secret: ${PAYMENTS_SANDBOX_SECRET:}
 
 ---
 # In AWS the API never holds the owner password: migrations run as a separate one-off task (profile "migrate").

@@ -2,16 +2,18 @@ import { screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api";
 import type { AttendanceToday, Child, ChildAttendance, SectionsForDay } from "@/lib/types";
+import { ARJUN_FEES } from "@/test/fees-fixtures";
 import { ADMIN_PERMISSIONS, renderAs } from "@/test/render";
 import { DashboardView } from "./dashboard-view";
 import { MyChildren, MyClass } from "./my-children";
 
-const { myChildren, myStudentRecord, child, today, sections } = vi.hoisted(() => ({
+const { myChildren, myStudentRecord, child, today, sections, childFees } = vi.hoisted(() => ({
   myChildren: vi.fn(),
   myStudentRecord: vi.fn(),
   child: vi.fn(),
   today: vi.fn(),
   sections: vi.fn(),
+  childFees: vi.fn(),
 }));
 
 vi.mock("@/lib/api", async (importOriginal) => {
@@ -22,6 +24,11 @@ vi.mock("@/lib/api", async (importOriginal) => {
 vi.mock("@/lib/attendance-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/attendance-api")>();
   return { ...actual, attendanceApi: { ...actual.attendanceApi, child, today, sections } };
+});
+
+vi.mock("@/lib/fees-api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/fees-api")>();
+  return { ...actual, feesApi: { ...actual.feesApi, childFees } };
 });
 
 vi.mock("next/navigation", () => ({
@@ -159,6 +166,9 @@ beforeEach(() => {
   child.mockImplementation((studentId: string) => Promise.resolve(childAttendance(studentId)));
   today.mockResolvedValue(TODAY);
   sections.mockResolvedValue(TEACHER_SECTIONS);
+  childFees.mockImplementation((id: string) =>
+    Promise.resolve(id === "st1" ? ARJUN_FEES : { ...ARJUN_FEES, instalments: [], receipts: [] }),
+  );
 });
 
 describe("MyChildren", () => {
@@ -173,6 +183,15 @@ describe("MyChildren", () => {
     const diya = screen.getByRole("article", { name: "Diya Sharma" });
     expect(within(diya).getByText("Class 2 A")).toBeInTheDocument();
     expect(within(diya).getByText("—")).toBeInTheDocument();
+  });
+
+  it("shows each child's fees on their card", async () => {
+    renderAs(PARENT, <MyChildren />, ["PARENT"]);
+    const arjun = await screen.findByRole("article", { name: "Arjun Sharma" });
+    expect(await within(arjun).findByText("₹11,600 overdue")).toBeInTheDocument();
+    expect(within(arjun).getByRole("link", { name: "Pay fees" })).toHaveAttribute("href", "/app/children/st1/fees");
+    const diya = screen.getByRole("article", { name: "Diya Sharma" });
+    expect(await within(diya).findByText("No fees have been set yet.")).toBeInTheDocument();
   });
 
   it("explains when no child is linked yet", async () => {
@@ -251,5 +270,6 @@ describe("Dashboard", () => {
     );
     expect(screen.queryByRole("heading", { name: "My children" })).not.toBeInTheDocument();
     expect(myChildren).not.toHaveBeenCalled();
+    expect(childFees).not.toHaveBeenCalled();
   });
 });

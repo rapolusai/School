@@ -3,7 +3,7 @@ import { hasPermission, landingPath, navFor, navItemForPath, safeNextPath } from
 import type { Me } from "./types";
 
 const ALL_SCHOOL_PERMISSIONS =
-  "dashboard.view users.read users.manage roles.read audit.read settings.manage students.read students.manage attendance.mark attendance.read fees.read fees.collect exams.manage notices.send child.view academics.read attendance.manage messages.read".split(
+  "dashboard.view users.read users.manage roles.read audit.read settings.manage students.read students.manage attendance.mark attendance.read fees.read fees.collect exams.manage notices.send child.view academics.read attendance.manage messages.read fees.manage".split(
     " ",
   );
 
@@ -55,6 +55,7 @@ describe("navFor", () => {
       "attendance",
       "students",
       "setup",
+      "fees",
       "users",
       "roles",
       "audit",
@@ -62,17 +63,27 @@ describe("navFor", () => {
     ]);
   });
 
-  it("gives a principal attendance, read access to students, setup, users, roles and audit, and messages", () => {
+  it("gives a principal attendance, read access to students, setup, fees, users, roles and audit, and messages", () => {
     expect(keys(PRINCIPAL)).toEqual([
       "dashboard",
       "attendance",
       "students",
       "setup",
+      "fees",
       "users",
       "roles",
       "audit",
       "messages",
     ]);
+  });
+
+  it("gives an accountant students, setup and fees", () => {
+    const accountant = user(
+      ["ACCOUNTANT"],
+      ["dashboard.view", "students.read", "fees.read", "fees.collect", "fees.manage", "academics.read"],
+    );
+    expect(keys(accountant)).toEqual(["dashboard", "students", "setup", "fees"]);
+    expect(navFor(accountant).find((item) => item.key === "fees")?.group).toBe("finance");
   });
 
   it("gives a teacher the dashboard, attendance, students and school setup", () => {
@@ -94,7 +105,7 @@ describe("navFor", () => {
 
   it("gives an accountant no attendance and no message log", () => {
     const accountant = user(["ACCOUNTANT"], ["dashboard.view", "students.read", "fees.read", "fees.collect", "academics.read"]);
-    expect(keys(accountant)).toEqual(["dashboard", "students", "setup"]);
+    expect(keys(accountant)).toEqual(["dashboard", "students", "setup", "fees"]);
   });
 
   it("gives a parent only the dashboard", () => {
@@ -153,6 +164,8 @@ describe("navItemForPath", () => {
     expect(navItemForPath("/app/setup")?.key).toBe("setup");
     expect(navItemForPath("/app/attendance/reports")?.key).toBe("attendance");
     expect(navItemForPath("/app/messages")?.key).toBe("messages");
+    expect(navItemForPath("/app/fees")?.key).toBe("fees");
+    expect(navItemForPath("/app/fees/receipts/abc")?.key).toBe("fees");
     expect(navItemForPath("/app/platform/schools")?.key).toBe("schools");
     expect(navItemForPath("/app/unknown")).toBeUndefined();
   });

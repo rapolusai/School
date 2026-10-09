@@ -20,6 +20,7 @@ public final class Permissions {
     public static final String ATTENDANCE_MANAGE = "attendance.manage";
     public static final String FEES_READ = "fees.read";
     public static final String FEES_COLLECT = "fees.collect";
+    public static final String FEES_MANAGE = "fees.manage";
     public static final String EXAMS_MANAGE = "exams.manage";
     public static final String NOTICES_SEND = "notices.send";
     public static final String CHILD_VIEW = "child.view";
@@ -34,7 +35,7 @@ public final class Permissions {
             DASHBOARD_VIEW, USERS_READ, USERS_MANAGE, ROLES_READ, AUDIT_READ, SETTINGS_MANAGE,
             STUDENTS_READ, STUDENTS_MANAGE, ATTENDANCE_MARK, ATTENDANCE_READ, FEES_READ, FEES_COLLECT,
             EXAMS_MANAGE, NOTICES_SEND, CHILD_VIEW, ACADEMICS_READ, ADMISSIONS_READ, ADMISSIONS_MANAGE,
-            ATTENDANCE_MANAGE, MESSAGES_READ);
+            ATTENDANCE_MANAGE, MESSAGES_READ, FEES_MANAGE);
 
     private Permissions() {
     }

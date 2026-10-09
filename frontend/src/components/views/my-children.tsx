@@ -3,6 +3,7 @@
 import { GraduationCap } from "lucide-react";
 import { Pill } from "@/components/ui/pill";
 import { ErrorState, LoadingRows } from "@/components/ui/states";
+import { ChildFeesSummary } from "@/components/views/fees/child-fees";
 import { studentStatusTone } from "@/components/views/students/student-status";
 import { api } from "@/lib/api";
 import { classLabel, initials } from "@/lib/format";
@@ -11,7 +12,15 @@ import type { Child } from "@/lib/types";
 import { useApiData } from "@/lib/use-api-data";
 import { ChildAttendanceSummary } from "./attendance/attendance-cards";
 
-function ChildCard({ child, showAttendance = false }: { child: Child; showAttendance?: boolean }) {
+function ChildCard({
+  child,
+  showAttendance = false,
+  fees = false,
+}: {
+  child: Child;
+  showAttendance?: boolean;
+  fees?: boolean;
+}) {
   const { t } = useI18n();
   const place = classLabel(child.className, child.sectionName);
   return (
@@ -51,6 +60,7 @@ function ChildCard({ child, showAttendance = false }: { child: Child; showAttend
         ) : null}
       </dl>
       {showAttendance ? <ChildAttendanceSummary studentId={child.id} /> : null}
+      {fees ? <ChildFeesSummary childId={child.id} /> : null}
     </article>
   );
 }
@@ -81,7 +91,7 @@ export function MyChildren() {
       ) : (
         <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2 xl:grid-cols-3">
           {list.map((child) => (
-            <ChildCard key={child.id} child={child} showAttendance />
+            <ChildCard key={child.id} child={child} showAttendance fees />
           ))}
         </div>
       )}
