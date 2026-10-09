@@ -75,6 +75,25 @@ public class TenantDirectory {
         return SchoolProfile.of(tenants.saveAndFlush(tenant));
     }
 
+    /**
+     * Changes a school's status (billing: converting a trial, past due, suspension). Nothing changes automatically:
+     * only the Super Admin's actions call this, and the caller audits the change.
+     */
+    @Transactional
+    public TenantView changeStatus(UUID id, TenantStatus status) {
+        Tenant tenant = tenants.findById(id).orElseThrow(() -> ApiException.notFound("School"));
+        tenant.changeStatus(status);
+        return TenantView.of(tenants.saveAndFlush(tenant));
+    }
+
+    /** Changes a school's plan (billing). The caller audits the change. */
+    @Transactional
+    public TenantView changePlan(UUID id, Plan plan) {
+        Tenant tenant = tenants.findById(id).orElseThrow(() -> ApiException.notFound("School"));
+        tenant.changePlan(plan);
+        return TenantView.of(tenants.saveAndFlush(tenant));
+    }
+
     /** Removes a school that has no data yet. Used to undo a sign-up that failed half way. */
     @Transactional
     public void removeEmpty(UUID id) {

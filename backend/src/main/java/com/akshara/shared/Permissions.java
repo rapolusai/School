@@ -28,6 +28,8 @@ public final class Permissions {
     public static final String ADMISSIONS_MANAGE = "admissions.manage";
     /** The log of SMS, WhatsApp and email messages the school has sent. */
     public static final String MESSAGES_READ = "messages.read";
+    /** The school's own Billing page: plan, trial, renewal date and Akshara's invoices to the school. */
+    public static final String BILLING_READ = "billing.read";
 
     public static final String PLATFORM_ADMIN = "platform.admin";
 
@@ -35,7 +37,7 @@ public final class Permissions {
             DASHBOARD_VIEW, USERS_READ, USERS_MANAGE, ROLES_READ, AUDIT_READ, SETTINGS_MANAGE,
             STUDENTS_READ, STUDENTS_MANAGE, ATTENDANCE_MARK, ATTENDANCE_READ, FEES_READ, FEES_COLLECT,
             EXAMS_MANAGE, NOTICES_SEND, CHILD_VIEW, ACADEMICS_READ, ADMISSIONS_READ, ADMISSIONS_MANAGE,
-            ATTENDANCE_MANAGE, MESSAGES_READ, FEES_MANAGE);
+            ATTENDANCE_MANAGE, MESSAGES_READ, FEES_MANAGE, BILLING_READ);
 
     private Permissions() {
     }

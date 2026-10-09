@@ -20,6 +20,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import com.akshara.support.BillingFixtures;
 import com.akshara.support.FeeFixtures;
 import com.akshara.support.FeeFixtures.Heads;
 import com.akshara.support.IntegrationTest;
@@ -36,7 +37,7 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
 
     /** Tables that are not owned by one school. Everything else must be isolated. */
     static final Set<String> NOT_SCHOOL_OWNED = Set.of("platform.tenant", "platform.platform_admin",
-            "public.flyway_schema_history");
+            "public.flyway_schema_history", "billing.subscription", "billing.invoice_counter");
 
     /** Tables whose isolation comes from a parent row instead of their own tenant_id. */
     static final Set<String> ISOLATED_THROUGH_PARENT = Set.of("identity.user_role");
@@ -49,7 +50,8 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
             "fees.fee_head", "fees.fee_structure", "fees.fee_instalment", "fees.fee_instalment_share",
             "fees.late_fee_rule", "fees.concession", "fees.concession_head", "fees.student_due",
             "fees.receipt_counter", "fees.receipt", "fees.payment_allocation", "fees.late_fee_waiver",
-            "fees.payment_order", "fees.gateway_event", "fees.fee_reminder");
+            "fees.payment_order", "fees.gateway_event", "fees.fee_reminder", "billing.invoice",
+            "billing.invoice_payment");
 
     /** The last day of the fixtures' current year, 2026-27. */
     static final LocalDate LAST_DAY = LocalDate.of(2027, 3, 31);
@@ -126,6 +128,10 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
                  "quietHoursEnabled":true,"quietHoursStart":"21:00","quietHoursEnd":"07:00"}""")
                 .andExpect(status().isOk());
         feeRecords(admin, yearId, classId, student);
+        // The school's subscription invoice from Akshara and a payment against it.
+        BillingFixtures billing = new BillingFixtures(api);
+        Session root = billing.root();
+        billing.pay(root, school.tenantId(), billing.paying(root, school.tenantId(), "36"));
         School other = api.signup();
 
         try (Connection app = appConnection(); Connection owner = ownerConnection()) {
