@@ -2008,7 +2008,8 @@
     color: var(--ink-2);
     font-size: 13.5px;
     line-height: 1.45;
-    white-space: pre-line;
+    /* Line breaks read as spaces in the two-line preview, so "Dear parents," does not fill it; the reader keeps them. */
+    white-space: normal;
     overflow-wrap: anywhere;
     display: -webkit-box;
     -webkit-line-clamp: 2;

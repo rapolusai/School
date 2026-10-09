@@ -237,3 +237,16 @@ Schema `communication`: `circular`, `circular_target` (the chosen classes, secti
 `tenant_isolation` policy and composite `(tenant_id, id)` foreign keys; no phone number is stored here. Two
 `security definer` functions tell the scheduler which schools have work due without a school selected. Indicative
 prices: `akshara.communication.cost.sms-part-paise` (20), `whatsapp-paise` (12), `email-paise` (0).
+
+## Demo data
+
+The demo school (`DemoCommunicationData`, run after the other demo data) has eight circulars: five sent (the
+half-yearly timetable to the whole school, a fees reminder to parents by email, Ravi Kumar's Class 5 A project
+circular approved by the principal, a staff meeting notice to staff roles, and an urgent rain closure by SMS, pinned
+on boards), the Annual Sports Day circular scheduled three days ahead, a Diwali draft, and Ravi Kumar's Class 5 A
+museum visit waiting for approval. The demo parent, student and teacher have read some of them. The 2026-27 calendar
+has the national holidays, Dussehra, a Diwali break and Christmas, a parent-teacher meeting (24 Oct, with an SMS
+reminder two days before), a staff-only meeting, the Annual Sports Day, a science exhibition for Classes 6 to 10 and
+the half-yearly examination week (7 to 12 Dec). The calendar is seeded after the demo attendance, so when the 20
+marked demo days include one of these holidays (Gandhi Jayanti, for a demo created in October 2026), those marks stay
+visible but are left out of the counts, as described above.
