@@ -31,3 +31,4 @@ E2E_BASE_URL=http://localhost:3000 npm test
 | `isolation.spec.ts` | school A lists only its users; A's token gets 404 for a user of school B |
 | `responsive.spec.ts` | no horizontal scroll; bottom bar on mobile, icon rail on tablet, sidebar on desktop |
 | `students.spec.ts` | admin sets up a year, class and section; admits a student; searches; opens the record; gives the mother a sign-in; the parent sees the child and gets 403 from `/api/students`; another school gets 404 |
+| `fees.spec.ts` | fee structure published through the API; an accountant collects Quarter 1 in cash, sees receipt `RCPT/<year>/000001` with the amount in words, prints it (only the receipt prints) and finds it in the register; a parent sees the overdue quarter on the dashboard, pays it through the sandbox checkout and lands on the receipt; another student's fees are 404 and staff fee routes 403 |

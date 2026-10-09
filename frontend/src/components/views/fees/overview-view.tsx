@@ -190,9 +190,9 @@ function RecentReceipts({ receipts }: { receipts: ReceiptSummary[] }) {
             <Link href={`/app/fees/receipts/${r.id}`} className="font-semibold hover:text-accent">
               {r.studentName}
             </Link>
+            <p className="mono truncate text-[12.5px] text-ink-3">{r.receiptNo}</p>
             <p className="truncate text-[12.5px] text-ink-3">
-              <span className="mono">{r.receiptNo}</span> · {formatPlainDate(r.receivedOn, locale)} ·{" "}
-              {modeLabel(r.mode)}
+              {formatPlainDate(r.receivedOn, locale)} · {modeLabel(r.mode)}
             </p>
           </div>
           <div className="flex flex-col items-end gap-1">

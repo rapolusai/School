@@ -232,9 +232,9 @@ export function ReceiptsView() {
                   <Link href={`/app/fees/receipts/${r.id}`} className="rowcard">
                     <span className="min-w-0 flex-1">
                       <b className="block truncate font-semibold">{r.studentName}</b>
+                      <span className="mono block truncate text-[12.5px] text-ink-3">{r.receiptNo}</span>
                       <span className="block truncate text-[12.5px] text-ink-3">
-                        <span className="mono">{r.receiptNo}</span> · {formatPlainDate(r.receivedOn, locale)} ·{" "}
-                        {modeLabel(r.mode)}
+                        {formatPlainDate(r.receivedOn, locale)} · {modeLabel(r.mode)}
                       </span>
                     </span>
                     <span className="flex flex-col items-end gap-1">

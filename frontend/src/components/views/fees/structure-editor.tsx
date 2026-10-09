@@ -568,7 +568,7 @@ function StructureForm({
                   const labelError = errors[`instalments[${i}].label`];
                   return (
                     <tr key={i}>
-                      <td className="min-w-[140px]">
+                      <td className="min-w-[140px]" data-label={t("fees.structure.col.label")}>
                         <input
                           className="input"
                           name={`instalments[${i}].label`}
@@ -581,7 +581,7 @@ function StructureForm({
                         />
                         {labelError ? <span className="field-error">{labelError}</span> : null}
                       </td>
-                      <td className="min-w-[150px]">
+                      <td className="min-w-[150px]" data-label={t("fees.structure.col.dueDate")}>
                         <input
                           className="input"
                           type="date"
@@ -595,7 +595,7 @@ function StructureForm({
                       </td>
                       {values.custom
                         ? charged.map(({ head }) => (
-                            <td key={head.id} className="r min-w-[110px]">
+                            <td key={head.id} className="r min-w-[110px]" data-label={head.name}>
                               <input
                                 className="input num text-right"
                                 name={`share.${i}.${head.id}`}
@@ -608,7 +608,9 @@ function StructureForm({
                             </td>
                           ))
                         : null}
-                      <td className="r num font-semibold whitespace-nowrap">{formatPaise(rowTotal)}</td>
+                      <td className="r num font-semibold whitespace-nowrap" data-label={t("fees.structure.col.amount")}>
+                        {formatPaise(rowTotal)}
+                      </td>
                     </tr>
                   );
                 })}
@@ -622,7 +624,7 @@ function StructureForm({
                     {charged.map(({ head, paise }) => {
                       const sum = plan.reduce((acc, row) => acc + (row[head.id] ?? 0), 0);
                       return (
-                        <td key={head.id} className={`r num${sum !== paise ? " text-bad" : ""}`}>
+                        <td key={head.id} className={`r num${sum !== paise ? " text-bad" : ""}`} data-label={head.name}>
                           {formatPaise(sum)}
                           <span className="block text-[12px] text-ink-3">
                             {t("fees.structure.of", { amount: formatPaise(paise) })}
@@ -630,7 +632,9 @@ function StructureForm({
                         </td>
                       );
                     })}
-                    <td className="r num font-semibold">{formatPaise(total)}</td>
+                    <td className="r num font-semibold" data-label={t("fees.structure.col.amount")}>
+                      {formatPaise(total)}
+                    </td>
                   </tr>
                 </tfoot>
               ) : null}

@@ -1629,6 +1629,51 @@
     min-height: 38px;
     padding: 7px 10px;
   }
+  /* Phones: each instalment becomes a card of labelled fields instead of a wide row. */
+  @media (max-width: 639px) {
+    .structure-grid,
+    .structure-grid tbody,
+    .structure-grid tfoot {
+      display: block;
+      width: 100%;
+    }
+    .structure-grid thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+    .structure-grid tr {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .structure-grid tfoot tr {
+      border-bottom: 0;
+    }
+    .structure-grid td,
+    .structure-grid tfoot th {
+      display: block;
+      min-width: 0 !important;
+      padding: 0;
+      border: 0;
+      text-align: left;
+    }
+    .structure-grid tfoot th {
+      grid-column: 1 / -1;
+    }
+    .structure-grid td[data-label]::before {
+      content: attr(data-label);
+      display: block;
+      margin-bottom: 4px;
+      font-size: 12px;
+      color: var(--ink-3);
+    }
+  }
   .receipt {
     display: flex;
     flex-direction: column;
@@ -1677,6 +1722,12 @@
     margin: 0;
     font-weight: 600;
     overflow-wrap: anywhere;
+  }
+  /* A total row: a line above it, none below. */
+  .table tfoot th,
+  .table tfoot td {
+    border-top: 1px solid var(--line);
+    border-bottom: 0;
   }
   .receipt-lines tfoot th,
   .receipt-lines tfoot td {

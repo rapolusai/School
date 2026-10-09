@@ -47,7 +47,7 @@ export function StudentSearch({
 
   return (
     <div className="flex flex-col gap-2">
-      <label className="search max-w-none">
+      <label className="search max-w-none flex-none">
         <Search size={18} aria-hidden="true" />
         <span className="sr-only">{placeholder}</span>
         <input
