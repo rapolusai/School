@@ -249,7 +249,7 @@ test("an admin declares a holiday and the attendance screen shows the school clo
   await expect(day.getByRole("button", { name: holiday })).toBeVisible();
 
   // 2. The attendance screen shows the day as a holiday, with nothing to mark.
-  await mainNav(page).getByRole("link", { name: "Attendance" }).click();
+  await mainNav(page).getByRole("link", { name: "Attendance", exact: true }).click();
   await expect(page).toHaveURL(/\/app\/attendance/);
   await expect(page.getByTestId("attendance-holiday")).toHaveText(
     `School holiday: ${holiday}. Attendance is not marked on holidays.`,

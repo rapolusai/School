@@ -107,7 +107,7 @@ test("a teacher checks in and out, applies for leave, the principal approves it 
   await expect(card.getByRole("button", { name: /^Check (in|out)$/ })).toHaveCount(0);
 
   // The teacher applies for two days of casual leave and sees the working days and balance after.
-  await mainNav(page).getByRole("link", { name: "Leave" }).click();
+  await mainNav(page).getByRole("link", { name: "Leave", exact: true }).click();
   await expect(page).toHaveURL(/\/app\/leave$/);
   await expect(page.getByTestId("balance-CL").getByTestId("balance-available")).toHaveText("12");
   await page.getByTestId("apply-leave").click();
