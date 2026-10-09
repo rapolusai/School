@@ -143,3 +143,37 @@ export function formatPhone(phone: string | null | undefined): string {
 export function classLabel(className: string | null | undefined, sectionName: string | null | undefined): string {
   return [className, sectionName].filter(Boolean).join(" ");
 }
+
+/* ---------------------------------------------------------------------------------------------- */
+/* Fees: the API sends and takes paise (₹1 = 100 paise); people read and type rupees.              */
+/* ---------------------------------------------------------------------------------------------- */
+
+const inrPaise = new Intl.NumberFormat("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/** 18430000 → "₹1,84,300"; 18430050 → "₹1,84,300.50"; -45000 → "-₹450". */
+export function formatPaise(paise: number): string {
+  const whole = Math.round(paise);
+  const sign = whole < 0 ? "-" : "";
+  const abs = Math.abs(whole);
+  if (abs % 100 === 0) return `${sign}₹${inrNumber.format(abs / 100)}`;
+  return `${sign}₹${inrPaise.format(abs / 100)}`;
+}
+
+/**
+ * Rupees as typed ("1,84,300", "₹ 4500.5", "450.50") → paise, or null when it is not a
+ * non-negative amount with at most two decimals.
+ */
+export function parseRupees(text: string): number | null {
+  const cleaned = text.replace(/[₹,\s]/g, "");
+  const match = /^(\d{1,9})(?:\.(\d{0,2}))?$/.exec(cleaned);
+  if (!match) return null;
+  return Number(match[1]) * 100 + Number((match[2] ?? "").padEnd(2, "0"));
+}
+
+/** Paise → the plain rupee text an amount input starts with: 1150000 → "11500", 45050 → "450.50". */
+export function rupeesInput(paise: number): string {
+  const abs = Math.abs(Math.round(paise));
+  const rupees = Math.floor(abs / 100);
+  const rest = abs % 100;
+  return `${paise < 0 ? "-" : ""}${rupees}${rest ? `.${String(rest).padStart(2, "0")}` : ""}`;
+}

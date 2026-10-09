@@ -6,6 +6,7 @@ import {
   ScrollText,
   ShieldCheck,
   Users,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 import type { MessageKey } from "./i18n/en";
@@ -24,9 +25,12 @@ export const PERMISSIONS = {
   studentsManage: "students.manage",
   childView: "child.view",
   platformAdmin: "platform.admin",
+  feesRead: "fees.read",
+  feesCollect: "fees.collect",
+  feesManage: "fees.manage",
 } as const;
 
-export type NavGroup = "overview" | "academics" | "administration" | "platform";
+export type NavGroup = "overview" | "academics" | "finance" | "administration" | "platform";
 
 export type NavItem = {
   key: string;
@@ -67,6 +71,15 @@ export const NAV_ITEMS: readonly NavItem[] = [
     icon: School,
     permission: PERMISSIONS.academicsRead,
     group: "academics",
+  },
+  {
+    key: "fees",
+    href: "/app/fees",
+    labelKey: "nav.fees",
+    shortLabelKey: "nav.fees.short",
+    icon: Wallet,
+    permission: PERMISSIONS.feesRead,
+    group: "finance",
   },
   {
     key: "users",

@@ -3,7 +3,7 @@ import { hasPermission, landingPath, navFor, navItemForPath, safeNextPath } from
 import type { Me } from "./types";
 
 const ALL_SCHOOL_PERMISSIONS =
-  "dashboard.view users.read users.manage roles.read audit.read settings.manage students.read students.manage attendance.mark attendance.read fees.read fees.collect exams.manage notices.send child.view academics.read".split(
+  "dashboard.view users.read users.manage roles.read audit.read settings.manage students.read students.manage attendance.mark attendance.read fees.read fees.collect exams.manage notices.send child.view academics.read fees.manage".split(
     " ",
   );
 
@@ -49,11 +49,20 @@ const keys = (me: Me | null) => navFor(me).map((item) => item.key);
 
 describe("navFor", () => {
   it("gives a school admin every school item and no platform items", () => {
-    expect(keys(SCHOOL_ADMIN)).toEqual(["dashboard", "students", "setup", "users", "roles", "audit"]);
+    expect(keys(SCHOOL_ADMIN)).toEqual(["dashboard", "students", "setup", "fees", "users", "roles", "audit"]);
   });
 
-  it("gives a principal read access to students, setup, users, roles and audit", () => {
-    expect(keys(PRINCIPAL)).toEqual(["dashboard", "students", "setup", "users", "roles", "audit"]);
+  it("gives a principal read access to students, setup, fees, users, roles and audit", () => {
+    expect(keys(PRINCIPAL)).toEqual(["dashboard", "students", "setup", "fees", "users", "roles", "audit"]);
+  });
+
+  it("gives an accountant students, setup and fees", () => {
+    const accountant = user(
+      ["ACCOUNTANT"],
+      ["dashboard.view", "students.read", "fees.read", "fees.collect", "fees.manage", "academics.read"],
+    );
+    expect(keys(accountant)).toEqual(["dashboard", "students", "setup", "fees"]);
+    expect(navFor(accountant).find((item) => item.key === "fees")?.group).toBe("finance");
   });
 
   it("gives a teacher the dashboard, students and school setup", () => {
@@ -126,6 +135,8 @@ describe("navItemForPath", () => {
     expect(navItemForPath("/app/students/abc")?.key).toBe("students");
     expect(navItemForPath("/app/students/import")?.key).toBe("students");
     expect(navItemForPath("/app/setup")?.key).toBe("setup");
+    expect(navItemForPath("/app/fees")?.key).toBe("fees");
+    expect(navItemForPath("/app/fees/receipts/abc")?.key).toBe("fees");
     expect(navItemForPath("/app/platform/schools")?.key).toBe("schools");
     expect(navItemForPath("/app/unknown")).toBeUndefined();
   });

@@ -106,3 +106,4 @@ export type ProblemDetails = {
 };
 
 export * from "./types/school";
+export * from "./types/fees";

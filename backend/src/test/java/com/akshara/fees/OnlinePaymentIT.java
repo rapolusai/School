@@ -99,6 +99,7 @@ class OnlinePaymentIT extends IntegrationTest {
         api.get("/api/payments/sandbox/orders/" + gatewayOrderId, parent.accessToken())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.studentName").value("Arjun Sharma"))
+                .andExpect(jsonPath("$.studentId").value(arjun))
                 .andExpect(jsonPath("$.amountPaise").value(11_500_00))
                 .andExpect(jsonPath("$.schoolName").value("Test School " + school.code()));
         api.createUser(admin, "Other Parent", email("other"), List.of("PARENT"));

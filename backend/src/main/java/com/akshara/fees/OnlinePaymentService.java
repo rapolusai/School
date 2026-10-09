@@ -283,8 +283,9 @@ public class OnlinePaymentService {
         TenantContext.require();
         PaymentOrder order = sandboxOrder(gatewayOrderId, userId, staff);
         TenantView school = tenants.findById(TenantContext.require()).orElseThrow();
-        return new SandboxCheckout(order.getGatewayOrderId(), order.getId(), order.getAmountPaise(),
-                order.getCurrency(), school.name(), roster.student(order.getStudentId()).fullName(),
+        return new SandboxCheckout(order.getGatewayOrderId(), order.getId(), order.getStudentId(),
+                order.getAmountPaise(), order.getCurrency(), school.name(),
+                roster.student(order.getStudentId()).fullName(),
                 labels(order), order.getStatus());
     }
 

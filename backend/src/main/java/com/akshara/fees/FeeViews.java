@@ -123,8 +123,8 @@ public final class FeeViews {
     }
 
     /** What the sandbox checkout page shows. */
-    public record SandboxCheckout(String gatewayOrderId, UUID orderId, long amountPaise, String currency,
-            String schoolName, String studentName, List<String> instalments, String status) {
+    public record SandboxCheckout(String gatewayOrderId, UUID orderId, UUID studentId, long amountPaise,
+            String currency, String schoolName, String studentName, List<String> instalments, String status) {
     }
 
     /** What a gateway's checkout hands back to the browser: verify it with the order. */

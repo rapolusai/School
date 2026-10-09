@@ -3,6 +3,7 @@
 import { GraduationCap } from "lucide-react";
 import { Pill } from "@/components/ui/pill";
 import { ErrorState, LoadingRows } from "@/components/ui/states";
+import { ChildFeesSummary } from "@/components/views/fees/child-fees";
 import { studentStatusTone } from "@/components/views/students/student-status";
 import { api } from "@/lib/api";
 import { classLabel, initials } from "@/lib/format";
@@ -10,7 +11,7 @@ import { translateOr, useI18n } from "@/lib/i18n";
 import type { Child } from "@/lib/types";
 import { useApiData } from "@/lib/use-api-data";
 
-function ChildCard({ child }: { child: Child }) {
+function ChildCard({ child, fees = false }: { child: Child; fees?: boolean }) {
   const { t } = useI18n();
   const place = classLabel(child.className, child.sectionName);
   return (
@@ -49,6 +50,7 @@ function ChildCard({ child }: { child: Child }) {
           </>
         ) : null}
       </dl>
+      {fees ? <ChildFeesSummary childId={child.id} /> : null}
     </article>
   );
 }
@@ -79,7 +81,7 @@ export function MyChildren() {
       ) : (
         <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2 xl:grid-cols-3">
           {list.map((child) => (
-            <ChildCard key={child.id} child={child} />
+            <ChildCard key={child.id} child={child} fees />
           ))}
         </div>
       )}
