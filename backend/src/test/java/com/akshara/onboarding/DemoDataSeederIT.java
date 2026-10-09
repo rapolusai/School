@@ -4,11 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneId;
@@ -66,10 +68,13 @@ class DemoDataSeederIT extends IntegrationTest {
     @Autowired
     DemoFeesData demoFees;
 
+    @Autowired
+    DemoStaffData staffData;
+
     @Test
     void seedsADemoSchoolWithClassesAndStudentsOnce() throws Exception {
         DemoDataSeeder seeder = new DemoDataSeeder(provisioning, tenants, users, passwordEncoder, DEMO_PASSWORD,
-                academics, students, transactionManager, admissions, attendanceData, demoFees);
+                academics, students, transactionManager, admissions, attendanceData, demoFees, staffData);
         seeder.run(null);
         // A second start leaves the existing demo school alone.
         seeder.run(null);
@@ -211,5 +216,38 @@ class DemoDataSeederIT extends IntegrationTest {
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         assertThat(JsonPath.<Integer>read(overview, "$.overdueStudents")).isBetween(5, 15);
+
+        // Staff records: every demo staff member has a profile, plus the extra teachers.
+        int staffCount = DemoDataSeeder.PEOPLE.size() - 2 + 1 + DemoStaffData.EXTRA_TEACHERS;
+        api.get("/api/staff?size=100", admin.accessToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(staffCount))
+                .andExpect(jsonPath("$.incompleteProfiles").value(0));
+        api.get("/api/staff/departments", admin.accessToken())
+                .andExpect(jsonPath("$.length()").value(DemoStaffData.DEPARTMENTS.size()))
+                .andExpect(jsonPath("$[?(@.name == 'Science')].head.name", contains("Anjali Deshmukh")));
+        api.get("/api/leave/types", admin.accessToken()).andExpect(jsonPath("$.length()").value(6));
+        if (!today.isAfter(LocalDate.of(2027, 3, 20)) && !today.isBefore(LocalDate.of(2026, 7, 1))) {
+            // Ravi Kumar's request waits for the principal; Rahul Verma's for his department head.
+            Session principal = api.login(code, "principal" + DemoDataSeeder.DEMO_DOMAIN, DEMO_PASSWORD);
+            api.get("/api/leave/inbox", principal.accessToken())
+                    .andExpect(jsonPath("$[*].userName", hasItem("Ravi Kumar")));
+            Session anjali = api.login(code, "anjali.deshmukh" + DemoDataSeeder.DEMO_DOMAIN, DEMO_PASSWORD);
+            api.get("/api/leave/inbox", anjali.accessToken())
+                    .andExpect(jsonPath("$[*].userName", contains("Rahul Verma")));
+            Session ravi = api.login(code, "teacher" + DemoDataSeeder.DEMO_DOMAIN, DEMO_PASSWORD);
+            api.get("/api/leave/me", ravi.accessToken())
+                    .andExpect(jsonPath("$.requests[?(@.status == 'PENDING')].leaveTypeCode", contains("CL")))
+                    .andExpect(jsonPath("$.approver.routing").value("SCHOOL"));
+            if (today.getDayOfWeek() != DayOfWeek.SUNDAY) {
+                api.get("/api/staff-attendance/me/today", ravi.accessToken())
+                        .andExpect(jsonPath("$.canCheckIn").value(true));
+                api.get("/api/staff-attendance/today", principal.accessToken())
+                        .andExpect(jsonPath("$.activeStaff").value(staffCount))
+                        .andExpect(jsonPath("$.checkedIn").value(greaterThan(5)));
+            }
+            api.get("/api/staff-attendance/month", principal.accessToken())
+                    .andExpect(jsonPath("$.staff.length()").value(staffCount));
+        }
     }
 }

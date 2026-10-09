@@ -31,6 +31,7 @@ import { useApiData } from "@/lib/use-api-data";
 import { AdmissionsCard } from "./admissions/admissions-card";
 import { AttendanceTodayCard, MarkAttendanceCards } from "./attendance/attendance-cards";
 import { MyChildren, MyClass } from "./my-children";
+import { StaffDashboardCards } from "./staff/staff-cards";
 
 function greetingKey(hour: number): MessageKey {
   if (hour < 12) return "dashboard.greeting.morning";
@@ -143,6 +144,7 @@ export function DashboardView() {
       {isStudent ? <MyClass /> : null}
       {canMarkOwn ? <MarkAttendanceCards /> : null}
       {canAttendanceToday ? <AttendanceTodayCard /> : null}
+      <StaffDashboardCards />
 
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
         {canUsers ? (

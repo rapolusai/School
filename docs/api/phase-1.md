@@ -232,3 +232,4 @@ table is missing either.
 Admissions (enquiries, applications, tests and interviews, offers, admitting, the public enquiry form): see [phase-1-admissions.md](phase-1-admissions.md).
 Attendance and the notifications outbox: [phase-1-attendance.md](phase-1-attendance.md).
 Fees (heads, structures, concessions, dues, payments, receipts, online payments, reports): see [phase-1-fees.md](phase-1-fees.md).
+Staff records, staff attendance and leave: [phase-1-staff.md](phase-1-staff.md).

@@ -1,13 +1,16 @@
 import {
   Building2,
+  CalendarOff,
   ClipboardList,
   ClipboardCheck,
   GraduationCap,
+  IdCard,
   LayoutDashboard,
   MessageSquareText,
   School,
   ScrollText,
   ShieldCheck,
+  UserCheck,
   Users,
   Wallet,
   type LucideIcon,
@@ -15,7 +18,7 @@ import {
 import type { MessageKey } from "./i18n/en";
 import type { Me } from "./types";
 
-/** Permission codes from docs/api/phase-0.md, phase-1.md and phase-1-attendance.md. */
+/** Permission codes from docs/api/phase-0.md, phase-1.md, phase-1-attendance.md and phase-1-staff.md. */
 export const PERMISSIONS = {
   dashboardView: "dashboard.view",
   usersRead: "users.read",
@@ -37,9 +40,14 @@ export const PERMISSIONS = {
   feesRead: "fees.read",
   feesCollect: "fees.collect",
   feesManage: "fees.manage",
+  staffRead: "staff.read",
+  staffManage: "staff.manage",
+  leaveRequest: "leave.request",
+  leaveApprove: "leave.approve",
+  staffAttendanceManage: "staff_attendance.manage",
 } as const;
 
-export type NavGroup = "overview" | "academics" | "finance" | "administration" | "platform";
+export type NavGroup = "overview" | "academics" | "finance" | "staff" | "administration" | "platform";
 
 export type NavItem = {
   key: string;
@@ -107,6 +115,33 @@ export const NAV_ITEMS: readonly NavItem[] = [
     icon: Wallet,
     permission: PERMISSIONS.feesRead,
     group: "finance",
+  },
+  {
+    key: "staff",
+    href: "/app/staff",
+    labelKey: "nav.staff",
+    shortLabelKey: "nav.staff.short",
+    icon: IdCard,
+    permission: PERMISSIONS.staffRead,
+    group: "staff",
+  },
+  {
+    key: "staff-attendance",
+    href: "/app/staff-attendance",
+    labelKey: "nav.staffAttendance",
+    shortLabelKey: "nav.staffAttendance.short",
+    icon: UserCheck,
+    permission: PERMISSIONS.staffRead,
+    group: "staff",
+  },
+  {
+    key: "leave",
+    href: "/app/leave",
+    labelKey: "nav.leave",
+    shortLabelKey: "nav.leave.short",
+    icon: CalendarOff,
+    permission: PERMISSIONS.leaveRequest,
+    group: "staff",
   },
   {
     key: "users",
