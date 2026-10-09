@@ -1464,3 +1464,216 @@
     filter: brightness(1.07);
   }
 }
+
+/* ------------------------------------------------- phase 1: attendance and messages */
+@layer components {
+  .att-list {
+    display: flex;
+    flex-direction: column;
+  }
+  .att-row {
+    display: flex;
+    align-items: center;
+    gap: 8px 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+    flex-wrap: wrap;
+  }
+  .att-row:last-child {
+    border-bottom: 0;
+  }
+  .att-row .person {
+    flex: 1 1 180px;
+  }
+  .att-opts {
+    display: flex;
+    gap: 6px;
+  }
+  /* Large tap targets: five 44px buttons fit a 390px phone with the card's padding. */
+  .att-opts button {
+    min-width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+  .att-opts button:hover:not(:disabled) {
+    border-color: var(--ink-3);
+  }
+  .att-opts button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .att-opts button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+  .att-opts button[aria-pressed="true"][data-v="P"],
+  .mark-P {
+    background: var(--good-soft);
+    border-color: var(--good);
+    color: var(--good);
+  }
+  .att-opts button[aria-pressed="true"][data-v="A"],
+  .mark-A {
+    background: var(--bad-soft);
+    border-color: var(--bad);
+    color: var(--bad);
+  }
+  .att-opts button[aria-pressed="true"][data-v="L"],
+  .mark-L {
+    background: var(--warn-soft);
+    border-color: var(--warn);
+    color: var(--warn);
+  }
+  .att-opts button[aria-pressed="true"][data-v="H"],
+  .mark-H {
+    background: var(--info-soft);
+    border-color: var(--info);
+    color: var(--info);
+  }
+  .att-opts button[aria-pressed="true"][data-v="E"],
+  .mark-E {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  @media (max-width: 420px) {
+    .att-opts {
+      width: 100%;
+    }
+    .att-opts button {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+  }
+  .att-counts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    margin: 0;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: var(--surface-2);
+    font-size: 13.5px;
+  }
+  .att-counts > div {
+    display: flex;
+    gap: 5px;
+  }
+  .att-counts dt {
+    color: var(--ink-2);
+  }
+  .att-counts dd {
+    margin: 0;
+    font-weight: 700;
+  }
+  .att-counts .att-count-todo dd,
+  .att-counts .att-count-todo dt {
+    color: var(--warn);
+  }
+  .att-savebar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px 14px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+  }
+  .att-savebar > .alert {
+    flex: 1 1 100%;
+  }
+  .mark {
+    display: inline-grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    font-weight: 700;
+    font-size: 12px;
+    line-height: 1;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin: 12px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 12.5px;
+    color: var(--ink-2);
+  }
+  .legend li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .legend .mark {
+    width: 20px;
+    height: 20px;
+    font-size: 11px;
+  }
+  /* The month register scrolls sideways inside its card; the student column stays put. */
+  .month-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+  }
+  .month-table th,
+  .month-table td {
+    padding: 4px 3px;
+    text-align: center;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  .month-table thead th {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--ink-3);
+    min-width: 30px;
+  }
+  .month-table .r {
+    text-align: right;
+    padding-left: 8px;
+  }
+  .month-table .sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--surface);
+    text-align: left;
+    min-width: 132px;
+    max-width: 170px;
+    padding-right: 10px;
+    font-weight: 500;
+  }
+  .month-table .is-sunday {
+    background: var(--surface-2);
+  }
+  .month-table tfoot th,
+  .month-table tfoot td {
+    font-size: 12px;
+    color: var(--ink-2);
+    border-bottom: 0;
+  }
+  .month-table tfoot tr:first-child th,
+  .month-table tfoot tr:first-child td {
+    border-top: 2px solid var(--line);
+  }
+  .msg-body {
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: var(--surface-2);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    line-height: 1.5;
+  }
+}

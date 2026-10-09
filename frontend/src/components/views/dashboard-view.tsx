@@ -28,6 +28,7 @@ import {
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import type { Tenant } from "@/lib/types";
 import { useApiData } from "@/lib/use-api-data";
+import { AttendanceTodayCard, MarkAttendanceCards } from "./attendance/attendance-cards";
 import { MyChildren, MyClass } from "./my-children";
 
 function greetingKey(hour: number): MessageKey {
@@ -115,6 +116,8 @@ export function DashboardView() {
     hasPermission(me, PERMISSIONS.childView) &&
     (Boolean(me?.roles.includes("PARENT")) || !hasPermission(me, PERMISSIONS.studentsRead));
   const isStudent = me?.roles.includes("STUDENT") ?? false;
+  const canAttendanceToday = hasPermission(me, PERMISSIONS.attendanceManage);
+  const canMarkOwn = hasPermission(me, PERMISSIONS.attendanceMark) && !canAttendanceToday;
 
   const users = useApiData(canUsers ? "users" : null, api.listUsers);
   const roles = useApiData(canRoles ? "roles" : null, api.listRoles);
@@ -137,6 +140,8 @@ export function DashboardView() {
 
       {canChildren ? <MyChildren /> : null}
       {isStudent ? <MyClass /> : null}
+      {canMarkOwn ? <MarkAttendanceCards /> : null}
+      {canAttendanceToday ? <AttendanceTodayCard /> : null}
 
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
         {canUsers ? (

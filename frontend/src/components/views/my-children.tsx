@@ -9,8 +9,9 @@ import { classLabel, initials } from "@/lib/format";
 import { translateOr, useI18n } from "@/lib/i18n";
 import type { Child } from "@/lib/types";
 import { useApiData } from "@/lib/use-api-data";
+import { ChildAttendanceSummary } from "./attendance/attendance-cards";
 
-function ChildCard({ child }: { child: Child }) {
+function ChildCard({ child, showAttendance = false }: { child: Child; showAttendance?: boolean }) {
   const { t } = useI18n();
   const place = classLabel(child.className, child.sectionName);
   return (
@@ -49,6 +50,7 @@ function ChildCard({ child }: { child: Child }) {
           </>
         ) : null}
       </dl>
+      {showAttendance ? <ChildAttendanceSummary studentId={child.id} /> : null}
     </article>
   );
 }
@@ -79,7 +81,7 @@ export function MyChildren() {
       ) : (
         <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2 xl:grid-cols-3">
           {list.map((child) => (
-            <ChildCard key={child.id} child={child} />
+            <ChildCard key={child.id} child={child} showAttendance />
           ))}
         </div>
       )}
