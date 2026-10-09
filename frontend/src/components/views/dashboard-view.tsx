@@ -28,6 +28,7 @@ import {
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import type { Tenant } from "@/lib/types";
 import { useApiData } from "@/lib/use-api-data";
+import { AdmissionsCard } from "./admissions/admissions-card";
 import { MyChildren, MyClass } from "./my-children";
 
 function greetingKey(hour: number): MessageKey {
@@ -208,6 +209,8 @@ export function DashboardView() {
           </p>
         </section>
       </div>
+
+      {hasPermission(me, PERMISSIONS.admissionsRead) ? <AdmissionsCard /> : null}
 
       {canAudit ? (
         <section className="card">

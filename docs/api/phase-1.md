@@ -228,3 +228,5 @@ New schemas `academics` (`academic_year`, `school_class`, `section`, `subject`, 
 `students` (`student`, `guardian`, `student_guardian`, `enrollment`). Every table has `tenant_id` and the
 `tenant_isolation` row-level security policy; `RowLevelSecurityCoverageIT` fails the build if a future
 table is missing either.
+
+Admissions (enquiries, applications, tests and interviews, offers, admitting, the public enquiry form): see [phase-1-admissions.md](phase-1-admissions.md).

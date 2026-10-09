@@ -266,6 +266,21 @@ public class StudentService {
         TenantContext.require();
         YearInfo year = academics.currentYear().orElseThrow(() -> ApiException.badRequest(
                 "Set up the current academic year in School setup first.", "sectionId"));
+        return admit(form, year, actor);
+    }
+
+    /**
+     * Admits a student into a section of the given academic year (the admissions office admits children for next
+     * year's intake as well as this year's). Otherwise exactly like {@link #create}.
+     */
+    public StudentDetail createInYear(CreateStudent form, UUID academicYearId, Actor actor) {
+        TenantContext.require();
+        YearInfo year = academics.year(academicYearId)
+                .orElseThrow(() -> ApiException.badRequest("Pick an academic year.", "academicYearId"));
+        return admit(form, year, actor);
+    }
+
+    private StudentDetail admit(CreateStudent form, YearInfo year, Actor actor) {
         SectionInfo section = academics.section(form.sectionId())
                 .orElseThrow(() -> ApiException.badRequest("Pick a section.", "sectionId"));
         Student.Profile profile = profile(form.admissionNo(), form.firstName(), form.lastName(), form.dateOfBirth(),

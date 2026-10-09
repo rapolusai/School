@@ -1464,3 +1464,275 @@
     filter: brightness(1.07);
   }
 }
+
+/* ---------- admissions ---------- */
+@layer components {
+  /* Board: one column per open stage; scrolls sideways on tablets, stacks on phones. */
+  .kanban {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(196px, 1fr));
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    align-items: start;
+  }
+  .lane {
+    background: var(--surface-2);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+  }
+  .lane-h {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--f-body);
+    font-weight: 600;
+    font-size: 13.5px;
+    margin: 0;
+  }
+  .lane-h span {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-3);
+  }
+  .lane-empty {
+    font-size: 13px;
+    color: var(--ink-3);
+    padding: 6px 0;
+  }
+  .kcard {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+  .kcard b {
+    font-weight: 600;
+  }
+  .kcard-title {
+    color: inherit;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+  }
+  .kcard-title:hover b {
+    color: var(--accent);
+    text-decoration: underline;
+  }
+  .kcard-sub {
+    font-size: 13px;
+    color: var(--ink-3);
+  }
+  .kcard-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .kcard-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+  .stage-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .stage-filter .chip {
+    cursor: pointer;
+    min-height: 32px;
+    font-weight: 500;
+  }
+  .stage-filter .chip[aria-pressed="true"] {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .stage-filter .chip:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  /* Placed against the window so the scrolling board and table never cut it off. */
+  .stage-menu {
+    position: fixed;
+    min-width: 220px;
+  }
+  .menu-item-quiet {
+    color: var(--ink-2);
+  }
+  /* Rejecting and withdrawing sit apart from the moves forward. */
+  .menu-item:not(.menu-item-quiet) + .menu-item-quiet {
+    margin-top: 4px;
+    border-top: 1px solid var(--line);
+    border-radius: 0 0 8px 8px;
+  }
+
+  .timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .timeline-item {
+    position: relative;
+    display: flex;
+    gap: 12px;
+    padding: 0 0 16px;
+  }
+  .timeline-item:not(:last-child)::before {
+    content: "";
+    position: absolute;
+    left: 13px;
+    top: 30px;
+    bottom: 2px;
+    width: 2px;
+    border-radius: 2px;
+    background: var(--line);
+  }
+  .timeline-dot {
+    width: 28px;
+    height: 28px;
+    flex: none;
+    border-radius: 99px;
+    display: grid;
+    place-items: center;
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  /* Public enquiry page: no app shell. */
+  .enquiry-page {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 32px 16px 24px;
+    background: var(--bg);
+  }
+  .enquiry-main {
+    width: 100%;
+    max-width: 720px;
+    flex: 1;
+  }
+  .enquiry-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .enquiry-foot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--ink-3);
+  }
+  /* The honeypot field: out of sight and out of the tab order. */
+  .hp-field {
+    position: absolute;
+    left: -10000px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  /* Offer letter: a paper-like sheet on screen and a clean page in print. */
+  .offer-letter {
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: clamp(20px, 5vw, 56px);
+    max-width: 800px;
+    width: 100%;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  .offer-letter-head {
+    text-align: center;
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: 14px;
+    color: var(--ink-2);
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+  .offer-letter-school {
+    font-family: var(--f-display);
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .offer-letter-date {
+    text-align: right;
+  }
+  .offer-letter-sign {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .offer-letter-signature {
+    height: 48px;
+    width: 200px;
+    max-width: 100%;
+    border-bottom: 1px solid var(--ink-3);
+  }
+
+  @media (max-width: 639px) {
+    .kanban {
+      grid-template-columns: minmax(0, 1fr);
+      overflow-x: visible;
+    }
+    .enquiry-page {
+      padding-top: 16px;
+    }
+  }
+}
+
+@media print {
+  body:has(.offer-letter) {
+    background: #fff;
+  }
+  body:has(.offer-letter) .side,
+  body:has(.offer-letter) .top,
+  body:has(.offer-letter) .bottombar,
+  body:has(.offer-letter) .skip-link,
+  body:has(.offer-letter) .no-print {
+    display: none !important;
+  }
+  body:has(.offer-letter) .shell {
+    display: block;
+  }
+  body:has(.offer-letter) .content {
+    padding: 0;
+    max-width: none;
+  }
+  .offer-letter {
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    max-width: none;
+    background: #fff;
+    color: #000;
+  }
+  .offer-letter-head,
+  .offer-letter-school {
+    color: #000;
+  }
+}

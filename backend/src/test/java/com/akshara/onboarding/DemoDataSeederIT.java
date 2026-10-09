@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import com.akshara.academics.AcademicsService;
+import com.akshara.admissions.AdmissionsService;
 import com.akshara.identity.UserService;
 import com.akshara.platform.TenantDirectory;
 import com.akshara.students.StudentService;
@@ -45,10 +46,13 @@ class DemoDataSeederIT extends IntegrationTest {
     @Autowired
     PlatformTransactionManager transactionManager;
 
+    @Autowired
+    AdmissionsService admissions;
+
     @Test
     void seedsADemoSchoolWithClassesAndStudentsOnce() throws Exception {
         DemoDataSeeder seeder = new DemoDataSeeder(provisioning, tenants, users, passwordEncoder, DEMO_PASSWORD,
-                academics, students, transactionManager);
+                academics, students, transactionManager, admissions);
         seeder.run(null);
         // A second start leaves the existing demo school alone.
         seeder.run(null);
@@ -72,7 +76,7 @@ class DemoDataSeederIT extends IntegrationTest {
         int admittedLastYear = (int) DemoSchoolData.STUDENTS.stream().filter(s -> s.contains("|2025|")).count();
         api.get("/api/students?size=100", admin.accessToken())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.total").value(all - graduates));
+                .andExpect(jsonPath("$.total").value(all - graduates + DemoAdmissionsData.ADMITTED_STUDENTS));
         // Alumni were last enrolled in 2025-26.
         api.get("/api/students?status=ALUMNI&yearId=" + lastYear, admin.accessToken())
                 .andExpect(jsonPath("$.total").value(graduates));
@@ -99,5 +103,26 @@ class DemoDataSeederIT extends IntegrationTest {
 
         Session frontOffice = api.login(code, "frontoffice" + DemoDataSeeder.DEMO_DOMAIN, DEMO_PASSWORD);
         api.get("/api/students", frontOffice.accessToken()).andExpect(status().isOk());
+
+        // The admissions pipeline: every stage has applications, with upcoming tests and one child admitted.
+        api.get("/api/admissions/applications", frontOffice.accessToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(DemoAdmissionsData.APPLICATIONS))
+                .andExpect(jsonPath("$.stageCounts.ENQUIRY").value(5))
+                .andExpect(jsonPath("$.stageCounts.APPLICATION").value(2))
+                .andExpect(jsonPath("$.stageCounts.ASSESSMENT").value(3))
+                .andExpect(jsonPath("$.stageCounts.OFFERED").value(2))
+                .andExpect(jsonPath("$.stageCounts.ADMITTED").value(1))
+                .andExpect(jsonPath("$.stageCounts.REJECTED").value(1))
+                .andExpect(jsonPath("$.stageCounts.WITHDRAWN").value(1));
+        api.get("/api/admissions/slots/upcoming", frontOffice.accessToken())
+                .andExpect(jsonPath("$.length()").value(DemoAdmissionsData.UPCOMING_SLOTS));
+        String admitted = TestApi.read(api.get("/api/admissions/applications?stage=ADMITTED", admin.accessToken()),
+                "$.items[0].id");
+        String newStudent = TestApi.read(api.get("/api/admissions/applications/" + admitted, admin.accessToken())
+                .andExpect(jsonPath("$.timeline[0].actorName").value("Suresh Rao")), "$.studentId");
+        api.get("/api/students/" + newStudent, admin.accessToken())
+                .andExpect(jsonPath("$.admissionNo").value(DemoAdmissionsData.ADMISSION_NO))
+                .andExpect(jsonPath("$.currentEnrollment.className").value("LKG"));
     }
 }

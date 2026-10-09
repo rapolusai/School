@@ -19,6 +19,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.akshara.academics.AcademicsService;
+import com.akshara.admissions.AdmissionsService;
 import com.akshara.audit.AuditService.Actor;
 import com.akshara.identity.UserService;
 import com.akshara.platform.Board;
@@ -61,10 +62,12 @@ public class DemoDataSeeder implements ApplicationRunner {
     private final AcademicsService academics;
     private final StudentService students;
     private final TransactionTemplate tx;
+    private final AdmissionsService admissions;
 
     public DemoDataSeeder(SchoolProvisioning provisioning, TenantDirectory tenants, UserService users,
             PasswordEncoder passwordEncoder, @Value("${akshara.demo.password:}") String password,
-            AcademicsService academics, StudentService students, PlatformTransactionManager transactionManager) {
+            AcademicsService academics, StudentService students, PlatformTransactionManager transactionManager,
+            AdmissionsService admissions) {
         this.provisioning = provisioning;
         this.tenants = tenants;
         this.users = users;
@@ -73,6 +76,7 @@ public class DemoDataSeeder implements ApplicationRunner {
         this.academics = academics;
         this.students = students;
         this.tx = new TransactionTemplate(transactionManager);
+        this.admissions = admissions;
     }
 
     @Override
@@ -100,5 +104,7 @@ public class DemoDataSeeder implements ApplicationRunner {
                         "parent" + DEMO_DOMAIN, "student" + DEMO_DOMAIN)));
         log.info("Seeded demo school '{}' with {} people and {} students", DEMO_CODE, PEOPLE.size() + 1,
                 studentCount);
+        new DemoAdmissionsData(admissions, academics, tx).seed(school.tenant().id(),
+                userIds.get("frontoffice" + DEMO_DOMAIN), userIds.get("principal" + DEMO_DOMAIN));
     }
 }

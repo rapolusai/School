@@ -1,5 +1,6 @@
 import {
   Building2,
+  ClipboardList,
   GraduationCap,
   LayoutDashboard,
   School,
@@ -24,6 +25,8 @@ export const PERMISSIONS = {
   studentsManage: "students.manage",
   childView: "child.view",
   platformAdmin: "platform.admin",
+  admissionsRead: "admissions.read",
+  admissionsManage: "admissions.manage",
 } as const;
 
 export type NavGroup = "overview" | "academics" | "administration" | "platform";
@@ -57,6 +60,15 @@ export const NAV_ITEMS: readonly NavItem[] = [
     shortLabelKey: "nav.students.short",
     icon: GraduationCap,
     permission: PERMISSIONS.studentsRead,
+    group: "academics",
+  },
+  {
+    key: "admissions",
+    href: "/app/admissions",
+    labelKey: "nav.admissions",
+    shortLabelKey: "nav.admissions.short",
+    icon: ClipboardList,
+    permission: PERMISSIONS.admissionsRead,
     group: "academics",
   },
   {
