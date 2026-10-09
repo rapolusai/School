@@ -1,8 +1,10 @@
 import {
   Building2,
   ClipboardList,
+  ClipboardCheck,
   GraduationCap,
   LayoutDashboard,
+  MessageSquareText,
   School,
   ScrollText,
   ShieldCheck,
@@ -12,7 +14,7 @@ import {
 import type { MessageKey } from "./i18n/en";
 import type { Me } from "./types";
 
-/** Permission codes from docs/api/phase-0.md and docs/api/phase-1.md. */
+/** Permission codes from docs/api/phase-0.md, phase-1.md and phase-1-attendance.md. */
 export const PERMISSIONS = {
   dashboardView: "dashboard.view",
   usersRead: "users.read",
@@ -27,6 +29,10 @@ export const PERMISSIONS = {
   platformAdmin: "platform.admin",
   admissionsRead: "admissions.read",
   admissionsManage: "admissions.manage",
+  attendanceRead: "attendance.read",
+  attendanceMark: "attendance.mark",
+  attendanceManage: "attendance.manage",
+  messagesRead: "messages.read",
 } as const;
 
 export type NavGroup = "overview" | "academics" | "administration" | "platform";
@@ -52,6 +58,15 @@ export const NAV_ITEMS: readonly NavItem[] = [
     icon: LayoutDashboard,
     permission: PERMISSIONS.dashboardView,
     group: "overview",
+  },
+  {
+    key: "attendance",
+    href: "/app/attendance",
+    labelKey: "nav.attendance",
+    shortLabelKey: "nav.attendance.short",
+    icon: ClipboardCheck,
+    permission: PERMISSIONS.attendanceRead,
+    group: "academics",
   },
   {
     key: "students",
@@ -105,6 +120,15 @@ export const NAV_ITEMS: readonly NavItem[] = [
     shortLabelKey: "nav.audit.short",
     icon: ScrollText,
     permission: PERMISSIONS.auditRead,
+    group: "administration",
+  },
+  {
+    key: "messages",
+    href: "/app/messages",
+    labelKey: "nav.messages",
+    shortLabelKey: "nav.messages.short",
+    icon: MessageSquareText,
+    permission: PERMISSIONS.messagesRead,
     group: "administration",
   },
   {

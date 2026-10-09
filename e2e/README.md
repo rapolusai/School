@@ -32,3 +32,4 @@ E2E_BASE_URL=http://localhost:3000 npm test
 | `responsive.spec.ts` | no horizontal scroll; bottom bar on mobile, icon rail on tablet, sidebar on desktop |
 | `students.spec.ts` | admin sets up a year, class and section; admits a student; searches; opens the record; gives the mother a sign-in; the parent sees the child and gets 403 from `/api/students`; another school gets 404 |
 | `admissions.spec.ts` | a parent sends an enquiry from `/enquire/<code>` without signing in; the admin moves it on the board from enquiry to application to offered and admits the child; the timeline, offer letter and student record; admitting again changes nothing; another school gets 404; no horizontal scroll at 820 and 390 px |
+| `attendance.spec.ts` | class teacher marks Class 5 A at 390px with one absence; teacher gets 403 from `/api/messages`; the admin's message log shows the alert as Simulated with a masked number (waits for the 15-second dispatcher) |

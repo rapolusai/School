@@ -19,7 +19,7 @@ public final class RoleCatalog {
             new RoleTemplate(SCHOOL_ADMIN, "School Admin", ALL_SCHOOL),
             new RoleTemplate("PRINCIPAL", "Principal", List.of(DASHBOARD_VIEW, USERS_READ, ROLES_READ, AUDIT_READ,
                     STUDENTS_READ, ATTENDANCE_READ, FEES_READ, EXAMS_MANAGE, NOTICES_SEND, ACADEMICS_READ,
-                    ADMISSIONS_READ, ADMISSIONS_MANAGE)),
+                    ADMISSIONS_READ, ADMISSIONS_MANAGE, ATTENDANCE_MANAGE, MESSAGES_READ)),
             new RoleTemplate("TEACHER", "Teacher", List.of(DASHBOARD_VIEW, STUDENTS_READ, ATTENDANCE_MARK,
                     ATTENDANCE_READ, EXAMS_MANAGE, NOTICES_SEND, ACADEMICS_READ)),
             new RoleTemplate("ACCOUNTANT", "Accountant", List.of(DASHBOARD_VIEW, STUDENTS_READ, FEES_READ,

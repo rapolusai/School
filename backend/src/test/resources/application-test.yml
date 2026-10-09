@@ -11,6 +11,10 @@ akshara:
       name: Test Platform Admin
   demo:
     enabled: false
+  notifications:
+    dispatch:
+      # Tests run the dispatcher themselves, for their own school only.
+      enabled: false
 logging:
   level:
     com.akshara: INFO

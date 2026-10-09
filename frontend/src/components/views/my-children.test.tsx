@@ -1,16 +1,27 @@
 import { screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api";
-import type { Child } from "@/lib/types";
+import type { AttendanceToday, Child, ChildAttendance, SectionsForDay } from "@/lib/types";
 import { ADMIN_PERMISSIONS, renderAs } from "@/test/render";
 import { DashboardView } from "./dashboard-view";
 import { MyChildren, MyClass } from "./my-children";
 
-const { myChildren, myStudentRecord } = vi.hoisted(() => ({ myChildren: vi.fn(), myStudentRecord: vi.fn() }));
+const { myChildren, myStudentRecord, child, today, sections } = vi.hoisted(() => ({
+  myChildren: vi.fn(),
+  myStudentRecord: vi.fn(),
+  child: vi.fn(),
+  today: vi.fn(),
+  sections: vi.fn(),
+}));
 
 vi.mock("@/lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api")>();
   return { ...actual, api: { ...actual.api, myChildren, myStudentRecord } };
+});
+
+vi.mock("@/lib/attendance-api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/attendance-api")>();
+  return { ...actual, attendanceApi: { ...actual.attendanceApi, child, today, sections } };
 });
 
 vi.mock("next/navigation", () => ({
@@ -42,9 +53,112 @@ const DIYA: Child = {
 
 const PARENT = ["dashboard.view", "child.view"];
 
+const NONE = { present: 0, absent: 0, late: 0, halfDay: 0, leave: 0 };
+
+function childAttendance(studentId: string): ChildAttendance {
+  if (studentId === "st1") {
+    return {
+      studentId,
+      fullName: "Arjun Sharma",
+      month: "2026-10",
+      daysMarked: 7,
+      counts: { ...NONE, present: 5, absent: 1, halfDay: 1 },
+      presentPercent: 78.6,
+      days: [],
+      recentAbsences: [
+        { date: "2026-10-07", status: "ABSENT" },
+        { date: "2026-09-15", status: "ABSENT" },
+      ],
+    };
+  }
+  return {
+    studentId,
+    fullName: "Diya Sharma",
+    month: "2026-10",
+    daysMarked: 7,
+    counts: { ...NONE, present: 7 },
+    presentPercent: 100,
+    days: [],
+    recentAbsences: [],
+  };
+}
+
+const TODAY: AttendanceToday = {
+  date: "2026-10-09",
+  academicYearName: "2026-27",
+  sectionCount: 2,
+  sectionsMarked: 1,
+  students: 60,
+  counts: { ...NONE, present: 27, absent: 2, late: 1 },
+  presentPercent: 93.3,
+  classes: [
+    {
+      classId: "c5",
+      className: "Class 5",
+      sectionCount: 2,
+      sectionsMarked: 1,
+      counts: { ...NONE, present: 27, absent: 2, late: 1 },
+      presentPercent: 93.3,
+      sections: [
+        {
+          sectionId: "s5a",
+          sectionName: "A",
+          label: "Class 5 A",
+          classTeacherName: "Ravi Kumar",
+          students: 30,
+          marked: false,
+          markedByName: null,
+          markedAt: null,
+          counts: NONE,
+          presentPercent: null,
+        },
+        {
+          sectionId: "s5b",
+          sectionName: "B",
+          label: "Class 5 B",
+          classTeacherName: null,
+          students: 30,
+          marked: true,
+          markedByName: "Lakshmi Iyer",
+          markedAt: "2026-10-09T03:40:00Z",
+          counts: { ...NONE, present: 27, absent: 2, late: 1 },
+          presentPercent: 93.3,
+        },
+      ],
+    },
+  ],
+};
+
+const TEACHER_SECTIONS: SectionsForDay = {
+  date: "2026-10-09",
+  today: "2026-10-09",
+  academicYear: { id: "y1", name: "2026-27", startsOn: "2026-06-01", endsOn: "2027-03-31" },
+  canMark: true,
+  sections: [
+    {
+      sectionId: "s5a",
+      classId: "c5",
+      className: "Class 5",
+      sectionName: "A",
+      label: "Class 5 A",
+      classTeacherName: "Ravi Kumar",
+      students: 30,
+      marked: false,
+      markedByName: null,
+      markedAt: null,
+      counts: NONE,
+      presentPercent: null,
+      canMark: true,
+    },
+  ],
+};
+
 beforeEach(() => {
   myChildren.mockResolvedValue([ARJUN, DIYA]);
   myStudentRecord.mockResolvedValue(ARJUN);
+  child.mockImplementation((studentId: string) => Promise.resolve(childAttendance(studentId)));
+  today.mockResolvedValue(TODAY);
+  sections.mockResolvedValue(TEACHER_SECTIONS);
 });
 
 describe("MyChildren", () => {
@@ -87,6 +201,47 @@ describe("Dashboard", () => {
     renderAs(PARENT, <DashboardView />, ["PARENT"]);
     expect(await screen.findAllByTestId("child-card")).toHaveLength(2);
     expect(myStudentRecord).not.toHaveBeenCalled();
+  });
+
+  it("shows a parent each child's attendance this month and the last absences", async () => {
+    renderAs(PARENT, <DashboardView />, ["PARENT"]);
+    const arjun = await screen.findByRole("article", { name: "Arjun Sharma" });
+    const arjunAttendance = await within(arjun).findByTestId("child-attendance");
+    expect(arjunAttendance).toHaveTextContent("Attendance this month");
+    expect(arjunAttendance).toHaveTextContent("78.6%");
+    expect(arjunAttendance).toHaveTextContent("Present 5 of 7 days marked");
+    expect(arjunAttendance).toHaveTextContent("Last absent: 7 Oct 2026, 15 Sept 2026");
+    const diya = screen.getByRole("article", { name: "Diya Sharma" });
+    expect(await within(diya).findByTestId("child-attendance")).toHaveTextContent("No absences this year.");
+    expect(child).toHaveBeenCalledWith("st1");
+    expect(child).toHaveBeenCalledWith("st2");
+  });
+
+  it("asks a class teacher to mark their own section", async () => {
+    renderAs(
+      ["dashboard.view", "students.read", "academics.read", "attendance.read", "attendance.mark"],
+      <DashboardView />,
+      ["TEACHER"],
+    );
+    const cards = await screen.findByTestId("mark-attendance-cards");
+    const link = within(cards).getByRole("link", { name: "Mark attendance for Class 5 A" });
+    expect(link).toHaveAttribute("href", "/app/attendance?section=s5a");
+    expect(within(cards).getByText("30 students to mark")).toBeInTheDocument();
+    expect(screen.queryByTestId("attendance-today")).not.toBeInTheDocument();
+    expect(today).not.toHaveBeenCalled();
+  });
+
+  it("shows the principal today's attendance across the school", async () => {
+    renderAs(
+      ["dashboard.view", "students.read", "academics.read", "attendance.read", "attendance.mark", "attendance.manage"],
+      <DashboardView />,
+      ["PRINCIPAL"],
+    );
+    const card = await screen.findByTestId("attendance-today");
+    expect(await within(card).findByText("93.3%")).toBeInTheDocument();
+    expect(card).toHaveTextContent("1 of 2 sections marked");
+    expect(card).toHaveTextContent("Still to mark: Class 5 A");
+    expect(screen.queryByTestId("mark-attendance-cards")).not.toBeInTheDocument();
   });
 
   it("does not show school staff a My children section", () => {

@@ -3,7 +3,7 @@ import { hasPermission, landingPath, navFor, navItemForPath, safeNextPath } from
 import type { Me } from "./types";
 
 const ALL_SCHOOL_PERMISSIONS =
-  "dashboard.view users.read users.manage roles.read audit.read settings.manage students.read students.manage attendance.mark attendance.read fees.read fees.collect exams.manage notices.send child.view academics.read".split(
+  "dashboard.view users.read users.manage roles.read audit.read settings.manage students.read students.manage attendance.mark attendance.read fees.read fees.collect exams.manage notices.send child.view academics.read attendance.manage messages.read".split(
     " ",
   );
 
@@ -30,11 +30,12 @@ function user(roles: string[], permissions: string[], platformAdmin = false): Me
   };
 }
 
-// Seeded roles from docs/api/phase-0.md, with academics.read added in docs/api/phase-1.md
+// Seeded roles from docs/api/phase-0.md, with academics.read added in docs/api/phase-1.md and
+// attendance.manage and messages.read in docs/api/phase-1-attendance.md
 const SCHOOL_ADMIN = user(["SCHOOL_ADMIN"], ALL_SCHOOL_PERMISSIONS);
 const PRINCIPAL = user(
   ["PRINCIPAL"],
-  "dashboard.view users.read roles.read audit.read students.read attendance.read fees.read exams.manage notices.send academics.read".split(
+  "dashboard.view users.read roles.read audit.read students.read attendance.read fees.read exams.manage notices.send academics.read attendance.manage messages.read".split(
     " ",
   ),
 );
@@ -49,15 +50,33 @@ const keys = (me: Me | null) => navFor(me).map((item) => item.key);
 
 describe("navFor", () => {
   it("gives a school admin every school item and no platform items", () => {
-    expect(keys(SCHOOL_ADMIN)).toEqual(["dashboard", "students", "setup", "users", "roles", "audit"]);
+    expect(keys(SCHOOL_ADMIN)).toEqual([
+      "dashboard",
+      "attendance",
+      "students",
+      "setup",
+      "users",
+      "roles",
+      "audit",
+      "messages",
+    ]);
   });
 
-  it("gives a principal read access to students, setup, users, roles and audit", () => {
-    expect(keys(PRINCIPAL)).toEqual(["dashboard", "students", "setup", "users", "roles", "audit"]);
+  it("gives a principal attendance, read access to students, setup, users, roles and audit, and messages", () => {
+    expect(keys(PRINCIPAL)).toEqual([
+      "dashboard",
+      "attendance",
+      "students",
+      "setup",
+      "users",
+      "roles",
+      "audit",
+      "messages",
+    ]);
   });
 
-  it("gives a teacher the dashboard, students and school setup", () => {
-    expect(keys(TEACHER)).toEqual(["dashboard", "students", "setup"]);
+  it("gives a teacher the dashboard, attendance, students and school setup", () => {
+    expect(keys(TEACHER)).toEqual(["dashboard", "attendance", "students", "setup"]);
   });
 
   it("gives front office students and setup without administration", () => {
@@ -65,11 +84,17 @@ describe("navFor", () => {
     expect(keys(frontOffice)).toEqual(["dashboard", "students", "setup"]);
   });
 
-  it("groups students and setup under the School group", () => {
+  it("groups attendance, students and setup under the School group", () => {
     expect(navFor(SCHOOL_ADMIN).filter((item) => item.group === "academics").map((item) => item.key)).toEqual([
+      "attendance",
       "students",
       "setup",
     ]);
+  });
+
+  it("gives an accountant no attendance and no message log", () => {
+    const accountant = user(["ACCOUNTANT"], ["dashboard.view", "students.read", "fees.read", "fees.collect", "academics.read"]);
+    expect(keys(accountant)).toEqual(["dashboard", "students", "setup"]);
   });
 
   it("gives a parent only the dashboard", () => {
@@ -126,6 +151,8 @@ describe("navItemForPath", () => {
     expect(navItemForPath("/app/students/abc")?.key).toBe("students");
     expect(navItemForPath("/app/students/import")?.key).toBe("students");
     expect(navItemForPath("/app/setup")?.key).toBe("setup");
+    expect(navItemForPath("/app/attendance/reports")?.key).toBe("attendance");
+    expect(navItemForPath("/app/messages")?.key).toBe("messages");
     expect(navItemForPath("/app/platform/schools")?.key).toBe("schools");
     expect(navItemForPath("/app/unknown")).toBeUndefined();
   });
