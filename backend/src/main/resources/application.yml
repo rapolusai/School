@@ -72,6 +72,11 @@ akshara:
     gateway: ${PAYMENTS_GATEWAY:sandbox}
     sandbox:
       secret: ${PAYMENTS_SANDBOX_SECRET:}
+  privacy:
+    export-cleanup:
+      # Deletes data export files (DPDP access requests) once their 7 days are over.
+      enabled: ${PRIVACY_EXPORT_CLEANUP_ENABLED:true}
+      interval: ${PRIVACY_EXPORT_CLEANUP_INTERVAL:PT1H}
 
 ---
 # In AWS the API never holds the owner password: migrations run as a separate one-off task (profile "migrate").
@@ -98,4 +103,7 @@ spring:
 akshara:
   notifications:
     dispatch:
+      enabled: false
+  privacy:
+    export-cleanup:
       enabled: false

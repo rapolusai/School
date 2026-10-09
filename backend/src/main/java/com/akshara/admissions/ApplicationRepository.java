@@ -19,6 +19,9 @@ interface ApplicationRepository extends JpaRepository<Application, UUID> {
 
     long countByStage(ApplicationStage stage);
 
+    /** The application a student was admitted from (at most one: student_id is unique). */
+    Optional<Application> findByStudentId(UUID studentId);
+
     @Query("select count(a) from Application a where a.stage = ?1 and a.stageChangedAt >= ?2 and a.stageChangedAt < ?3")
     long countByStageChangedBetween(ApplicationStage stage, Instant from, Instant to);
 }

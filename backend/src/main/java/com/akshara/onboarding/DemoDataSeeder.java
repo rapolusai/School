@@ -65,11 +65,13 @@ public class DemoDataSeeder implements ApplicationRunner {
     private final AdmissionsService admissions;
     private final DemoAttendanceData attendanceData;
     private final DemoFeesData fees;
+    private final DemoPrivacyData privacy;
 
     public DemoDataSeeder(SchoolProvisioning provisioning, TenantDirectory tenants, UserService users,
             PasswordEncoder passwordEncoder, @Value("${akshara.demo.password:}") String password,
             AcademicsService academics, StudentService students, PlatformTransactionManager transactionManager,
-            AdmissionsService admissions, DemoAttendanceData attendanceData, DemoFeesData fees) {
+            AdmissionsService admissions, DemoAttendanceData attendanceData, DemoFeesData fees,
+            DemoPrivacyData privacy) {
         this.provisioning = provisioning;
         this.tenants = tenants;
         this.users = users;
@@ -81,6 +83,7 @@ public class DemoDataSeeder implements ApplicationRunner {
         this.admissions = admissions;
         this.attendanceData = attendanceData;
         this.fees = fees;
+        this.privacy = privacy;
     }
 
     @Override
@@ -113,5 +116,6 @@ public class DemoDataSeeder implements ApplicationRunner {
         log.info("Seeded {} demo attendance registers", attendanceData.seed(school.tenant().id(), userIds));
         TenantContext.runAs(school.tenant().id(), () -> tx.execute(status -> fees.seed(
                 new Actor(userIds.get("accounts" + DEMO_DOMAIN), "Meena Reddy"))));
+        TenantContext.runAs(school.tenant().id(), () -> tx.execute(status -> privacy.seed(userIds)));
     }
 }

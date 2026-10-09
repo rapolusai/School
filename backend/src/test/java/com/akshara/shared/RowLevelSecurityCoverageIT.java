@@ -49,7 +49,9 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
             "fees.fee_head", "fees.fee_structure", "fees.fee_instalment", "fees.fee_instalment_share",
             "fees.late_fee_rule", "fees.concession", "fees.concession_head", "fees.student_due",
             "fees.receipt_counter", "fees.receipt", "fees.payment_allocation", "fees.late_fee_waiver",
-            "fees.payment_order", "fees.gateway_event", "fees.fee_reminder");
+            "fees.payment_order", "fees.gateway_event", "fees.fee_reminder", "privacy.grievance_officer",
+            "privacy.privacy_notice", "privacy.consent_record", "privacy.data_request", "privacy.request_event",
+            "privacy.data_export");
 
     /** The last day of the fixtures' current year, 2026-27. */
     static final LocalDate LAST_DAY = LocalDate.of(2027, 3, 31);
@@ -126,6 +128,7 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
                  "quietHoursEnabled":true,"quietHoursStart":"21:00","quietHoursEnd":"07:00"}""")
                 .andExpect(status().isOk());
         feeRecords(admin, yearId, classId, student);
+        privacyRecords(school, admin, student);
         School other = api.signup();
 
         try (Connection app = appConnection(); Connection owner = ownerConnection()) {
@@ -244,6 +247,27 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
                 {"outcome":"FAILURE"}""").andExpect(status().isOk());
         api.post("/api/fees/reminders", admin.accessToken(), """
                 {"studentIds":["%s"]}""".formatted(student)).andExpect(jsonPath("$.requested").value(1));
+    }
+
+    /** One row in every privacy table: officer, notice, paper consent, and a parent's access request with its export. */
+    private void privacyRecords(School school, Session admin, String student) throws Exception {
+        api.put("/api/privacy/grievance-officer", admin.accessToken(), """
+                {"name":"Lata Iyer","email":"dpo@example.test","phone":"9876501003"}""").andExpect(status().isOk());
+        api.post("/api/privacy/notice", admin.accessToken(), """
+                {"bodyEn":"Notice","bodyHi":"सूचना"}""").andExpect(status().isCreated());
+        api.post("/api/privacy/students/" + student + "/consents", admin.accessToken(), """
+                {"givenByName":"Lata Rao","signedOn":"%s","photos":true,"whatsapp":true}"""
+                .formatted(LocalDate.now(ZoneId.of("Asia/Kolkata")))).andExpect(status().isCreated());
+        String guardian = TestApi.read(api.get("/api/students/" + student, admin.accessToken()), "$.guardians[0].id");
+        String email = "lata@" + school.code() + ".akshara.test";
+        api.post("/api/students/" + student + "/guardians/" + guardian + "/sign-in", admin.accessToken(), """
+                {"mode":"CREATE","email":"%s","password":"%s"}""".formatted(email, TestApi.PASSWORD))
+                .andExpect(status().isOk());
+        Session parent = api.login(school.code(), email, TestApi.PASSWORD);
+        String request = TestApi.read(api.post("/api/me/privacy/requests", parent.accessToken(), """
+                {"type":"ACCESS","subject":"CHILD","studentId":"%s"}""".formatted(student))
+                .andExpect(status().isCreated()), "$.id");
+        api.post("/api/privacy/requests/" + request + "/export", admin.accessToken(), null).andExpect(status().isOk());
     }
 
     private static boolean canUpdateTenantId(Connection connection, String table) throws SQLException {

@@ -19,6 +19,10 @@ akshara:
     gateway: sandbox
     sandbox:
       secret: test-only-sandbox-secret-not-for-real-use
+  privacy:
+    export-cleanup:
+      # Tests run the export clean-up themselves.
+      enabled: false
 logging:
   level:
     com.akshara: INFO
