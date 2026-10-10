@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f5f6f3" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f1512" media="(prefers-color-scheme: dark)" />
+    <title>Offline · Akshara</title>
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f5f6f3;
+        --surface: #ffffff;
+        --ink: #1b211e;
+        --ink-2: #4a524e;
+        --line: #dfe3dc;
+        --accent: #c98a12;
+        --accent-ink: #1a1406;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f1512;
+          --surface: #17201b;
+          --ink: #eef2ee;
+          --ink-2: #b4beb8;
+          --line: #2a3530;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: Figtree, "Noto Sans Devanagari", system-ui, sans-serif;
+        line-height: 1.5;
+      }
+      main {
+        width: 100%;
+        max-width: 420px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 24px;
+        text-align: center;
+      }
+      img {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+      }
+      h1 {
+        font-size: 20px;
+        margin: 16px 0 4px;
+      }
+      p {
+        margin: 0 0 4px;
+        color: var(--ink-2);
+      }
+      p[lang="hi"] {
+        margin-top: 12px;
+      }
+      a {
+        display: inline-block;
+        margin-top: 20px;
+        padding: 10px 18px;
+        min-height: 44px;
+        border-radius: 10px;
+        background: var(--accent);
+        color: var(--accent-ink);
+        font-weight: 600;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="/icons/icon-192.png" alt="" />
+      <h1>You are offline</h1>
+      <p>Akshara needs a connection to show your child's attendance, homework and fees. Check your internet and try again.</p>
+      <p lang="hi">आप ऑफ़लाइन हैं। हाज़िरी, गृहकार्य और फ़ीस देखने के लिए इंटरनेट चाहिए। कनेक्शन जाँचें और फिर से कोशिश करें।</p>
+      <a href="/app/dashboard">Try again · फिर से कोशिश करें</a>
+    </main>
+  </body>
+</html>

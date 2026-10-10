@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/toast";
 import { AttachmentList, FilePicker } from "@/components/views/files/attachments";
 import { api, toApiError } from "@/lib/api";
 import { errorMessage } from "@/lib/error-message";
+import { rememberChild, rememberedChild } from "@/lib/family";
 import { formatDateTime, formatPlainDate } from "@/lib/format";
 import { homeworkApi } from "@/lib/homework-api";
 import { localeFor, useI18n, type MessageKey } from "@/lib/i18n";
@@ -164,7 +165,8 @@ function ChildHomework({ studentId }: { studentId: string }) {
 export function ParentHomeworkView({ initialChildId }: { initialChildId?: string }) {
   const { t } = useI18n();
   const children = useApiData("me:children", api.myChildren);
-  const [chosen, setChosen] = useState(initialChildId ?? "");
+  // The family app remembers the child last looked at on this device (lib/family.ts).
+  const [chosen, setChosen] = useState(() => initialChildId ?? rememberedChild() ?? "");
   const list = children.data ?? [];
   const childId = list.some((c) => c.id === chosen) ? chosen : (list[0]?.id ?? "");
   const child = list.find((c) => c.id === childId);
@@ -183,7 +185,15 @@ export function ParentHomeworkView({ initialChildId }: { initialChildId?: string
             <div className="toolbar">
               <label className="field min-w-0 flex-1 sm:max-w-xs">
                 <span className="field-label">{t("timetable.family.child")}</span>
-                <select className="input" name="child" value={childId} onChange={(e) => setChosen(e.target.value)}>
+                <select
+                  className="input"
+                  name="child"
+                  value={childId}
+                  onChange={(e) => {
+                    setChosen(e.target.value);
+                    rememberChild(e.target.value);
+                  }}
+                >
                   {list.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.fullName}

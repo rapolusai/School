@@ -5,6 +5,7 @@ import {
   ClipboardList,
   ClipboardCheck,
   GraduationCap,
+  House,
   IdCard,
   LayoutDashboard,
   Megaphone,
@@ -19,6 +20,7 @@ import {
   Wallet,
   type LucideIcon,
 } from "lucide-react";
+import { isFamilyMember } from "./family";
 import type { MessageKey } from "./i18n/en";
 import type { Me } from "./types";
 
@@ -247,7 +249,78 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
 ];
 
-type PermissionSubject = Pick<Me, "permissions" | "platformAdmin"> | null | undefined;
+/**
+ * The parent and student app's menu (docs/api/phase-1-portal.md), used instead of NAV_ITEMS for someone whose
+ * every role is PARENT or STUDENT. Phones show the first four in the bottom bar; Fees needs child.view, so a
+ * student sees Notices there instead.
+ */
+export const FAMILY_NAV_ITEMS: readonly NavItem[] = [
+  {
+    key: "dashboard",
+    href: "/app/dashboard",
+    labelKey: "portal.nav.home",
+    shortLabelKey: "portal.nav.home",
+    icon: House,
+    permission: PERMISSIONS.dashboardView,
+    group: "overview",
+  },
+  {
+    key: "family-attendance",
+    href: "/app/family/attendance",
+    labelKey: "nav.attendance",
+    shortLabelKey: "nav.attendance.short",
+    icon: ClipboardCheck,
+    permission: PERMISSIONS.dashboardView,
+    group: "academics",
+  },
+  {
+    key: "family-homework",
+    href: "/app/homework",
+    labelKey: "nav.homework",
+    shortLabelKey: "nav.homework.short",
+    icon: NotebookPen,
+    permission: PERMISSIONS.dashboardView,
+    group: "academics",
+  },
+  {
+    key: "family-fees",
+    href: "/app/family/fees",
+    labelKey: "nav.fees",
+    shortLabelKey: "nav.fees.short",
+    icon: Wallet,
+    permission: PERMISSIONS.childView,
+    group: "finance",
+  },
+  {
+    key: "board",
+    href: "/app/board",
+    labelKey: "nav.board",
+    shortLabelKey: "nav.board.short",
+    icon: Newspaper,
+    permission: PERMISSIONS.noticesRead,
+    group: "communication",
+  },
+  {
+    key: "calendar",
+    href: "/app/calendar",
+    labelKey: "nav.calendar",
+    shortLabelKey: "nav.calendar.short",
+    icon: CalendarDays,
+    permission: PERMISSIONS.noticesRead,
+    group: "communication",
+  },
+  {
+    key: "family-leave",
+    href: "/app/family/leave",
+    labelKey: "nav.leave",
+    shortLabelKey: "nav.leave.short",
+    icon: CalendarOff,
+    permission: PERMISSIONS.dashboardView,
+    group: "academics",
+  },
+];
+
+type PermissionSubject = (Pick<Me, "permissions" | "platformAdmin"> & Partial<Pick<Me, "roles">>) | null | undefined;
 
 export function hasPermission(me: PermissionSubject, permission: string): boolean {
   if (!me) return false;
@@ -255,9 +328,10 @@ export function hasPermission(me: PermissionSubject, permission: string): boolea
   return me.permissions.includes(permission);
 }
 
-/** The navigation items this user may see, in display order. Pure. */
+/** The navigation items this user may see, in display order: the family menu for parents and students. Pure. */
 export function navFor(me: PermissionSubject): NavItem[] {
-  return NAV_ITEMS.filter((item) => hasPermission(me, item.permission));
+  const items = isFamilyMember(me) ? FAMILY_NAV_ITEMS : NAV_ITEMS;
+  return items.filter((item) => hasPermission(me, item.permission));
 }
 
 /** Where a user lands after sign-in (or when opening /app). */
@@ -269,7 +343,7 @@ export function landingPath(me: PermissionSubject): string {
 
 /** The nav item that owns a pathname (longest matching href), if any. */
 export function navItemForPath(pathname: string): NavItem | undefined {
-  return [...NAV_ITEMS]
+  return [...NAV_ITEMS, ...FAMILY_NAV_ITEMS]
     .sort((a, b) => b.href.length - a.href.length)
     .find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));
 }

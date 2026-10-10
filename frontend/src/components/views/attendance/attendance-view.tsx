@@ -19,6 +19,7 @@ import {
   type SectionDay,
 } from "@/lib/types";
 import { useApiData } from "@/lib/use-api-data";
+import { LeaveRequestsLink } from "@/components/views/portal/leave-inbox";
 import { countStatuses, CountsBar, MarkLegend, presentPercent, STATUS_LABEL, statusMark } from "./attendance-shared";
 
 const PLAIN_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -43,7 +44,11 @@ function byClass(sections: SectionDay[]): { classId: string; className: string; 
 
 function marksOf(view: RegisterView): Marks {
   const marks: Marks = {};
-  for (const entry of view.entries) if (entry.status) marks[entry.studentId] = entry.status;
+  for (const entry of view.entries) {
+    if (entry.status) marks[entry.studentId] = entry.status;
+    // An unmarked register starts from approved child leave (docs/api/phase-1-portal.md); the teacher can change it.
+    else if (!view.marked && entry.inSection && entry.approvedLeave) marks[entry.studentId] = entry.approvedLeave.prefill;
+  }
   return marks;
 }
 
@@ -108,7 +113,7 @@ export function AttendanceView({
   const markAllPresent = () => {
     setProblem(null);
     const next: Marks = { ...(draft?.key === key ? draft.marks : base) };
-    for (const entry of entries) if (entry.inSection) next[entry.studentId] = "PRESENT";
+    for (const entry of entries) if (entry.inSection) next[entry.studentId] = entry.approvedLeave?.prefill ?? "PRESENT";
     setDraft({ key, marks: next });
   };
 
@@ -152,6 +157,7 @@ export function AttendanceView({
         title={t("attendance.title")}
         actions={
           <>
+            <LeaveRequestsLink />
             <Link href="/app/attendance/reports" className="btn">
               <BarChart3 size={18} aria-hidden="true" />
               {t("attendance.reports")}
@@ -293,6 +299,9 @@ export function AttendanceView({
                             {[
                               entry.rollNo ? t("students.rollShort", { roll: entry.rollNo }) : null,
                               entry.inSection ? null : t("attendance.left"),
+                              entry.approvedLeave
+                                ? t(entry.approvedLeave.halfDay ? "portal.register.halfDayLeave" : "portal.register.onLeave")
+                                : null,
                             ]
                               .filter(Boolean)
                               .join(" · ") || entry.admissionNo}

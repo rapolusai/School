@@ -110,8 +110,36 @@ describe("navFor", () => {
     expect(keys(accountant)).toEqual(["dashboard", "students", "setup", "fees"]);
   });
 
-  it("gives a parent only the dashboard", () => {
-    expect(keys(PARENT)).toEqual(["dashboard"]);
+  it("gives a parent the family menu instead of the staff one", () => {
+    expect(keys(PARENT)).toEqual(["dashboard", "family-attendance", "family-homework", "family-fees", "family-leave"]);
+  });
+
+  it("gives parents and students the family menu, with fees for parents only", () => {
+    const parent = user(["PARENT"], ["dashboard.view", "child.view", "notices.read"]);
+    const student = user(["STUDENT"], ["dashboard.view", "notices.read"]);
+    expect(keys(parent)).toEqual([
+      "dashboard",
+      "family-attendance",
+      "family-homework",
+      "family-fees",
+      "board",
+      "calendar",
+      "family-leave",
+    ]);
+    expect(keys(student)).toEqual(["dashboard", "family-attendance", "family-homework", "board", "calendar", "family-leave"]);
+    expect(navFor(parent)[0]).toMatchObject({ href: "/app/dashboard", labelKey: "portal.nav.home" });
+    // The phone bottom bar shows the first four: Home, Attendance, Homework and Fees (Notices for a student).
+    expect(navFor(student).slice(0, 4).map((item) => item.href)).toEqual([
+      "/app/dashboard",
+      "/app/family/attendance",
+      "/app/homework",
+      "/app/board",
+    ]);
+  });
+
+  it("keeps the staff menu for a teacher who is also a parent", () => {
+    const both = user(["TEACHER", "PARENT"], [...TEACHER.permissions, "child.view"]);
+    expect(keys(both)).toEqual(["dashboard", "attendance", "students", "setup", "notices"]);
   });
 
   it("gives a platform admin only Schools", () => {
@@ -169,6 +197,8 @@ describe("navItemForPath", () => {
     expect(navItemForPath("/app/fees")?.key).toBe("fees");
     expect(navItemForPath("/app/fees/receipts/abc")?.key).toBe("fees");
     expect(navItemForPath("/app/platform/schools")?.key).toBe("schools");
+    expect(navItemForPath("/app/family/leave")?.key).toBe("family-leave");
+    expect(navItemForPath("/app/family/attendance")?.key).toBe("family-attendance");
     expect(navItemForPath("/app/unknown")).toBeUndefined();
   });
 });

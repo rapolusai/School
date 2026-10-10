@@ -216,24 +216,25 @@ describe("MyClass", () => {
 });
 
 describe("Dashboard", () => {
-  it("shows a parent their children", async () => {
+  // Parents get the family app's home (components/views/portal/family-home.tsx): one child at a time.
+  it("shows a parent their children, one at a time", async () => {
     renderAs(PARENT, <DashboardView />, ["PARENT"]);
-    expect(await screen.findAllByTestId("child-card")).toHaveLength(2);
+    expect(await screen.findAllByTestId("child-card")).toHaveLength(1);
+    expect(screen.getByRole("article", { name: "Arjun Sharma" })).toBeInTheDocument();
+    const switcher = screen.getByRole("radiogroup", { name: "Choose a child" });
+    expect(within(switcher).getByRole("radio", { name: "Arjun Sharma" })).toBeChecked();
+    expect(within(switcher).getByRole("radio", { name: "Diya Sharma" })).not.toBeChecked();
     expect(myStudentRecord).not.toHaveBeenCalled();
   });
 
-  it("shows a parent each child's attendance this month and the last absences", async () => {
+  it("shows a parent the chosen child's attendance this month", async () => {
     renderAs(PARENT, <DashboardView />, ["PARENT"]);
-    const arjun = await screen.findByRole("article", { name: "Arjun Sharma" });
-    const arjunAttendance = await within(arjun).findByTestId("child-attendance");
-    expect(arjunAttendance).toHaveTextContent("Attendance this month");
-    expect(arjunAttendance).toHaveTextContent("78.6%");
-    expect(arjunAttendance).toHaveTextContent("Present 5 of 7 days marked");
-    expect(arjunAttendance).toHaveTextContent("Last absent: 7 Oct 2026, 15 Sept 2026");
-    const diya = screen.getByRole("article", { name: "Diya Sharma" });
-    expect(await within(diya).findByTestId("child-attendance")).toHaveTextContent("No absences this year.");
+    const month = await screen.findByTestId("child-attendance");
+    expect(await within(month).findByText("78.6%")).toBeInTheDocument();
+    expect(month).toHaveTextContent("Attendance this month");
+    expect(month).toHaveTextContent("Present 5 of 7 days marked");
     expect(child).toHaveBeenCalledWith("st1");
-    expect(child).toHaveBeenCalledWith("st2");
+    expect(child).not.toHaveBeenCalledWith("st2");
   });
 
   it("asks a class teacher to mark their own section", async () => {
