@@ -1,5 +1,6 @@
 import {
   Activity,
+  BarChart3,
   Building2,
   CalendarDays,
   CalendarOff,
@@ -77,10 +78,22 @@ export type NavItem = {
   shortLabelKey: MessageKey;
   icon: LucideIcon;
   permission: string;
+  /** Shown with any of these permissions too (the reports hub). */
+  anyOf?: readonly string[];
   group: NavGroup;
   /** Shown only to parents (child.view without staff access), not to staff who also hold child.view. */
   parentOnly?: boolean;
 };
+
+/** Each module's report permission: holding any of them opens the reports hub (docs/api/phase-1-reports.md). */
+export const REPORT_PERMISSIONS: readonly string[] = [
+  PERMISSIONS.attendanceRead,
+  PERMISSIONS.feesRead,
+  PERMISSIONS.admissionsRead,
+  PERMISSIONS.staffRead,
+  PERMISSIONS.homeworkManage,
+  PERMISSIONS.timetableManage,
+];
 
 /** Every navigation item, in display order. */
 export const NAV_ITEMS: readonly NavItem[] = [
@@ -301,6 +314,16 @@ export const NAV_ITEMS: readonly NavItem[] = [
     permission: PERMISSIONS.platformAdmin,
     group: "platform",
   },
+  {
+    key: "reports",
+    href: "/app/reports",
+    labelKey: "nav.reports",
+    shortLabelKey: "nav.reports.short",
+    icon: BarChart3,
+    permission: PERMISSIONS.attendanceRead,
+    anyOf: REPORT_PERMISSIONS,
+    group: "overview",
+  },
 ];
 
 /**
@@ -412,7 +435,16 @@ export function isParentUser(me: NavSubject): boolean {
  */
 export function navFor(me: NavSubject): NavItem[] {
   const items = isFamilyMember(me) ? FAMILY_NAV_ITEMS : NAV_ITEMS;
-  return items.filter((item) => hasPermission(me, item.permission) && (!item.parentOnly || isParentUser(me)));
+  return items.filter(
+    (item) =>
+      (hasPermission(me, item.permission) || (item.anyOf ?? []).some((p) => hasPermission(me, p))) &&
+      (!item.parentOnly || isParentUser(me)),
+  );
+}
+
+/** True when the user holds at least one of the permissions. */
+export function hasAnyPermission(me: PermissionSubject, permissions: readonly string[]): boolean {
+  return permissions.some((p) => hasPermission(me, p));
 }
 
 /** Where a user lands after sign-in (or when opening /app). */

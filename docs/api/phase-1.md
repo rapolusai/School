@@ -238,3 +238,4 @@ Timetable, homework and file attachments: [phase-1-timetable-homework.md](phase-
 Billing (plans, subscriptions, GST invoices, renewals, suspension, platform health — the Super Admin console): see [phase-1-billing.md](phase-1-billing.md).
 Data protection (privacy notice, consent, data requests, export and erasure under the DPDP Act 2023): see [phase-1-privacy.md](phase-1-privacy.md).
 Parent and student app (child leave requests, a student's own attendance, the installable app): [phase-1-portal.md](phase-1-portal.md).
+Staff dashboards and reports (dashboard summary, report exports, print): [phase-1-reports.md](phase-1-reports.md).

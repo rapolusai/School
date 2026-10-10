@@ -61,6 +61,7 @@ describe("navFor", () => {
       "audit",
       "messages",
       "notices",
+      "reports",
     ]);
   });
 
@@ -76,6 +77,7 @@ describe("navFor", () => {
       "audit",
       "messages",
       "notices",
+      "reports",
     ]);
   });
 
@@ -84,12 +86,12 @@ describe("navFor", () => {
       ["ACCOUNTANT"],
       ["dashboard.view", "students.read", "fees.read", "fees.collect", "fees.manage", "academics.read"],
     );
-    expect(keys(accountant)).toEqual(["dashboard", "students", "setup", "fees"]);
+    expect(keys(accountant)).toEqual(["dashboard", "students", "setup", "fees", "reports"]);
     expect(navFor(accountant).find((item) => item.key === "fees")?.group).toBe("finance");
   });
 
   it("gives a teacher the dashboard, attendance, students, school setup and circulars", () => {
-    expect(keys(TEACHER)).toEqual(["dashboard", "attendance", "students", "setup", "notices"]);
+    expect(keys(TEACHER)).toEqual(["dashboard", "attendance", "students", "setup", "notices", "reports"]);
   });
 
   it("gives front office students and setup without administration", () => {
@@ -107,7 +109,7 @@ describe("navFor", () => {
 
   it("gives an accountant no attendance and no message log", () => {
     const accountant = user(["ACCOUNTANT"], ["dashboard.view", "students.read", "fees.read", "fees.collect", "academics.read"]);
-    expect(keys(accountant)).toEqual(["dashboard", "students", "setup", "fees"]);
+    expect(keys(accountant)).toEqual(["dashboard", "students", "setup", "fees", "reports"]);
   });
 
   it("gives a parent the family menu instead of the staff one", () => {
@@ -147,7 +149,7 @@ describe("navFor", () => {
 
   it("keeps the staff menu for a teacher who is also a parent", () => {
     const both = user(["TEACHER", "PARENT"], [...TEACHER.permissions, "child.view"]);
-    expect(keys(both)).toEqual(["dashboard", "attendance", "students", "setup", "notices", "myPrivacy"]);
+    expect(keys(both)).toEqual(["dashboard", "attendance", "students", "setup", "notices", "myPrivacy", "reports"]);
   });
 
   it("gives a parent their privacy page in the family menu", () => {
@@ -168,6 +170,7 @@ describe("navFor", () => {
       "messages",
       "notices",
       "privacy",
+      "reports",
     ]);
     expect(navFor(admin).find((item) => item.key === "privacy")?.group).toBe("administration");
     expect(keys(TEACHER)).not.toContain("privacy");
