@@ -110,3 +110,4 @@ export * from "./types/admissions";
 export * from "./types/attendance";
 export * from "./types/notifications";
 export * from "./types/fees";
+export * from "./types/privacy";

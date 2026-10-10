@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hasPermission, landingPath, navFor, navItemForPath, safeNextPath } from "./permissions";
+import { hasPermission, isParentUser, landingPath, navFor, navItemForPath, safeNextPath } from "./permissions";
 import type { Me } from "./types";
 
 const ALL_SCHOOL_PERMISSIONS =
@@ -108,8 +108,33 @@ describe("navFor", () => {
     expect(keys(accountant)).toEqual(["dashboard", "students", "setup", "fees"]);
   });
 
-  it("gives a parent only the dashboard", () => {
-    expect(keys(PARENT)).toEqual(["dashboard"]);
+  it("gives a parent the dashboard and their privacy page", () => {
+    expect(keys(PARENT)).toEqual(["dashboard", "myPrivacy"]);
+    expect(navFor(PARENT).find((item) => item.key === "myPrivacy")?.href).toBe("/app/my-privacy");
+  });
+
+  it("gives data protection to holders of privacy.manage, under Administration", () => {
+    const admin = user(["SCHOOL_ADMIN"], [...ALL_SCHOOL_PERMISSIONS, "privacy.manage"]);
+    expect(keys(admin)).toEqual([
+      "dashboard",
+      "attendance",
+      "students",
+      "setup",
+      "fees",
+      "users",
+      "roles",
+      "audit",
+      "messages",
+      "privacy",
+    ]);
+    expect(navFor(admin).find((item) => item.key === "privacy")?.group).toBe("administration");
+    expect(keys(TEACHER)).not.toContain("privacy");
+  });
+
+  it("keeps the parent privacy page away from staff who can also view a child", () => {
+    expect(keys(SCHOOL_ADMIN)).not.toContain("myPrivacy");
+    const staffParent = user(["TEACHER", "PARENT"], [...TEACHER.permissions, "child.view"]);
+    expect(keys(staffParent)).toContain("myPrivacy");
   });
 
   it("gives a platform admin only Schools", () => {
@@ -147,6 +172,17 @@ describe("hasPermission", () => {
   });
 });
 
+describe("isParentUser", () => {
+  it("is true for parents and for anyone with child.view but no student list", () => {
+    expect(isParentUser(PARENT)).toBe(true);
+    expect(isParentUser(user(["CUSTOM"], ["child.view"]))).toBe(true);
+    expect(isParentUser(SCHOOL_ADMIN)).toBe(false);
+    expect(isParentUser(TEACHER)).toBe(false);
+    expect(isParentUser(PLATFORM_ADMIN)).toBe(false);
+    expect(isParentUser(null)).toBe(false);
+  });
+});
+
 describe("landingPath", () => {
   it("sends platform admins to Schools and school users to the dashboard", () => {
     expect(landingPath(PLATFORM_ADMIN)).toBe("/app/platform/schools");
@@ -167,6 +203,9 @@ describe("navItemForPath", () => {
     expect(navItemForPath("/app/fees")?.key).toBe("fees");
     expect(navItemForPath("/app/fees/receipts/abc")?.key).toBe("fees");
     expect(navItemForPath("/app/platform/schools")?.key).toBe("schools");
+    expect(navItemForPath("/app/privacy/requests/abc")?.key).toBe("privacy");
+    expect(navItemForPath("/app/privacy/notice")?.key).toBe("privacy");
+    expect(navItemForPath("/app/my-privacy/requests/abc")?.key).toBe("myPrivacy");
     expect(navItemForPath("/app/unknown")).toBeUndefined();
   });
 });
