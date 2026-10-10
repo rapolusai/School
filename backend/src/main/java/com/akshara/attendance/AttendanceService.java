@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.akshara.academics.AcademicsDirectory;
 import com.akshara.academics.AcademicsDirectory.SectionInfo;
 import com.akshara.academics.AcademicsDirectory.YearInfo;
+import com.akshara.attendance.ChildLeaveService.ApprovedLeave;
 import com.akshara.audit.AuditService;
 import com.akshara.audit.AuditService.Actor;
 import com.akshara.communication.SchoolCalendar;
@@ -68,9 +69,13 @@ public class AttendanceService {
             List<SectionDay> sections, String holiday) {
     }
 
-    /** One line of a register. {@code inSection} is false for a student marked earlier who has since left. */
+    /**
+     * One line of a register. {@code inSection} is false for a student marked earlier who has since left.
+     * {@code approvedLeave} is the student's approved leave that day, if any: the web app pre-fills an unmarked student
+     * with its {@code prefill} mark (LEAVE, or HALF_DAY for a half day), which the teacher can still change.
+     */
     public record RegisterEntry(UUID studentId, String fullName, String admissionNo, Integer rollNo,
-            boolean inSection, AttendanceStatus status) {
+            boolean inSection, AttendanceStatus status, ApprovedLeave approvedLeave) {
     }
 
     public record RegisterView(UUID sectionId, UUID classId, String className, String sectionName, String label,
@@ -91,10 +96,11 @@ public class AttendanceService {
     private final AuditService audit;
     private final ApplicationEventPublisher events;
     private final SchoolCalendar calendar;
+    private final ChildLeaveService childLeave;
 
     public AttendanceService(AttendanceRegisterRepository registers, AttendanceEntryRepository entries,
             AcademicsDirectory academics, StudentRoster roster, AbsenceAlerts alerts, AuditService audit,
-            ApplicationEventPublisher events, SchoolCalendar calendar) {
+            ApplicationEventPublisher events, SchoolCalendar calendar, ChildLeaveService childLeave) {
         this.registers = registers;
         this.entries = entries;
         this.academics = academics;
@@ -103,6 +109,7 @@ public class AttendanceService {
         this.audit = audit;
         this.events = events;
         this.calendar = calendar;
+        this.childLeave = childLeave;
     }
 
     /** Today in India, the school day attendance is marked for. */
@@ -236,8 +243,10 @@ public class AttendanceService {
             newlyAbsent.stream().filter(rosterById::containsKey).forEach(id -> absentees.put(id, rosterById.get(id)));
             List<UUID> leavers = newlyAbsent.stream().filter(id -> !rosterById.containsKey(id)).toList();
             absentees.putAll(roster.students(leavers, year.id()));
-            alerted = alerts.apply(section, date, newlyAbsent.stream().map(absentees::get)
-                    .filter(Objects::nonNull).toList(), noLongerAbsent, at);
+            // A parent's approved leave note covers the day: the school already knows, so no absence alert.
+            Set<UUID> onLeave = childLeave.approvedOn(date, newlyAbsent).keySet();
+            alerted = alerts.apply(section, date, newlyAbsent.stream().filter(id -> !onLeave.contains(id))
+                    .map(absentees::get).filter(Objects::nonNull).toList(), noLongerAbsent, at);
             events.publishEvent(new AttendanceSaved(TenantContext.require(), register.getId(), sectionId, date, first,
                     afterCounts));
         }
@@ -323,13 +332,14 @@ public class AttendanceService {
             AttendanceRegister register, Map<UUID, AttendanceStatus> marks, List<RosterStudent> rosterList) {
         List<RegisterEntry> rows = new ArrayList<>();
         Set<UUID> listed = rosterList.stream().map(RosterStudent::id).collect(Collectors.toSet());
+        Map<UUID, ApprovedLeave> leave = childLeave.approvedOn(date, listed);
         rosterList.forEach(s -> rows.add(new RegisterEntry(s.id(), s.fullName(), s.admissionNo(), s.rollNo(), true,
-                marks.get(s.id()))));
+                marks.get(s.id()), leave.get(s.id()))));
         List<UUID> others = marks.keySet().stream().filter(id -> !listed.contains(id)).toList();
         roster.students(others, year.id()).values().stream()
                 .sorted(Comparator.comparing(s -> s.fullName().toLowerCase(Locale.ROOT)))
                 .forEach(s -> rows.add(new RegisterEntry(s.id(), s.fullName(), s.admissionNo(), s.rollNo(), false,
-                        marks.get(s.id()))));
+                        marks.get(s.id()), null)));
         String holiday = calendar.holidayOn(date).orElse(null);
         AttendanceCounts counts = AttendanceCounts.of(marks.values());
         int unmarked = (int) rows.stream().filter(r -> r.status() == null).count();

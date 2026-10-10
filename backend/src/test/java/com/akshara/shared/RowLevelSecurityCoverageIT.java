@@ -10,6 +10,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -22,6 +23,8 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.akshara.attendance.ChildLeaveService;
+import com.akshara.attendance.ChildLeaveService.Application;
 import com.akshara.audit.AuditService.Actor;
 import com.akshara.files.FileUploads;
 import com.akshara.homework.HomeworkScope;
@@ -65,13 +68,16 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
             "communication.circular_target", "communication.circular_recipient", "communication.settings",
             "files.stored_file", "timetable.settings", "timetable.period", "timetable.teacher_assignment",
             "timetable.slot", "timetable.teacher_absence", "timetable.substitution", "homework.homework",
-            "homework.homework_section", "homework.submission", "homework.settings");
+            "homework.homework_section", "homework.submission", "homework.settings", "attendance.leave_request");
 
     @Autowired
     HomeworkService homework;
 
     @Autowired
     StudentHomeworkService learners;
+
+    @Autowired
+    ChildLeaveService childLeave;
 
     /** The last day of the fixtures' current year, 2026-27. */
     static final LocalDate LAST_DAY = LocalDate.of(2027, 3, 31);
@@ -179,6 +185,7 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
                 {"teacherCircularsNeedApproval":true,"enquiryAckEnabled":true,"enquiryAckChannel":"SMS"}""")
                 .andExpect(status().isOk());
         timetableAndHomework(school, admin, section, subject, student, day.isAfter(LAST_DAY) ? LAST_DAY : day);
+        childLeave(school, admin, student, day.isAfter(LAST_DAY) ? LAST_DAY : day);
         School other = api.signup();
 
         try (Connection app = appConnection(); Connection owner = ownerConnection()) {
@@ -354,6 +361,21 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
                     at.plusSeconds(3600));
             return null;
         });
+    }
+
+    /** The student's mother signs in and asks for a day of leave for her child. */
+    private void childLeave(School school, Session admin, String student, LocalDate day) throws Exception {
+        String email = "lata@" + school.code() + ".akshara.test";
+        String guardian = TestApi.read(api.get("/api/students/" + student, admin.accessToken()), "$.guardians[0].id");
+        api.post("/api/students/" + student + "/guardians/" + guardian + "/sign-in", admin.accessToken(), """
+                {"mode":"CREATE","email":"%s","password":"%s"}""".formatted(email, TestApi.PASSWORD))
+                .andExpect(status().isOk());
+        UUID parent = UUID.fromString(TestApi.read(api.get("/api/me",
+                api.login(school.code(), email, TestApi.PASSWORD).accessToken()), "$.id"));
+        LocalDate leaveDay = day.getDayOfWeek() == DayOfWeek.SUNDAY ? day.minusDays(1) : day;
+        TenantContext.runAs(school.tenantId(), () -> childLeave.apply(parent, UUID.fromString(student),
+                new Application(leaveDay, leaveDay, false, "Fever"), new Actor(parent, "Lata Rao"), day,
+                Instant.now()));
     }
 
     private static List<TableInfo> tables() throws SQLException {

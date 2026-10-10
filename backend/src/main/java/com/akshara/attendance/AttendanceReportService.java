@@ -27,11 +27,13 @@ import org.springframework.transaction.annotation.Transactional;
 import com.akshara.academics.AcademicsDirectory;
 import com.akshara.academics.AcademicsDirectory.SectionInfo;
 import com.akshara.academics.AcademicsDirectory.YearInfo;
+import com.akshara.attendance.ChildLeaveService.ApprovedLeave;
 import com.akshara.communication.SchoolCalendar;
 import com.akshara.shared.ApiException;
 import com.akshara.shared.TenantContext;
 import com.akshara.students.StudentRoster;
 import com.akshara.students.StudentRoster.RosterStudent;
+import com.akshara.students.StudentService;
 
 /**
  * Attendance reports: a section's month register (students by days), one student's summary for a date range, the
@@ -84,8 +86,21 @@ public class AttendanceReportService {
             long students, AttendanceCounts counts, Double presentPercent, List<TodayClass> classes) {
     }
 
+    /**
+     * A child's month, for their parent or for the student. {@code today} and the fields after it describe today
+     * whatever the month: the mark (null until the register is marked), the whole-school holiday and the approved
+     * leave, if any. {@code holidays} and {@code leaveDays} are the month's whole-school holidays and approved leave.
+     */
     public record ChildAttendance(UUID studentId, String fullName, String month, int daysMarked,
-            AttendanceCounts counts, Double presentPercent, List<DayMark> days, List<DayMark> recentAbsences) {
+            AttendanceCounts counts, Double presentPercent, List<DayMark> days, List<DayMark> recentAbsences,
+            LocalDate today, AttendanceStatus todayStatus, String todayHoliday, ApprovedLeave todayLeave,
+            List<Holiday> holidays, List<LeaveDay> leaveDays) {
+    }
+
+    public record Holiday(LocalDate date, String title) {
+    }
+
+    public record LeaveDay(LocalDate date, boolean halfDay) {
     }
 
     private final AttendanceRegisterRepository registers;
@@ -94,16 +109,20 @@ public class AttendanceReportService {
     private final AcademicsDirectory academics;
     private final StudentRoster roster;
     private final SchoolCalendar calendar;
+    private final StudentService students;
+    private final ChildLeaveService childLeave;
 
     public AttendanceReportService(AttendanceRegisterRepository registers, AttendanceEntryRepository entries,
             AttendanceService attendance, AcademicsDirectory academics, StudentRoster roster,
-            SchoolCalendar calendar) {
+            SchoolCalendar calendar, StudentService students, ChildLeaveService childLeave) {
         this.registers = registers;
         this.entries = entries;
         this.attendance = attendance;
         this.academics = academics;
         this.roster = roster;
         this.calendar = calendar;
+        this.students = students;
+        this.childLeave = childLeave;
     }
 
     // ------------------------------------------------------------------ month register
@@ -311,9 +330,22 @@ public class AttendanceReportService {
         if (!roster.childIdsOf(parentUserId).contains(studentId)) {
             throw ApiException.notFound("Student");
         }
+        return childMonth(studentId, month);
+    }
+
+    /** The signed-in student's own month; 404 when the sign-in is not linked to a student record. */
+    public ChildAttendance mine(UUID userId, YearMonth month) {
+        TenantContext.require();
+        UUID studentId = students.studentOf(userId).orElseThrow(() -> ApiException.notFound("Student record")).id();
+        return childMonth(studentId, month);
+    }
+
+    private ChildAttendance childMonth(UUID studentId, YearMonth month) {
         RosterStudent student = roster.student(studentId, null).orElseThrow(() -> ApiException.notFound("Student"));
         YearMonth m = month != null ? month : YearMonth.now(AttendanceService.INDIA);
-        List<DayMark> days = daysOf(studentId, m.atDay(1), m.atEndOfMonth());
+        LocalDate first = m.atDay(1);
+        LocalDate last = m.atEndOfMonth();
+        List<DayMark> days = daysOf(studentId, first, last);
         AttendanceCounts counts = AttendanceCounts.of(days.stream().map(DayMark::status).toList());
         LocalDate today = AttendanceService.today();
         LocalDate since = academics.currentYear().map(YearInfo::startsOn).filter(d -> !d.isAfter(today))
@@ -321,8 +353,16 @@ public class AttendanceReportService {
         List<DayMark> absences = new ArrayList<>(daysOf(studentId, since, today).stream()
                 .filter(d -> d.status() == AttendanceStatus.ABSENT).toList());
         Collections.reverse(absences);
+        AttendanceStatus todayStatus = daysOf(studentId, today, today).stream().map(DayMark::status).findFirst()
+                .orElse(null);
+        List<Holiday> holidays = calendar.holidaysBetween(first, last).entrySet().stream()
+                .map(e -> new Holiday(e.getKey(), e.getValue())).toList();
+        List<LeaveDay> leaveDays = childLeave.approvedDays(studentId, first, last).entrySet().stream()
+                .map(e -> new LeaveDay(e.getKey(), e.getValue())).toList();
         return new ChildAttendance(student.id(), student.fullName(), m.toString(), counts.total(), counts,
-                counts.presentPercent(), days, absences.stream().limit(RECENT_ABSENCES).toList());
+                counts.presentPercent(), days, absences.stream().limit(RECENT_ABSENCES).toList(), today, todayStatus,
+                calendar.holidayOn(today).orElse(null), childLeave.approvedOn(today, List.of(studentId))
+                        .get(studentId), holidays, leaveDays);
     }
 
     private List<DayMark> daysOf(UUID studentId, LocalDate from, LocalDate to) {
