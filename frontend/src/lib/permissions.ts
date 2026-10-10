@@ -9,6 +9,7 @@ import {
   IdCard,
   LayoutDashboard,
   Megaphone,
+  LockKeyhole,
   MessageSquareText,
   Newspaper,
   NotebookPen,
@@ -17,6 +18,7 @@ import {
   ScrollText,
   ShieldCheck,
   UserCheck,
+  UserLock,
   Users,
   Wallet,
   type LucideIcon,
@@ -60,6 +62,7 @@ export const PERMISSIONS = {
   timetableManage: "timetable.manage",
   homeworkManage: "homework.manage",
   billingRead: "billing.read",
+  privacyManage: "privacy.manage",
 } as const;
 
 export type NavGroup = "overview" | "academics" | "finance" | "staff" | "communication" | "administration" | "platform";
@@ -73,6 +76,8 @@ export type NavItem = {
   icon: LucideIcon;
   permission: string;
   group: NavGroup;
+  /** Shown only to parents (child.view without staff access), not to staff who also hold child.view. */
+  parentOnly?: boolean;
 };
 
 /** Every navigation item, in display order. */
@@ -249,6 +254,25 @@ export const NAV_ITEMS: readonly NavItem[] = [
     group: "communication",
   },
   {
+    key: "privacy",
+    href: "/app/privacy",
+    labelKey: "nav.privacy",
+    shortLabelKey: "nav.privacy.short",
+    icon: LockKeyhole,
+    permission: PERMISSIONS.privacyManage,
+    group: "administration",
+  },
+  {
+    key: "myPrivacy",
+    href: "/app/my-privacy",
+    labelKey: "nav.myPrivacy",
+    shortLabelKey: "nav.myPrivacy.short",
+    icon: UserLock,
+    permission: PERMISSIONS.childView,
+    group: "overview",
+    parentOnly: true,
+  },
+  {
     key: "schools",
     href: "/app/platform/schools",
     labelKey: "nav.schools",
@@ -278,6 +302,8 @@ export const NAV_ITEMS: readonly NavItem[] = [
 ];
 
 type PermissionSubject = Pick<Me, "permissions" | "platformAdmin"> | null | undefined;
+/** Navigation also looks at roles, to tell parents from staff. */
+type NavSubject = (Pick<Me, "permissions" | "platformAdmin"> & { roles?: string[] }) | null | undefined;
 
 export function hasPermission(me: PermissionSubject, permission: string): boolean {
   if (!me) return false;
@@ -285,9 +311,21 @@ export function hasPermission(me: PermissionSubject, permission: string): boolea
   return me.permissions.includes(permission);
 }
 
+/**
+ * A parent's view of the app: child.view, and either the PARENT role or no staff access to
+ * students (a School Admin also holds child.view). Same rule as the dashboard.
+ */
+export function isParentUser(me: NavSubject): boolean {
+  if (!me) return false;
+  return (
+    hasPermission(me, PERMISSIONS.childView) &&
+    (Boolean(me.roles?.includes("PARENT")) || !hasPermission(me, PERMISSIONS.studentsRead))
+  );
+}
+
 /** The navigation items this user may see, in display order. Pure. */
-export function navFor(me: PermissionSubject): NavItem[] {
-  return NAV_ITEMS.filter((item) => hasPermission(me, item.permission));
+export function navFor(me: NavSubject): NavItem[] {
+  return NAV_ITEMS.filter((item) => hasPermission(me, item.permission) && (!item.parentOnly || isParentUser(me)));
 }
 
 /** Where a user lands after sign-in (or when opening /app). */

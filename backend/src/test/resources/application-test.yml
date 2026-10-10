@@ -27,6 +27,10 @@ akshara:
     reminders:
       # Tests run the homework reminder job themselves.
       enabled: false
+  privacy:
+    export-cleanup:
+      # Tests run the export clean-up themselves.
+      enabled: false
 logging:
   level:
     com.akshara: INFO

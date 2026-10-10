@@ -171,6 +171,18 @@ class Application extends AssignedIdEntity {
         moveTo(ApplicationStage.ADMITTED);
     }
 
+    /**
+     * Erasure of the admitted child's personal data: the name becomes a placeholder, the date of birth keeps only its
+     * year, and the previous school and the family's message are cleared. Stage, class, fee and consent stay.
+     */
+    void anonymise(String placeholderName) {
+        this.firstName = placeholderName;
+        this.lastName = null;
+        this.dateOfBirth = LocalDate.of(dateOfBirth.getYear(), 1, 1);
+        this.previousSchool = null;
+        this.message = null;
+    }
+
     String childName() {
         return lastName == null || lastName.isBlank() ? firstName : firstName + " " + lastName;
     }

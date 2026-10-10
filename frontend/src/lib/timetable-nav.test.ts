@@ -49,7 +49,7 @@ describe("timetable and homework in the navigation", () => {
     expect(keys(ACCOUNTANT)).toContain("timetable");
     expect(keys(ACCOUNTANT)).not.toContain("homework");
     expect(keys(STUDENT)).toEqual(["dashboard"]);
-    expect(keys(PARENT)).toEqual(["dashboard"]);
+    expect(keys(PARENT)).toEqual(["dashboard", "myPrivacy"]);
   });
 
   it("owns the substitution sheet and homework detail pages", () => {

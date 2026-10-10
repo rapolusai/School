@@ -115,3 +115,4 @@ export * from "./types/communication";
 export * from "./types/timetable";
 export * from "./types/homework";
 export * from "./types/billing";
+export * from "./types/privacy";

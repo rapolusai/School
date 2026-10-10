@@ -37,6 +37,8 @@ public class SecurityConfig {
 
     /** The public admissions enquiry form of a school (no sign-in; rate-limited by the admissions module). */
     static final String PUBLIC_ADMISSION_INFO = "/api/public/schools/*/admission-info";
+    /** A school's current privacy notice, readable by anyone (parents read it before they sign in or enquire). */
+    static final String PUBLIC_PRIVACY_NOTICE = "/api/public/schools/*/privacy-notice";
     static final String PUBLIC_ENQUIRIES = "/api/public/schools/*/enquiries";
 
     @Bean
@@ -51,6 +53,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, PUBLIC_POSTS).permitAll()
                         .requestMatchers(HttpMethod.GET, PUBLIC_ADMISSION_INFO).permitAll()
+                        .requestMatchers(HttpMethod.GET, PUBLIC_PRIVACY_NOTICE).permitAll()
                         .requestMatchers(HttpMethod.POST, PUBLIC_ENQUIRIES).permitAll()
                         .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
                         .requestMatchers("/api/platform/**").hasAuthority(Permissions.PLATFORM_ADMIN)

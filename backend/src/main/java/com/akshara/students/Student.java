@@ -126,6 +126,23 @@ class Student extends AssignedIdEntity {
         this.userAccountId = userId;
     }
 
+    /**
+     * Erasure of a student who has left: the name becomes a placeholder, the date of birth keeps only its year, and
+     * the other personal fields and the student's own sign-in link are cleared. The admission number, dates and status
+     * stay, so records the school must keep (fee receipts) still point at a student.
+     */
+    void anonymise(String placeholderName) {
+        this.firstName = placeholderName;
+        this.lastName = null;
+        this.dateOfBirth = LocalDate.of(dateOfBirth.getYear(), 1, 1);
+        this.bloodGroup = null;
+        this.address = null;
+        this.previousSchool = null;
+        this.apaarId = null;
+        this.leavingReason = null;
+        this.userAccountId = null;
+    }
+
     String fullName() {
         return lastName == null || lastName.isBlank() ? firstName : firstName + " " + lastName;
     }

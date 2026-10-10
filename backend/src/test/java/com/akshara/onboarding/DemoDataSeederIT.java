@@ -81,11 +81,14 @@ class DemoDataSeederIT extends IntegrationTest {
     @Autowired
     DemoBillingData demoBilling;
 
+    @Autowired
+    DemoPrivacyData demoPrivacy;
+
     @Test
     void seedsADemoSchoolWithClassesAndStudentsOnce() throws Exception {
         DemoDataSeeder seeder = new DemoDataSeeder(provisioning, tenants, users, passwordEncoder, DEMO_PASSWORD,
                 academics, students, transactionManager, admissions, attendanceData, demoFees, staffData,
-                communicationData, timetableHomeworkData, demoBilling);
+                communicationData, timetableHomeworkData, demoBilling, demoPrivacy);
         seeder.run(null);
         // A second start leaves the existing demo school alone.
         seeder.run(null);
@@ -320,5 +323,20 @@ class DemoDataSeederIT extends IntegrationTest {
                 .andExpect(jsonPath("$.taxSplit").value("CGST_SGST"))
                 .andExpect(jsonPath("$.payments.length()").value(1))
                 .andExpect(jsonPath("$.payments[0].reference").value(DemoBillingData.UTR));
+        // Data protection: notice version 1 with the principal as grievance officer, the demo parent's consent for
+        // both children, and one open access request about Arjun.
+        api.get("/api/privacy/notice", principal.accessToken())
+                .andExpect(jsonPath("$.current.version").value(1))
+                .andExpect(jsonPath("$.officer.name").value("Lakshmi Iyer"));
+        api.get("/api/me/privacy", parent.accessToken())
+                .andExpect(jsonPath("$.needsConsent").value(false))
+                .andExpect(jsonPath("$.children[0].purposes[?(@.purpose == 'PHOTOS')].status", contains("GIVEN")))
+                .andExpect(jsonPath("$.children[1].purposes[?(@.purpose == 'PHOTOS')].status",
+                        contains("DECLINED")));
+        api.get("/api/privacy/requests?status=OPEN", principal.accessToken())
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.items[0].type").value("ACCESS"))
+                .andExpect(jsonPath("$.items[0].studentName").value("Arjun Sharma"))
+                .andExpect(jsonPath("$.items[0].requesterName").value("Anitha Sharma"));
     }
 }
