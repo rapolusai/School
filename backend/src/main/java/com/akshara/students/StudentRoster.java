@@ -226,6 +226,14 @@ public class StudentRoster {
                 .getResultList());
     }
 
+    /** How many students the school has on roll (status ACTIVE): its plan's student count and billing use this. */
+    public long activeCount() {
+        TenantContext.require();
+        return entityManager.createQuery("select count(s) from Student s "
+                + "where s.status = com.akshara.students.StudentStatus.ACTIVE", Long.class)
+                .getSingleResult();
+    }
+
     private static RosterStudent view(Student s, Enrollment e) {
         return new RosterStudent(s.getId(), s.fullName(), s.getAdmissionNo(), e.getRollNo(), s.isActive());
     }

@@ -15,7 +15,11 @@ import { landingPath, safeNextPath } from "@/lib/permissions";
 
 type Mode = "school" | "platform";
 
+/** Problem type the API sends when the right password meets a suspended school (docs/api/phase-1-billing.md). */
+export const SCHOOL_PAUSED_TYPE = "urn:akshara:problem:school-paused";
+
 export function loginErrorMessage(error: ApiError, mode: Mode, t: Translate): string {
+  if (error.status === 401 && mode === "school" && error.type === SCHOOL_PAUSED_TYPE) return t("login.error.paused");
   if (error.status === 401) {
     return mode === "platform" ? t("login.error.invalidPlatform") : t("login.error.invalid");
   }

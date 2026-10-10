@@ -95,6 +95,23 @@ akshara:
       # that switched homework reminders on). Runs hourly from 17:00 to 20:00 India time; each homework is done once.
       enabled: ${HOMEWORK_REMINDERS_ENABLED:true}
       cron: ${HOMEWORK_REMINDERS_CRON:0 0 17-20 * * *}
+  billing:
+    # Akshara as the seller on the schools' GST invoices. The defaults are obvious placeholders (never a real GSTIN);
+    # every environment sets the real values from SSM Parameter Store.
+    seller:
+      name: ${BILLING_SELLER_NAME:Akshara School Cloud (sample seller)}
+      address: "${BILLING_SELLER_ADDRESS:Sample address - set BILLING_SELLER_ADDRESS}"
+      state-code: ${BILLING_SELLER_STATE_CODE:36}
+      gstin: ${BILLING_SELLER_GSTIN:36XXXXX0000X1ZX}
+    # SAC 998315: hosting and IT infrastructure provisioning, which covers software as a service.
+    sac-code: ${BILLING_SAC_CODE:998315}
+    invoice-prefix: ${BILLING_INVOICE_PREFIX:AKS}
+    payment-terms-days: 15
+    renewal-window-days: 30
+    trial-warning-days: 7
+  # Shown on the Super Admin's platform health page. Maven fills in the project version; CI may pass the commit.
+  build:
+    version: ${APP_VERSION:@project.version@}
 
 ---
 # In AWS the API never holds the owner password: migrations run as a separate one-off task (profile "migrate").

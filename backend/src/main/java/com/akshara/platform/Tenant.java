@@ -136,6 +136,16 @@ public class Tenant extends AssignedIdEntity {
         return udiseCode;
     }
 
+    /** Set by the Super Admin only (billing): converting a trial, marking past due, suspending, reactivating. */
+    void changeStatus(TenantStatus status) {
+        this.status = status;
+    }
+
+    /** Set by the Super Admin only, when a school starts paying or changes plan. */
+    void changePlan(Plan plan) {
+        this.plan = plan;
+    }
+
     /** Contact details a school admin maintains. Name, code, board and plan are not changed here. */
     void updateProfile(String address, String phone, String contactEmail, String udiseCode) {
         this.address = address;

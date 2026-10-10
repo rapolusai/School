@@ -10,16 +10,30 @@ public class ApiException extends RuntimeException {
     private final HttpStatus status;
     private final String title;
     private final Map<String, String> errors;
+    private final String type;
 
     public ApiException(HttpStatus status, String title, String detail) {
         this(status, title, detail, Map.of());
     }
 
     public ApiException(HttpStatus status, String title, String detail, Map<String, String> errors) {
+        this(status, title, detail, errors, null);
+    }
+
+    /**
+     * @param type the problem type URI the web app can recognise (RFC 9457), or null for {@code about:blank}
+     */
+    public ApiException(HttpStatus status, String title, String detail, Map<String, String> errors, String type) {
         super(detail);
         this.status = status;
         this.title = title;
         this.errors = errors;
+        this.type = type;
+    }
+
+    /** The problem type URI, or null for {@code about:blank}. */
+    public String type() {
+        return type;
     }
 
     public HttpStatus status() {

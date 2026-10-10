@@ -1,6 +1,7 @@
 "use client";
 
 import { Plus, Search } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { Pill, statusTone } from "@/components/ui/pill";
 import { ErrorState, LoadingRows, PageHead } from "@/components/ui/states";
@@ -93,7 +94,12 @@ export function SchoolsView() {
                             {initials(tenant.name)}
                           </span>
                           <div className="min-w-0">
-                            <b className="truncate">{tenant.name}</b>
+                            <Link
+                              href={`/app/platform/schools/${encodeURIComponent(tenant.id)}`}
+                              className="link block truncate font-bold"
+                            >
+                              {tenant.name}
+                            </Link>
                             <span className="sub">
                               <span className="mono">{tenant.code}</span>
                               {tenant.city ? ` · ${tenant.city}` : ""}

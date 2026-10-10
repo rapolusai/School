@@ -41,6 +41,15 @@ public class AuthService {
 
     private static final String GENERIC_FAILURE = "Those details don't match. Check the school code, email and password.";
 
+    /**
+     * Problem type of a sign-in refused because the Super Admin suspended the school. Only someone who gave the right
+     * email and password sees it; every other failure stays generic, so it reveals nothing to anyone else.
+     */
+    public static final String SCHOOL_PAUSED_TYPE = "urn:akshara:problem:school-paused";
+
+    private static final String SCHOOL_PAUSED = "Sign-in to this school is paused at the moment. Please contact the "
+            + "school office.";
+
     public record Session(String accessToken, long expiresIn, Me user, String refreshToken) {
     }
 
@@ -117,6 +126,7 @@ public class AuthService {
         // Hash outside any transaction so a slow check never holds a database connection.
         boolean passwordOk = passwordEncoder.matches(password, candidate == null ? dummyHash : candidate.passwordHash());
         boolean allowed = passwordOk && candidate != null && candidate.active() && tenant.status().allowsSignIn();
+        boolean paused = passwordOk && candidate != null && candidate.active() && !tenant.status().allowsSignIn();
 
         Session session = TenantContext.runAs(tenant.id(), () -> tx.execute(status -> {
             if (candidate == null) {
@@ -128,7 +138,8 @@ public class AuthService {
             }
             Actor actor = new Actor(user.getId(), user.getName());
             if (!allowed) {
-                audit.record(actor, "auth.login_failed", "user", user.getId(), Map.of());
+                audit.record(actor, "auth.login_failed", "user", user.getId(),
+                        paused ? Map.of("reason", "school_suspended") : Map.of());
                 return null;
             }
             user.recordLogin();
@@ -137,6 +148,11 @@ public class AuthService {
             return session(user, tenant, refreshToken);
         }));
         if (session == null) {
+            if (paused) {
+                rateLimiter.recordFailure(key);
+                throw new ApiException(org.springframework.http.HttpStatus.UNAUTHORIZED, "Sign-in paused", SCHOOL_PAUSED,
+                        Map.of(), SCHOOL_PAUSED_TYPE);
+            }
             throw failed(key);
         }
         rateLimiter.reset(key);

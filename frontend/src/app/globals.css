@@ -3260,3 +3260,21 @@
     min-width: 160px;
   }
 }
+
+/* ---- billing ---- */
+@layer components {
+  .alert-warn {
+    background: var(--warn-soft);
+    color: var(--warn);
+  }
+  /* GST invoice totals: a light line between tax rows, a strong one above the total. */
+  .invoice .invoice-totals th,
+  .invoice .invoice-totals td {
+    border-top: 1px solid var(--line);
+    padding: 8px 10px;
+  }
+  .invoice .invoice-totals .invoice-grand th,
+  .invoice .invoice-totals .invoice-grand td {
+    border-top: 2px solid var(--ink);
+  }
+}

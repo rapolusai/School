@@ -78,11 +78,14 @@ class DemoDataSeederIT extends IntegrationTest {
     @Autowired
     DemoTimetableHomeworkData timetableHomeworkData;
 
+    @Autowired
+    DemoBillingData demoBilling;
+
     @Test
     void seedsADemoSchoolWithClassesAndStudentsOnce() throws Exception {
         DemoDataSeeder seeder = new DemoDataSeeder(provisioning, tenants, users, passwordEncoder, DEMO_PASSWORD,
                 academics, students, transactionManager, admissions, attendanceData, demoFees, staffData,
-                communicationData, timetableHomeworkData);
+                communicationData, timetableHomeworkData, demoBilling);
         seeder.run(null);
         // A second start leaves the existing demo school alone.
         seeder.run(null);
@@ -302,5 +305,20 @@ class DemoDataSeederIT extends IntegrationTest {
                 .andExpect(jsonPath("$.items.length()").value(DemoTimetableHomeworkData.HOMEWORK.size()));
         api.get("/api/homework?when=all", ravi.accessToken())
                 .andExpect(jsonPath("$.total").value(DemoTimetableHomeworkData.HOMEWORK.size()));
+        // Billing with Akshara: a yearly Growth subscription in Telangana, its one invoice paid by bank transfer.
+        String invoice = TestApi.read(api.get("/api/billing", admin.accessToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.plan").value("GROWTH"))
+                .andExpect(jsonPath("$.subscription.billingCycle").value("YEARLY"))
+                .andExpect(jsonPath("$.details.legalName").value(DemoBillingData.LEGAL_NAME))
+                .andExpect(jsonPath("$.details.stateCode").value("36"))
+                .andExpect(jsonPath("$.invoices.length()").value(1))
+                .andExpect(jsonPath("$.invoices[0].status").value("PAID"))
+                .andExpect(jsonPath("$.notice.kind").doesNotExist()), "$.invoices[0].id");
+        api.get("/api/billing/invoices/" + invoice, admin.accessToken())
+                .andExpect(jsonPath("$.taxSplit").value("CGST_SGST"))
+                .andExpect(jsonPath("$.payments.length()").value(1))
+                .andExpect(jsonPath("$.payments[0].reference").value(DemoBillingData.UTR));
     }
 }

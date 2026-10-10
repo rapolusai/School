@@ -1,4 +1,5 @@
 import {
+  Activity,
   Building2,
   CalendarDays,
   CalendarOff,
@@ -11,6 +12,7 @@ import {
   MessageSquareText,
   Newspaper,
   NotebookPen,
+  ReceiptIndianRupee,
   School,
   ScrollText,
   ShieldCheck,
@@ -23,7 +25,7 @@ import type { MessageKey } from "./i18n/en";
 import type { Me } from "./types";
 
 /** Permission codes from docs/api/phase-0.md, phase-1.md, phase-1-attendance.md, phase-1-staff.md,
- * phase-1-communication.md and phase-1-timetable-homework.md. */
+ * phase-1-communication.md, phase-1-timetable-homework.md and phase-1-billing.md. */
 export const PERMISSIONS = {
   dashboardView: "dashboard.view",
   usersRead: "users.read",
@@ -57,6 +59,7 @@ export const PERMISSIONS = {
   timetableRead: "timetable.read",
   timetableManage: "timetable.manage",
   homeworkManage: "homework.manage",
+  billingRead: "billing.read",
 } as const;
 
 export type NavGroup = "overview" | "academics" | "finance" | "staff" | "communication" | "administration" | "platform";
@@ -144,6 +147,15 @@ export const NAV_ITEMS: readonly NavItem[] = [
     shortLabelKey: "nav.fees.short",
     icon: Wallet,
     permission: PERMISSIONS.feesRead,
+    group: "finance",
+  },
+  {
+    key: "billing",
+    href: "/app/billing",
+    labelKey: "nav.billing",
+    shortLabelKey: "nav.billing.short",
+    icon: ReceiptIndianRupee,
+    permission: PERMISSIONS.billingRead,
     group: "finance",
   },
   {
@@ -242,6 +254,24 @@ export const NAV_ITEMS: readonly NavItem[] = [
     labelKey: "nav.schools",
     shortLabelKey: "nav.schools.short",
     icon: Building2,
+    permission: PERMISSIONS.platformAdmin,
+    group: "platform",
+  },
+  {
+    key: "platformBilling",
+    href: "/app/platform/billing",
+    labelKey: "nav.platformBilling",
+    shortLabelKey: "nav.platformBilling.short",
+    icon: ReceiptIndianRupee,
+    permission: PERMISSIONS.platformAdmin,
+    group: "platform",
+  },
+  {
+    key: "platformHealth",
+    href: "/app/platform/health",
+    labelKey: "nav.platformHealth",
+    shortLabelKey: "nav.platformHealth.short",
+    icon: Activity,
     permission: PERMISSIONS.platformAdmin,
     group: "platform",
   },

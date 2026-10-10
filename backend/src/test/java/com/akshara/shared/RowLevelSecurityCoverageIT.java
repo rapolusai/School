@@ -29,6 +29,7 @@ import com.akshara.homework.HomeworkService;
 import com.akshara.homework.HomeworkService.HomeworkInput;
 import com.akshara.homework.HomeworkViews.HomeworkDetail;
 import com.akshara.homework.StudentHomeworkService;
+import com.akshara.support.BillingFixtures;
 import com.akshara.support.FeeFixtures;
 import com.akshara.support.FeeFixtures.Heads;
 import com.akshara.support.IntegrationTest;
@@ -45,7 +46,7 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
 
     /** Tables that are not owned by one school. Everything else must be isolated. */
     static final Set<String> NOT_SCHOOL_OWNED = Set.of("platform.tenant", "platform.platform_admin",
-            "public.flyway_schema_history");
+            "public.flyway_schema_history", "billing.subscription", "billing.invoice_counter");
 
     /** Tables whose isolation comes from a parent row instead of their own tenant_id. */
     static final Set<String> ISOLATED_THROUGH_PARENT = Set.of("identity.user_role");
@@ -65,7 +66,8 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
             "communication.circular_target", "communication.circular_recipient", "communication.settings",
             "files.stored_file", "timetable.settings", "timetable.period", "timetable.teacher_assignment",
             "timetable.slot", "timetable.teacher_absence", "timetable.substitution", "homework.homework",
-            "homework.homework_section", "homework.submission", "homework.settings");
+            "homework.homework_section", "homework.submission", "homework.settings", "billing.invoice",
+            "billing.invoice_payment");
 
     @Autowired
     HomeworkService homework;
@@ -179,6 +181,10 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
                 {"teacherCircularsNeedApproval":true,"enquiryAckEnabled":true,"enquiryAckChannel":"SMS"}""")
                 .andExpect(status().isOk());
         timetableAndHomework(school, admin, section, subject, student, day.isAfter(LAST_DAY) ? LAST_DAY : day);
+        // The school's subscription invoice from Akshara and a payment against it.
+        BillingFixtures billing = new BillingFixtures(api);
+        Session root = billing.root();
+        billing.pay(root, school.tenantId(), billing.paying(root, school.tenantId(), "36"));
         School other = api.signup();
 
         try (Connection app = appConnection(); Connection owner = ownerConnection()) {

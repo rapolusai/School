@@ -53,6 +53,8 @@ public final class Permissions {
      * sections and subjects the person teaches (teacher assignments) and the sections they are class teacher of.
      */
     public static final String HOMEWORK_MANAGE = "homework.manage";
+    /** The school's own Billing page: plan, trial, renewal date and Akshara's invoices to the school. */
+    public static final String BILLING_READ = "billing.read";
 
     public static final String PLATFORM_ADMIN = "platform.admin";
 
@@ -62,7 +64,7 @@ public final class Permissions {
             EXAMS_MANAGE, NOTICES_SEND, CHILD_VIEW, ACADEMICS_READ, ADMISSIONS_READ, ADMISSIONS_MANAGE,
             ATTENDANCE_MANAGE, MESSAGES_READ, FEES_MANAGE, STAFF_READ, STAFF_MANAGE, LEAVE_REQUEST, LEAVE_APPROVE,
             STAFF_ATTENDANCE_MANAGE, NOTICES_READ, NOTICES_APPROVE, CALENDAR_MANAGE, TIMETABLE_READ, TIMETABLE_MANAGE,
-            HOMEWORK_MANAGE);
+            HOMEWORK_MANAGE, BILLING_READ);
 
     private Permissions() {
     }
