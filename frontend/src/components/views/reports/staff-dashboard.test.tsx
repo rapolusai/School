@@ -216,7 +216,7 @@ describe("tilesFor", () => {
       "clashes",
     ]);
     const byKey = Object.fromEntries(tiles.map((tile) => [tile.key, tile]));
-    expect(byKey.attendanceToday).toMatchObject({ value: "95.3%", sub: "10 of 12 sections marked", attention: true });
+    expect(byKey.attendanceToday).toMatchObject({ value: "95.3%", sub: "Marked: 10 of 12", attention: true });
     expect(byKey.absentToday).toMatchObject({ value: "14", sub: "3 on leave", href: "/app/reports/absentees" });
     expect(byKey.students).toMatchObject({ value: "412", sub: "3 admitted this month" });
     expect(byKey.feesToday).toMatchObject({ value: "₹45,000", sub: "3 receipts" });
@@ -235,8 +235,8 @@ describe("tilesFor", () => {
   it("gives a teacher their sections, homework and substitutions", () => {
     const tiles = tilesFor(TEACHER_SUMMARY, "teacher", t, (p) => p !== "leave.approve");
     expect(tiles.map((tile) => [tile.key, tile.value, tile.sub])).toEqual([
-      ["sectionsToMark", "1", "0 of 1 sections marked"],
-      ["attendanceToday", "—", "0 of 1 sections marked"],
+      ["sectionsToMark", "1", "Marked: 0 of 1"],
+      ["attendanceToday", "—", "Marked: 0 of 1"],
       ["homework", "3", "Handed in, not yet reviewed"],
       ["substitutions", "1", "4 classes today"],
     ]);

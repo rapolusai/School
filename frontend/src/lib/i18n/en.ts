@@ -2623,7 +2623,7 @@ export const en = {
   "reports.tile.sectionsToMark": "Sections to mark",
   "reports.tile.attendanceToday": "Attendance today",
   "reports.tile.myAttendanceToday": "My classes today",
-  "reports.tile.sectionsMarked": "{marked} of {total} sections marked",
+  "reports.tile.sectionsMarked": "Marked: {marked} of {total}",
   "reports.tile.noSections": "No sections set up yet",
   "reports.tile.holiday": "Holiday: {name}",
   "reports.tile.absentToday": "Absent today",

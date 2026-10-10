@@ -235,3 +235,4 @@ Fees (heads, structures, concessions, dues, payments, receipts, online payments,
 Staff records, staff attendance and leave: [phase-1-staff.md](phase-1-staff.md).
 Circulars, notice boards and the school calendar: [phase-1-communication.md](phase-1-communication.md).
 Timetable, homework and file attachments: [phase-1-timetable-homework.md](phase-1-timetable-homework.md).
+Staff dashboards and reports (dashboard summary, report exports, print): [phase-1-reports.md](phase-1-reports.md).

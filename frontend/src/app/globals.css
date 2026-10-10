@@ -3433,9 +3433,10 @@
     flex-direction: column;
     gap: 10px;
   }
+  /* A fixed value column keeps every bar's track the same length, so the stages compare. */
   .funnel-row {
     display: grid;
-    grid-template-columns: minmax(84px, 120px) minmax(0, 1fr) minmax(0, auto);
+    grid-template-columns: minmax(84px, 120px) minmax(0, 1fr) 12rem;
     align-items: center;
     gap: 4px 12px;
   }
@@ -3554,6 +3555,9 @@
     padding: 11px 10px;
     border-bottom: 1px solid var(--line);
     white-space: normal;
+  }
+  .report-table tbody tr:last-child th {
+    border-bottom: 0;
   }
   .report-table tfoot th,
   .report-table tfoot td {

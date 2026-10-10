@@ -2622,7 +2622,7 @@ export const hi: Record<MessageKey, string> = {
   "reports.tile.sectionsToMark": "दर्ज करने बाकी सेक्शन",
   "reports.tile.attendanceToday": "आज की उपस्थिति",
   "reports.tile.myAttendanceToday": "आज मेरी कक्षाएँ",
-  "reports.tile.sectionsMarked": "{total} में से {marked} सेक्शन दर्ज",
+  "reports.tile.sectionsMarked": "दर्ज: {total} में से {marked}",
   "reports.tile.noSections": "अभी कोई सेक्शन नहीं बना",
   "reports.tile.holiday": "छुट्टी: {name}",
   "reports.tile.absentToday": "आज अनुपस्थित",
