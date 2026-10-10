@@ -122,14 +122,12 @@ export async function downloadExport(path: string, filename: string): Promise<vo
   if (!res.ok) throw await parseErrorResponse(res);
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
-  try {
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } finally {
-    URL.revokeObjectURL(url);
-  }
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  // Some browsers read the object URL after click() returns; free it a little later.
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }

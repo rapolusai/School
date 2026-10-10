@@ -232,3 +232,4 @@ table is missing either.
 Admissions (enquiries, applications, tests and interviews, offers, admitting, the public enquiry form): see [phase-1-admissions.md](phase-1-admissions.md).
 Attendance and the notifications outbox: [phase-1-attendance.md](phase-1-attendance.md).
 Fees (heads, structures, concessions, dues, payments, receipts, online payments, reports): see [phase-1-fees.md](phase-1-fees.md).
+Data protection (privacy notice, consent, data requests, export and erasure under the DPDP Act 2023): see [phase-1-privacy.md](phase-1-privacy.md).

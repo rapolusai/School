@@ -1536,7 +1536,7 @@ export const en = {
   "privacy.requests.kpi.open": "Open",
   "privacy.requests.kpi.overdue": "Overdue",
   "privacy.requests.kpi.closed": "Closed",
-  "privacy.requests.search": "Search by parent, student or admission no.",
+  "privacy.requests.search": "Search by the name of the parent who asked",
   "privacy.requests.filter.status": "Status",
   "privacy.requests.filter.OPEN": "Open",
   "privacy.requests.filter.ALL": "All",

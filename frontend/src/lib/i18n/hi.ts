@@ -1534,7 +1534,7 @@ export const hi: Record<MessageKey, string> = {
   "privacy.requests.kpi.open": "खुले",
   "privacy.requests.kpi.overdue": "देरी वाले",
   "privacy.requests.kpi.closed": "बंद",
-  "privacy.requests.search": "अभिभावक, विद्यार्थी या प्रवेश संख्या से खोजें",
+  "privacy.requests.search": "अनुरोध करने वाले अभिभावक के नाम से खोजें",
   "privacy.requests.filter.status": "स्थिति",
   "privacy.requests.filter.OPEN": "खुले",
   "privacy.requests.filter.ALL": "सभी",
