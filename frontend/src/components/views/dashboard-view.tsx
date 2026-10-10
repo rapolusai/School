@@ -33,6 +33,7 @@ import { AttendanceTodayCard, MarkAttendanceCards } from "./attendance/attendanc
 import { NoticesCard, UpcomingCard } from "./communication/dashboard-cards";
 import { ChildrenHomeworkCards, StudentHomeworkCard } from "./homework/homework-cards";
 import { MyChildren, MyClass } from "./my-children";
+import { isStaffMember, StaffDashboard } from "./reports/staff-dashboard";
 import { StaffDashboardCards } from "./staff/staff-cards";
 import { StudentTodayCard, TodayClassesCard } from "./timetable/timetable-cards";
 
@@ -144,6 +145,7 @@ export function DashboardView() {
       />
 
       {tenant ? <TrialBanner tenant={tenant} now={now} /> : null}
+      {isStaffMember(me) ? <StaffDashboard /> : null}
 
       {canChildren ? <MyChildren /> : null}
       {canChildren ? <ChildrenHomeworkCards /> : null}

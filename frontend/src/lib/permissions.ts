@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   Building2,
   CalendarDays,
   CalendarOff,
@@ -69,8 +70,20 @@ export type NavItem = {
   shortLabelKey: MessageKey;
   icon: LucideIcon;
   permission: string;
+  /** Shown with any of these permissions too (the reports hub). */
+  anyOf?: readonly string[];
   group: NavGroup;
 };
+
+/** Each module's report permission: holding any of them opens the reports hub (docs/api/phase-1-reports.md). */
+export const REPORT_PERMISSIONS: readonly string[] = [
+  PERMISSIONS.attendanceRead,
+  PERMISSIONS.feesRead,
+  PERMISSIONS.admissionsRead,
+  PERMISSIONS.staffRead,
+  PERMISSIONS.homeworkManage,
+  PERMISSIONS.timetableManage,
+];
 
 /** Every navigation item, in display order. */
 export const NAV_ITEMS: readonly NavItem[] = [
@@ -245,6 +258,16 @@ export const NAV_ITEMS: readonly NavItem[] = [
     permission: PERMISSIONS.platformAdmin,
     group: "platform",
   },
+  {
+    key: "reports",
+    href: "/app/reports",
+    labelKey: "nav.reports",
+    shortLabelKey: "nav.reports.short",
+    icon: BarChart3,
+    permission: PERMISSIONS.attendanceRead,
+    anyOf: REPORT_PERMISSIONS,
+    group: "overview",
+  },
 ];
 
 type PermissionSubject = Pick<Me, "permissions" | "platformAdmin"> | null | undefined;
@@ -257,7 +280,14 @@ export function hasPermission(me: PermissionSubject, permission: string): boolea
 
 /** The navigation items this user may see, in display order. Pure. */
 export function navFor(me: PermissionSubject): NavItem[] {
-  return NAV_ITEMS.filter((item) => hasPermission(me, item.permission));
+  return NAV_ITEMS.filter(
+    (item) => hasPermission(me, item.permission) || (item.anyOf ?? []).some((p) => hasPermission(me, p)),
+  );
+}
+
+/** True when the user holds at least one of the permissions. */
+export function hasAnyPermission(me: PermissionSubject, permissions: readonly string[]): boolean {
+  return permissions.some((p) => hasPermission(me, p));
 }
 
 /** Where a user lands after sign-in (or when opening /app). */
