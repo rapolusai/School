@@ -1,6 +1,7 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
 import {
   adminCredentials,
+  expectNoHorizontalScroll,
   loginViaApi,
   loginViaUi,
   mainNav,
@@ -21,7 +22,7 @@ function indiaDate(offsetDays = 0): string {
 function academicYear() {
   const today = indiaDate();
   const year = Number(today.slice(5, 7)) >= 4 ? Number(today.slice(0, 4)) : Number(today.slice(0, 4)) - 1;
-  return { startsOn: `${year}-04-01`, endsOn: `${year + 1}-03-31` };
+  return { startsOn: `${year}-04-01`, endsOn: `${year + 1}-03-31`, name: `${year}-${String((year + 1) % 100).padStart(2, "0")}` };
 }
 
 type PrivacySchool = {
@@ -109,6 +110,13 @@ test("the admin publishes a notice; the parent accepts it, changes a choice and 
   await page.getByRole("button", { name: "Publish version 1" }).click();
   await expect(page.getByText("Version 1 published. Parents will be asked to accept it.")).toBeVisible();
   await expect(page.getByTestId("current-notice")).toContainText("Version 1");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expectNoHorizontalScroll(page);
+  await page.getByRole("navigation", { name: "Data protection sections" }).getByRole("link", { name: "Consent" }).click();
+  await expect(page.getByTestId("consent-coverage")).toContainText("0 of 1 students at school have essential consent for version 1.");
+  await expect(page.getByTestId("consents-cards")).toContainText("Kabir Mehta");
+  await expectNoHorizontalScroll(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
 
   // Anyone can read it, with the grievance officer, without signing in.
   const visitor = await browser.newPage({ baseURL: test.info().project.use.baseURL });
@@ -117,6 +125,8 @@ test("the admin publishes a notice; the parent accepts it, changes a choice and 
   await expect(visitor.getByTestId("grievance-officer")).toContainText("Lakshmi Iyer");
   await visitor.getByRole("radio", { name: "हिन्दी" }).check();
   await expect(visitor.getByTestId("notice-text")).toHaveAttribute("lang", "hi");
+  await visitor.setViewportSize({ width: 390, height: 844 });
+  await expectNoHorizontalScroll(visitor);
   await visitor.close();
 
   // The parent must accept before using the app; optional choices start unticked.
@@ -127,6 +137,9 @@ test("the admin publishes a notice; the parent accepts it, changes a choice and 
   await expect(page.getByRole("heading", { name: "My children" })).toHaveCount(0);
   await gate.getByRole("button", { name: "Agree and continue" }).click();
   await expect(gate.getByText("Tick this box to continue to the app.")).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expectNoHorizontalScroll(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
   await gate.getByRole("checkbox", { name: /I have read the notice/ }).check();
   const choices = gate.getByTestId(`gate-child-${s.studentId}`);
   await expect(choices.getByRole("checkbox", { name: /Photos/ })).not.toBeChecked();
@@ -144,6 +157,14 @@ test("the admin publishes a notice; the parent accepts it, changes a choice and 
   await whatsapp.click();
   await expect(page.getByText("Consent withdrawn.")).toBeVisible();
   await expect(whatsapp).not.toBeChecked();
+  for (const viewport of [
+    { width: 820, height: 1180 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await expectNoHorizontalScroll(page);
+  }
+  await page.setViewportSize({ width: 1440, height: 900 });
 
   await page.getByRole("button", { name: "New request" }).click();
   const dialog = page.getByRole("dialog", { name: "New request" });
@@ -192,11 +213,18 @@ test("staff answer an access request with a data file and erase a left student's
   await mainNav(page).getByRole("link", { name: "Data protection" }).click();
   const queue = page.getByTestId("requests-table");
   await expect(queue.getByRole("row")).toHaveCount(3);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByTestId("requests-cards").getByRole("listitem")).toHaveCount(2);
+  await expectNoHorizontalScroll(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
   await queue.getByRole("row").filter({ hasText: "Copy of data" }).getByRole("link", { name: "Meena Mehta" }).click();
   await expect(page).toHaveURL(new RegExp(`/app/privacy/requests/${access}$`));
   const exportCard = page.getByTestId("export-card");
   await exportCard.getByRole("button", { name: "Make the data file" }).click();
   await expect(exportCard).toContainText(/data-export-.*\.zip/);
+  await page.setViewportSize({ width: 820, height: 1180 });
+  await expectNoHorizontalScroll(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
   const [download] = await Promise.all([
     page.waitForEvent("download"),
     exportCard.getByRole("button", { name: "Download" }).click(),
