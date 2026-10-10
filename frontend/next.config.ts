@@ -45,7 +45,11 @@ const nextConfig: NextConfig = {
     return [{ source: "/api/:path*", destination: `${apiUrl}/api/:path*` }];
   },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      // The installable app's service worker: always fetched fresh so an update reaches every phone.
+      { source: "/sw.js", headers: [{ key: "Cache-Control", value: "no-cache, no-store, must-revalidate" }] },
+    ];
   },
 };
 

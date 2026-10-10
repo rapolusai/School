@@ -48,8 +48,11 @@ describe("timetable and homework in the navigation", () => {
   it("gives an accountant the timetable but not homework, and students and parents neither", () => {
     expect(keys(ACCOUNTANT)).toContain("timetable");
     expect(keys(ACCOUNTANT)).not.toContain("homework");
-    expect(keys(STUDENT)).toEqual(["dashboard"]);
-    expect(keys(PARENT)).toEqual(["dashboard", "myPrivacy"]);
+    // Students and parents get the family menu (docs/api/phase-1-portal.md), whose Homework is their own view.
+    for (const family of [STUDENT, PARENT]) {
+      expect(keys(family)).not.toContain("timetable");
+      expect(keys(family)).not.toContain("homework");
+    }
   });
 
   it("owns the substitution sheet and homework detail pages", () => {

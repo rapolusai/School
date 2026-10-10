@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Providers } from "@/components/providers";
+import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-registration";
 import { THEME_INIT_SCRIPT } from "@/lib/theme-script";
 import "./globals.css";
 
@@ -10,6 +11,8 @@ export const metadata: Metadata = {
   title: { default: "Akshara School Cloud", template: "%s · Akshara" },
   description: "School management for Indian schools: users, roles and audit trail.",
   applicationName: "Akshara",
+  // Added to the home screen (app/manifest.ts): open full screen with the app's own title.
+  appleWebApp: { capable: true, title: "Akshara", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
@@ -33,6 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <Providers>{children}</Providers>
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );

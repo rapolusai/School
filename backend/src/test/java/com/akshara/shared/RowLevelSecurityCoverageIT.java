@@ -10,6 +10,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -22,6 +23,8 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.akshara.attendance.ChildLeaveService;
+import com.akshara.attendance.ChildLeaveService.Application;
 import com.akshara.audit.AuditService.Actor;
 import com.akshara.files.FileUploads;
 import com.akshara.homework.HomeworkScope;
@@ -68,13 +71,17 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
             "timetable.slot", "timetable.teacher_absence", "timetable.substitution", "homework.homework",
             "homework.homework_section", "homework.submission", "homework.settings", "billing.invoice",
             "billing.invoice_payment", "privacy.grievance_officer", "privacy.privacy_notice",
-            "privacy.consent_record", "privacy.data_request", "privacy.request_event", "privacy.data_export");
+            "privacy.consent_record", "privacy.data_request", "privacy.request_event", "privacy.data_export",
+            "attendance.leave_request");
 
     @Autowired
     HomeworkService homework;
 
     @Autowired
     StudentHomeworkService learners;
+
+    @Autowired
+    ChildLeaveService childLeave;
 
     /** The last day of the fixtures' current year, 2026-27. */
     static final LocalDate LAST_DAY = LocalDate.of(2027, 3, 31);
@@ -186,7 +193,9 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         BillingFixtures billing = new BillingFixtures(api);
         Session root = billing.root();
         billing.pay(root, school.tenantId(), billing.paying(root, school.tenantId(), "36"));
-        privacyRecords(school, admin, student);
+        Session lata = parentSignIn(school, admin, student);
+        privacyRecords(admin, lata, student);
+        childLeave(school, lata, student, day.isAfter(LAST_DAY) ? LAST_DAY : day);
         School other = api.signup();
 
         try (Connection app = appConnection(); Connection owner = ownerConnection()) {
@@ -308,7 +317,17 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
     }
 
     /** One row in every privacy table: officer, notice, paper consent, and a parent's access request with its export. */
-    private void privacyRecords(School school, Session admin, String student) throws Exception {
+    /** The student's mother, Lata Rao, gets a sign-in. */
+    private Session parentSignIn(School school, Session admin, String student) throws Exception {
+        String guardian = TestApi.read(api.get("/api/students/" + student, admin.accessToken()), "$.guardians[0].id");
+        String email = "lata@" + school.code() + ".akshara.test";
+        api.post("/api/students/" + student + "/guardians/" + guardian + "/sign-in", admin.accessToken(), """
+                {"mode":"CREATE","email":"%s","password":"%s"}""".formatted(email, TestApi.PASSWORD))
+                .andExpect(status().isOk());
+        return api.login(school.code(), email, TestApi.PASSWORD);
+    }
+
+    private void privacyRecords(Session admin, Session parent, String student) throws Exception {
         api.put("/api/privacy/grievance-officer", admin.accessToken(), """
                 {"name":"Lata Iyer","email":"dpo@example.test","phone":"9876501003"}""").andExpect(status().isOk());
         api.post("/api/privacy/notice", admin.accessToken(), """
@@ -316,12 +335,6 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         api.post("/api/privacy/students/" + student + "/consents", admin.accessToken(), """
                 {"givenByName":"Lata Rao","signedOn":"%s","photos":true,"whatsapp":true}"""
                 .formatted(LocalDate.now(ZoneId.of("Asia/Kolkata")))).andExpect(status().isCreated());
-        String guardian = TestApi.read(api.get("/api/students/" + student, admin.accessToken()), "$.guardians[0].id");
-        String email = "lata@" + school.code() + ".akshara.test";
-        api.post("/api/students/" + student + "/guardians/" + guardian + "/sign-in", admin.accessToken(), """
-                {"mode":"CREATE","email":"%s","password":"%s"}""".formatted(email, TestApi.PASSWORD))
-                .andExpect(status().isOk());
-        Session parent = api.login(school.code(), email, TestApi.PASSWORD);
         String request = TestApi.read(api.post("/api/me/privacy/requests", parent.accessToken(), """
                 {"type":"ACCESS","subject":"CHILD","studentId":"%s"}""".formatted(student))
                 .andExpect(status().isCreated()), "$.id");
@@ -383,6 +396,15 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
                     at.plusSeconds(3600));
             return null;
         });
+    }
+
+    /** The student's mother asks for a day of leave for her child. */
+    private void childLeave(School school, Session lata, String student, LocalDate day) throws Exception {
+        UUID parent = UUID.fromString(TestApi.read(api.get("/api/me", lata.accessToken()), "$.id"));
+        LocalDate leaveDay = day.getDayOfWeek() == DayOfWeek.SUNDAY ? day.minusDays(1) : day;
+        TenantContext.runAs(school.tenantId(), () -> childLeave.apply(parent, UUID.fromString(student),
+                new Application(leaveDay, leaveDay, false, "Fever"), new Actor(parent, "Lata Rao"), day,
+                Instant.now()));
     }
 
     private static List<TableInfo> tables() throws SQLException {

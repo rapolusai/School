@@ -84,11 +84,14 @@ class DemoDataSeederIT extends IntegrationTest {
     @Autowired
     DemoPrivacyData demoPrivacy;
 
+    @Autowired
+    DemoPortalData portalData;
+
     @Test
     void seedsADemoSchoolWithClassesAndStudentsOnce() throws Exception {
         DemoDataSeeder seeder = new DemoDataSeeder(provisioning, tenants, users, passwordEncoder, DEMO_PASSWORD,
                 academics, students, transactionManager, admissions, attendanceData, demoFees, staffData,
-                communicationData, timetableHomeworkData, demoBilling, demoPrivacy);
+                communicationData, timetableHomeworkData, demoBilling, demoPrivacy, portalData);
         seeder.run(null);
         // A second start leaves the existing demo school alone.
         seeder.run(null);
@@ -338,5 +341,20 @@ class DemoDataSeederIT extends IntegrationTest {
                 .andExpect(jsonPath("$.items[0].type").value("ACCESS"))
                 .andExpect(jsonPath("$.items[0].studentName").value("Arjun Sharma"))
                 .andExpect(jsonPath("$.items[0].requesterName").value("Anitha Sharma"));
+        // Child leave: Diya's approved by the principal, Arjun's half day waiting for his class teacher.
+        if (!today.isAfter(LocalDate.of(2027, 1, 31))) {
+            api.get("/api/me/children/" + diya + "/leave-requests", parent.accessToken())
+                    .andExpect(jsonPath("$.requests.length()").value(1))
+                    .andExpect(jsonPath("$.requests[0].status").value("APPROVED"))
+                    .andExpect(jsonPath("$.requests[0].decidedByName").value("Lakshmi Iyer"));
+            api.get("/api/attendance/leave-requests", ravi.accessToken())
+                    .andExpect(jsonPath("$.pending.length()").value(1))
+                    .andExpect(jsonPath("$.pending[0].studentName").value("Arjun Sharma"))
+                    .andExpect(jsonPath("$.pending[0].halfDay").value(true))
+                    .andExpect(jsonPath("$.pending[0].canDecide").value(true));
+            api.get("/api/attendance/leave-requests", principal.accessToken())
+                    .andExpect(jsonPath("$.pending.length()").value(1))
+                    .andExpect(jsonPath("$.recent[0].status").value("APPROVED"));
+        }
     }
 }

@@ -1,5 +1,6 @@
 /** Types mirroring docs/api/phase-1-attendance.md (attendance). Keep in sync with the contract. */
 
+import type { ApprovedLeave, AttendanceHoliday, LeaveDay } from "./portal";
 import type { PlainDate } from "./school";
 
 export const ATTENDANCE_STATUSES = ["PRESENT", "ABSENT", "LATE", "HALF_DAY", "LEAVE"] as const;
@@ -57,6 +58,8 @@ export type RegisterEntry = {
   /** false: marked earlier, has since left the section */
   inSection: boolean;
   status: AttendanceStatus | null;
+  /** Approved child leave that day (docs/api/phase-1-portal.md): an unmarked register pre-fills `prefill`. */
+  approvedLeave?: ApprovedLeave | null;
 };
 
 export type RegisterView = {
@@ -192,4 +195,12 @@ export type ChildAttendance = {
   days: DayMark[];
   /** Newest first, at most 5, this academic year. */
   recentAbsences: DayMark[];
+  /* Today, whatever the month, and the month's holidays and approved leave (docs/api/phase-1-portal.md). */
+  today?: PlainDate;
+  /** null until today's register is marked */
+  todayStatus?: AttendanceStatus | null;
+  todayHoliday?: string | null;
+  todayLeave?: ApprovedLeave | null;
+  holidays?: AttendanceHoliday[];
+  leaveDays?: LeaveDay[];
 };

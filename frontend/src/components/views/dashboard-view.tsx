@@ -35,6 +35,7 @@ import { ChildrenHomeworkCards, StudentHomeworkCard } from "./homework/homework-
 import { MyChildren, MyClass } from "./my-children";
 import { StaffDashboardCards } from "./staff/staff-cards";
 import { StudentTodayCard, TodayClassesCard } from "./timetable/timetable-cards";
+import { FamilyHome, isFamilyMember } from "./portal/family-home";
 
 function greetingKey(hour: number): MessageKey {
   if (hour < 12) return "dashboard.greeting.morning";
@@ -131,6 +132,7 @@ export function DashboardView() {
   const audit = useApiData(canAudit ? "audit:5" : null, () => api.listAuditEvents(5));
 
   if (!me) return null;
+  if (isFamilyMember(me)) return <FamilyHome />;
   const tenant = me.tenant;
   const locale = localeFor(lang);
   const activeUsers = users.data?.filter((u) => u.status === "ACTIVE").length ?? 0;

@@ -25,7 +25,9 @@ const keys = (me: Me) => navFor(me).map((item) => item.key);
 describe("circulars, the notice board and the calendar in the navigation", () => {
   it("gives parents and students the notice board and the calendar, next to their dashboard", () => {
     expect(PERMISSIONS.noticesRead).toBe("notices.read");
-    expect(keys(PARENT)).toEqual(["dashboard", "board", "calendar", "myPrivacy"]);
+    // Parents get the family menu (docs/api/phase-1-portal.md) with the board and the calendar, and no circulars.
+    expect(keys(PARENT)).toEqual(expect.arrayContaining(["dashboard", "board", "calendar"]));
+    expect(keys(PARENT)).not.toContain("notices");
   });
 
   it("gives teachers and principals the circulars too, in the Notices group", () => {
