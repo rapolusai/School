@@ -34,8 +34,10 @@ cp .env.example .env      # fill in every value; JWT_SECRET needs 32+ characters
 docker compose up --build
 ```
 
-Open http://localhost:3000. Sign up a new school, or, with `DEMO_PASSWORD` set, sign in to school
-code `demo` as `admin@demo.akshara.test` (also `principal@`, `teacher@`, `accounts@`, `frontoffice@`,
+Open http://localhost:3000. If another program already uses port 3000, 8080 or 5432, set `WEB_PORT`,
+`API_PORT` or `DB_PORT` in `.env` (for example `WEB_PORT=3100`) and open that port instead.
+
+Sign up a new school, or, with `DEMO_PASSWORD` set, sign in to school code `demo` as `admin@demo.akshara.test` (also `principal@`, `teacher@`, `accounts@`, `frontoffice@`,
 `parent@` and `student@` at `demo.akshara.test`) with that password. The demo school has two academic
 years, classes LKG to 10 and about 60 students; the parent's dashboard shows Arjun (Class 5 A) and Diya
 (Class 2 A), and the teacher is class teacher of Class 5 A.

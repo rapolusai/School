@@ -1,6 +1,6 @@
 # Local stack: PostgreSQL, the API and the web app. Copy .env.example to .env first.
 #   docker compose up --build
-# Then open http://localhost:3000
+# Then open http://localhost:3000 (or the WEB_PORT set in .env).
 name: akshara
 
 services:
@@ -16,7 +16,7 @@ services:
       - db-data:/var/lib/postgresql/data
       - ./infra/docker/postgres-init.sh:/docker-entrypoint-initdb.d/10-roles.sh:ro
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d akshara"]
       interval: 5s
@@ -36,13 +36,13 @@ services:
       DB_OWNER_PASSWORD: ${DB_OWNER_PASSWORD}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env (at least 32 characters)}
       COOKIE_SECURE: "false"
-      ALLOWED_ORIGINS: http://localhost:3000
+      ALLOWED_ORIGINS: http://localhost:${WEB_PORT:-3000}
       PLATFORM_ADMIN_EMAIL: ${PLATFORM_ADMIN_EMAIL:-}
       PLATFORM_ADMIN_PASSWORD: ${PLATFORM_ADMIN_PASSWORD:-}
       DEMO_ENABLED: ${DEMO_ENABLED:-true}
       DEMO_PASSWORD: ${DEMO_PASSWORD:-}
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:${API_PORT:-8080}:8080"
 
   web:
     build:
@@ -54,7 +54,7 @@ services:
       api:
         condition: service_healthy
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:${WEB_PORT:-3000}:3000"
 
 volumes:
   db-data:
