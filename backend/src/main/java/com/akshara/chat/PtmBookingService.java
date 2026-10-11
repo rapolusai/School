@@ -370,7 +370,7 @@ class PtmBookingService {
         boolean held = !e.getMeetingDate().isAfter(today);
         return new FamilyBooking(b.getId(), b.getSlotId(), slot == null ? null : slot.getStartsAt(),
                 slot == null ? null : slot.getEndsAt(), b.getBookedBy().name(), canChange, until,
-                held ? b.getAttendance() : null, b.getParentNote());
+                held ? b.getAttendance() : null, held ? b.getParentNote() : null);
     }
 
     private void auditBooking(Actor actor, String action, PtmBooking b, PtmSlot slot) {

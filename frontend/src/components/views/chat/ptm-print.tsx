@@ -182,7 +182,7 @@ function TeacherPage({ printable, schedule }: { printable: Printable; schedule: 
         sub={`${schedule.kind === "CLASS_TEACHER" ? t("ptm.kind.CLASS_TEACHER") : schedule.subjects || t("ptm.kind.SUBJECT_TEACHER")} · ${timeRange(
           schedule.availableFrom,
           schedule.availableTo,
-        )} · ${plural(t, "ptm.card.booked", schedule.booked, { slots: schedule.slots.length })}`}
+        )} · ${plural(t, "ptm.card.booked", schedule.booked, { slots: schedule.booked + schedule.free })}`}
       />
       <div className="table-wrap">
         <table className="table">

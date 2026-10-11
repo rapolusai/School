@@ -67,7 +67,7 @@ public final class PtmViews {
     public record FamilySlot(UUID id, LocalTime startsAt, LocalTime endsAt, boolean available, Instant bookableUntil) {
     }
 
-    /** The child's booking with a teacher; attendance and the teacher's note show once they are marked. */
+    /** The child's booking with a teacher; attendance and the teacher's note show from the meeting day. */
     public record FamilyBooking(UUID id, UUID slotId, LocalTime startsAt, LocalTime endsAt, String bookedBy,
             boolean canChange, Instant changeUntil, PtmAttendance attendance, String parentNote) {
     }

@@ -93,7 +93,8 @@ export function ChatInbox({
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      {/* On a phone an open conversation takes the screen, so the composer stays above the bottom bar. */}
+      <div className={`flex flex-wrap items-center justify-between gap-2${selected ? " max-md:hidden" : ""}`}>
         <p className="max-w-2xl text-[13.5px] text-ink-2">
           {side === "PARENT" ? t("chat.family.intro") : t("chat.staff.intro")}
         </p>

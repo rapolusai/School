@@ -224,7 +224,7 @@ function MyMeetings() {
                   t,
                   "ptm.card.booked",
                   m.schedule.booked,
-                  { slots: m.schedule.slots.length },
+                  { slots: m.schedule.booked + m.schedule.free },
                 )}`}
               />
             </li>

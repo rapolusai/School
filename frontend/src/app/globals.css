@@ -4746,8 +4746,14 @@
       border-right: 0;
       max-height: none;
     }
+    /* An open conversation fills the phone: the thread scrolls, so the composer stays above the bottom bar. */
+    .chatbox,
+    .chat-pane {
+      min-height: 0;
+    }
     .chat-thread {
-      max-height: calc(100dvh - 330px);
+      min-height: 180px;
+      max-height: max(180px, calc(100dvh - 500px));
     }
   }
   .ptm-slots {

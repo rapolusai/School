@@ -19,7 +19,7 @@ import { WEEK_DAYS, type ChatAway, type ChatSettings, type WeekDay } from "@/lib
 import { useApiData } from "@/lib/use-api-data";
 import { ChatInbox } from "./chat-inbox";
 import { OversightView } from "./oversight-views";
-import { ChatNav, daysText, hhmm, MAX_AWAY_DAYS, MAX_AWAY_NOTE_LENGTH, timeRange } from "./chat-shared";
+import { ChatNav, daysText, hhmm, MAX_AWAY_DAYS, MAX_AWAY_NOTE_LENGTH, POLL_MS, timeRange, usePolling } from "./chat-shared";
 
 /** /app/chat: a member of staff's conversations with parents; someone who only oversees gets the oversight list. */
 export function StaffChatView({ initialId }: { initialId?: string }) {
@@ -52,6 +52,7 @@ export function FamilyChatView({ initialId }: { initialId?: string }) {
 export function ChatDashboardCards() {
   const { t, lang } = useI18n();
   const unread = useApiData("chat:staff:unread", staffChatApi.unread);
+  usePolling(unread.reload, POLL_MS, true);
   const meetings = useApiData("ptm:mine", ptmApi.mine);
   const next = (meetings.data ?? []).find((m) => !m.event.past && m.event.status === "SCHEDULED");
   return (
@@ -93,7 +94,7 @@ export function ChatDashboardCards() {
             {formatPlainDate(next.event.date, localeFor(lang))} · {timeRange(next.schedule.availableFrom, next.schedule.availableTo)}
           </span>
           <span className="text-[12.5px] font-semibold text-ink-3">
-            {plural(t, "ptm.card.booked", next.schedule.booked, { slots: next.schedule.slots.length })}
+            {plural(t, "ptm.card.booked", next.schedule.booked, { slots: next.schedule.booked + next.schedule.free })}
           </span>
           <Link
             href={`/app/ptm/${encodeURIComponent(next.event.id)}`}
@@ -112,6 +113,7 @@ export function ChatDashboardCards() {
 export function FamilyMessagesCard() {
   const { t } = useI18n();
   const unread = useApiData("chat:family:unread", familyChatApi.unread);
+  usePolling(unread.reload, POLL_MS, true);
   const count = unread.data?.unread ?? 0;
   return (
     <section className="card flex flex-col gap-3" aria-labelledby="family-messages-card" data-testid="family-messages-card">

@@ -207,6 +207,11 @@ class PtmIT extends ChatTestBase {
                 {"privateNote":"Ask about reading","parentNote":"Please read with Chitra daily."}""")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.privateNote").value("Ask about reading"));
+        // The parent sees the note from the meeting day, like attendance; the private note never.
+        api.get("/api/me/ptm", w.priya().accessToken())
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("Please read with Chitra daily."))))
+                .andExpect(content().string(not(containsString("Ask about reading"))));
         api.put("/api/ptm/my/bookings/" + chitraBooking, w.meera().accessToken(), """
                 {"privateNote":"x"}""").andExpect(status().isNotFound());
 
