@@ -52,8 +52,9 @@ describe("translate", () => {
     expect(translateOr(t, "board.UNKNOWN", "UNKNOWN")).toBe("UNKNOWN");
     expect(roleLabel(t, "TEACHER")).toBe("शिक्षक");
     expect(roleLabel(t, "LIBRARIAN", "Librarian")).toBe("पुस्तकालयाध्यक्ष");
+    expect(roleLabel(t, "TRANSPORT_MANAGER", "Transport manager")).toBe("परिवहन प्रबंधक");
     // A role without a translation falls back to the server's name.
-    expect(roleLabel(t, "TRANSPORT_MANAGER", "Transport manager")).toBe("Transport manager");
+    expect(roleLabel(t, "CANTEEN_MANAGER", "Canteen manager")).toBe("Canteen manager");
   });
 
   it("picks singular and plural forms", () => {

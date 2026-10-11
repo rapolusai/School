@@ -70,6 +70,14 @@ describe("reportGroupsFor", () => {
     expect(keys(["dashboard.view", "lessons.read"])).toEqual([["academics", ["syllabusCoverage"]]]);
     expect(keys(["dashboard.view", "lessons.manage"])).toEqual([]);
   });
+
+  it("adds a Transport group for transport.read, last in the hub", () => {
+    const transport = ["transportRoster", "transportDocuments", "transportFees", "transportBoarding"];
+    expect(keys(["dashboard.view", "transport.read", "transport.manage", "transport.trip"])).toEqual([["transport", transport]]);
+    expect(keys([...PRINCIPAL, "transport.read"]).at(-1)).toEqual(["transport", transport]);
+    // Running trips (bus attendants) opens no report.
+    expect(keys(["dashboard.view", "transport.trip"])).toEqual([]);
+  });
 });
 
 describe("ReportsHubView", () => {
@@ -122,6 +130,15 @@ describe("ReportsHubView", () => {
     expect(screen.getByTestId("report-link-libraryOverdue")).toHaveAttribute("href", "/app/reports/library-overdue");
     expect(screen.getByTestId("report-link-libraryStock")).toHaveAttribute("href", "/app/library/stock");
     expect(screen.getByTestId("report-link-libraryPopular")).toHaveTextContent("Excel");
+  });
+
+  it("shows a transport manager the transport reports", () => {
+    renderAs(["dashboard.view", "transport.read", "transport.manage"], <ReportsHubView />, ["TRANSPORT_MANAGER"]);
+    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(["Transport"]);
+    expect(screen.getByTestId("report-link-transportRoster")).toHaveAttribute("href", "/app/reports/transport-route-students");
+    expect(screen.getByTestId("report-link-transportDocuments")).toHaveAttribute("href", "/app/reports/transport-documents");
+    expect(screen.getByTestId("report-link-transportFees")).toHaveAttribute("href", "/app/reports/transport-fees");
+    expect(screen.getByTestId("report-link-transportBoarding")).toHaveAttribute("href", "/app/reports/transport-boarding");
   });
 
   it("turns away someone without any report permission", () => {

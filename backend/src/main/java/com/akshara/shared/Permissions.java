@@ -100,6 +100,15 @@ public final class Permissions {
     public static final String LESSONS_MANAGE = "lessons.manage";
     /** Approving or returning lesson plans, and every section and subject (School Admin, Principal, coordinators). */
     public static final String LESSONS_APPROVE = "lessons.approve";
+    /** Routes, vehicles and crew, the live trip board and the transport reports (read only). */
+    public static final String TRANSPORT_READ = "transport.read";
+    /** Vehicles, drivers and attendants, routes and stops, fee zones, student allocations and transport alerts. */
+    public static final String TRANSPORT_MANAGE = "transport.manage";
+    /**
+     * Running a trip from a phone: start it, share the bus's position, mark students boarded, dropped or absent and
+     * report a delay. Without transport.manage, only the trips of routes the user is the driver or attendant of.
+     */
+    public static final String TRANSPORT_TRIP = "transport.trip";
 
     public static final String PLATFORM_ADMIN = "platform.admin";
 
@@ -112,7 +121,8 @@ public final class Permissions {
             HOMEWORK_MANAGE, BILLING_READ, PRIVACY_MANAGE,
             LIBRARY_READ, LIBRARY_MANAGE, PAYROLL_READ, PAYROLL_MANAGE, PAYROLL_APPROVE, EXAMS_READ, EXAMS_SETUP,
             EXAMS_PUBLISH,
-            CHAT_USE, CHAT_OVERSEE, PTM_MANAGE, LESSONS_READ, LESSONS_MANAGE, LESSONS_APPROVE);
+            CHAT_USE, CHAT_OVERSEE, PTM_MANAGE, LESSONS_READ, LESSONS_MANAGE, LESSONS_APPROVE, TRANSPORT_READ,
+            TRANSPORT_MANAGE, TRANSPORT_TRIP);
 
     private Permissions() {
     }

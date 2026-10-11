@@ -4,12 +4,14 @@ import {
   ArrowRight,
   Banknote,
   BookMarked,
+  Bus,
   CalendarCheck2,
   CalendarRange,
   ChartColumnBig,
   ClipboardCheck,
   ClipboardList,
   FileSpreadsheet,
+  FileClock,
   Filter,
   Handshake,
   History,
@@ -34,7 +36,7 @@ import { hasAnyPermission, hasPermission, PERMISSIONS, REPORT_PERMISSIONS } from
 
 type PermissionSubject = Parameters<typeof hasPermission>[0];
 
-export const REPORT_GROUPS = ["attendance", "fees", "admissions", "staff", "academics", "library"] as const;
+export const REPORT_GROUPS = ["attendance", "fees", "admissions", "staff", "academics", "library", "transport"] as const;
 export type ReportGroup = (typeof REPORT_GROUPS)[number];
 
 export type ReportLink = {
@@ -56,6 +58,7 @@ const GROUP_LABELS: Record<ReportGroup, MessageKey> = {
   staff: "reports.group.staff",
   academics: "reports.group.academics",
   library: "reports.group.library",
+  transport: "reports.group.transport",
 };
 
 /** Every report, new and existing, with the permission that opens it. */
@@ -290,6 +293,46 @@ export const REPORT_LINKS: readonly ReportLink[] = [
     description: "ptm.report.description",
     permission: PERMISSIONS.ptmManage,
     icon: Handshake,
+  },
+  {
+    key: "transportRoster",
+    group: "transport",
+    href: "/app/reports/transport-route-students",
+    title: "transport.report.roster.title",
+    description: "transport.report.roster.description",
+    permission: PERMISSIONS.transportRead,
+    icon: Bus,
+    excel: true,
+  },
+  {
+    key: "transportDocuments",
+    group: "transport",
+    href: "/app/reports/transport-documents",
+    title: "transport.report.docs.title",
+    description: "transport.report.docs.description",
+    permission: PERMISSIONS.transportRead,
+    icon: FileClock,
+    excel: true,
+  },
+  {
+    key: "transportFees",
+    group: "transport",
+    href: "/app/reports/transport-fees",
+    title: "transport.report.fees.title",
+    description: "transport.report.fees.description",
+    permission: PERMISSIONS.transportRead,
+    icon: Wallet,
+    excel: true,
+  },
+  {
+    key: "transportBoarding",
+    group: "transport",
+    href: "/app/reports/transport-boarding",
+    title: "transport.report.boarding.title",
+    description: "transport.report.boarding.description",
+    permission: PERMISSIONS.transportRead,
+    icon: ClipboardCheck,
+    excel: true,
   },
 ];
 

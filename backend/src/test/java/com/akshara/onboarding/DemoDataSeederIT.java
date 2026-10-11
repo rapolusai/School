@@ -8,6 +8,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -103,12 +104,15 @@ class DemoDataSeederIT extends IntegrationTest {
     @Autowired
     DemoLessonsData lessonsData;
 
+    @Autowired
+    DemoTransportData transportData;
+
     @Test
     void seedsADemoSchoolWithClassesAndStudentsOnce() throws Exception {
         DemoDataSeeder seeder = new DemoDataSeeder(provisioning, tenants, users, passwordEncoder, DEMO_PASSWORD,
                 academics, students, transactionManager, admissions, attendanceData, demoFees, staffData,
                 communicationData, timetableHomeworkData, demoBilling, demoPrivacy, portalData, libraryData,
-                payrollData, examsData, chatData, lessonsData);
+                payrollData, examsData, chatData, lessonsData, transportData);
         seeder.run(null);
         // A second start leaves the existing demo school alone.
         seeder.run(null);
@@ -252,9 +256,9 @@ class DemoDataSeederIT extends IntegrationTest {
         assertThat(JsonPath.<Integer>read(overview, "$.overdueStudents")).isBetween(5, 15);
 
         // Staff records: every demo staff member has a profile, plus the extra teachers, the timetable's subject
-        // teachers and the librarian.
+        // teachers, the librarian and the bus drivers and attendants.
         int staffCount = DemoDataSeeder.PEOPLE.size() - 2 + 1 + DemoStaffData.EXTRA_TEACHERS
-                + DemoTimetableHomeworkData.TEACHERS.size() + 1;
+                + DemoTimetableHomeworkData.TEACHERS.size() + 1 + DemoTransportData.CREW.size();
         api.get("/api/staff?size=100", admin.accessToken())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(staffCount))
@@ -499,5 +503,27 @@ class DemoDataSeederIT extends IntegrationTest {
                         contains(7.5)))
                 .andExpect(jsonPath("$.tests[?(@.title == '" + DemoLessonsData.CLOSED_TEST + "')].maxScore",
                         contains(9.0)));
+        // Transport: three routes with a driver and an attendant each, Arjun and other students on the buses, the
+        // mini bus's fitness certificate due soon, and this morning's trip of Arjun's route run by its attendant.
+        api.get("/api/transport/routes", admin.accessToken())
+                .andExpect(jsonPath("$[*].name", contains(DemoTransportData.ROUTE_ONE, "Route 2 - Kukatpally",
+                        "Route 3 - Secunderabad")))
+                .andExpect(jsonPath("$[*].flags[*]", not(hasItem("FITNESS_INVALID"))));
+        api.get("/api/transport/allocations", admin.accessToken())
+                .andExpect(jsonPath("$.length()").value(DemoTransportData.OTHER_RIDERS + 1));
+        api.get("/api/transport/reports/documents", principal.accessToken())
+                .andExpect(jsonPath("$.rows[0].subject").value("TS09 UC 1029"))
+                .andExpect(jsonPath("$.rows[0].document").value("FITNESS"))
+                .andExpect(jsonPath("$.rows[0].daysLeft").value(DemoTransportData.FITNESS_DAYS_LEFT));
+        Session busAttendant = api.login(code, DemoTransportData.ATTENDANT_EMAIL, DEMO_PASSWORD);
+        api.get("/api/transport/my-trips", busAttendant.accessToken())
+                .andExpect(jsonPath("$.routes[*].name", contains(DemoTransportData.ROUTE_ONE)))
+                .andExpect(jsonPath("$.routes[0].role").value("ATTENDANT"))
+                .andExpect(jsonPath("$.routes[0].morning.status").value("COMPLETED"));
+        api.get("/api/me/transport", parent.accessToken())
+                .andExpect(jsonPath("$.children[0].name").value("Arjun Sharma"))
+                .andExpect(jsonPath("$.children[0].allocation.routeName").value(DemoTransportData.ROUTE_ONE))
+                .andExpect(jsonPath("$.children[0].trips[0].status").value("COMPLETED"))
+                .andExpect(jsonPath("$.children[0].trips[0].childStatus").value("BOARDED"));
     }
 }

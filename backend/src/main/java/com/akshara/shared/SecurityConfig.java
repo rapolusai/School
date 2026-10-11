@@ -40,6 +40,11 @@ public class SecurityConfig {
     /** A school's current privacy notice, readable by anyone (parents read it before they sign in or enquire). */
     static final String PUBLIC_PRIVACY_NOTICE = "/api/public/schools/*/privacy-notice";
     static final String PUBLIC_ENQUIRIES = "/api/public/schools/*/enquiries";
+    /**
+     * A school vehicle's GPS device posting its position (no sign-in; the vehicle's device token is checked and rate
+     * limited by the transport module).
+     */
+    static final String PUBLIC_VEHICLE_POSITIONS = "/api/public/transport/vehicles/*/positions";
 
     @Bean
     SecurityFilterChain api(HttpSecurity http, JwtService jwtService) throws Exception {
@@ -55,6 +60,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, PUBLIC_ADMISSION_INFO).permitAll()
                         .requestMatchers(HttpMethod.GET, PUBLIC_PRIVACY_NOTICE).permitAll()
                         .requestMatchers(HttpMethod.POST, PUBLIC_ENQUIRIES).permitAll()
+                        .requestMatchers(HttpMethod.POST, PUBLIC_VEHICLE_POSITIONS).permitAll()
                         .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
                         .requestMatchers("/api/platform/**").hasAuthority(Permissions.PLATFORM_ADMIN)
                         .requestMatchers("/api/**").authenticated()

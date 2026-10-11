@@ -4782,3 +4782,133 @@
     break-after: auto;
   }
 }
+
+/* ---- transport ---- */
+@layer components {
+  /* The route as a line of stops (no map tiles): reached stops filled, the next ringed, the bus above its stop. */
+  .route-line {
+    display: block;
+    max-width: none;
+  }
+  .route-line-track {
+    stroke: var(--line);
+    stroke-width: 3;
+    stroke-linecap: round;
+  }
+  .route-line-stop {
+    fill: var(--surface);
+    stroke: var(--ink-3);
+    stroke-width: 2;
+  }
+  .route-line-reached {
+    fill: var(--accent);
+    stroke: var(--accent);
+  }
+  .route-line-next {
+    fill: var(--surface);
+    stroke: var(--info);
+    stroke-width: 3;
+  }
+  .route-line-num {
+    fill: var(--ink-3);
+    font-size: 10px;
+    font-family: var(--f-mono);
+  }
+  .route-line-bus {
+    fill: var(--marigold);
+  }
+  .route-line-bus-window {
+    fill: var(--surface);
+  }
+
+  /* The trip screen's marks: large labelled buttons that share a 390px row. */
+  .trip-opts button {
+    padding: 0 12px;
+    font-size: 13.5px;
+  }
+  .trip-opts button[aria-pressed="true"][data-v="BOARDED"] {
+    background: var(--good-soft);
+    border-color: var(--good);
+    color: var(--good);
+  }
+  .trip-opts button[aria-pressed="true"][data-v="DROPPED"] {
+    background: var(--info-soft);
+    border-color: var(--info);
+    color: var(--info);
+  }
+  .trip-opts button[aria-pressed="true"][data-v="ABSENT"] {
+    background: var(--bad-soft);
+    border-color: var(--bad);
+    color: var(--bad);
+  }
+
+  /* The family Bus page's stop list. */
+  .bus-stops {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .bus-stop {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 0;
+    font-size: 13.5px;
+  }
+  .bus-stop:not(:last-child)::before {
+    content: "";
+    position: absolute;
+    left: 5px;
+    top: 19px;
+    bottom: -5px;
+    width: 2px;
+    background: var(--line);
+  }
+  .bus-stop-dot {
+    width: 12px;
+    height: 12px;
+    flex: none;
+    border-radius: 99px;
+    border: 2px solid var(--ink-3);
+    background: var(--surface);
+    position: relative;
+  }
+  .bus-stop[data-reached] .bus-stop-dot {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .bus-stop[data-next] .bus-stop-dot {
+    border-color: var(--info);
+    box-shadow: 0 0 0 3px var(--info-soft);
+  }
+  .bus-stop[data-mine] {
+    font-weight: 600;
+  }
+
+  /* The route-wise student list prints one route per page for its attendant. */
+  .transport-roster {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 18px;
+  }
+  .transport-tick {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid var(--ink-3);
+    border-radius: 3px;
+  }
+}
+
+@media print {
+  .transport-roster + .transport-roster {
+    break-before: page;
+  }
+  .transport-tick {
+    border-color: #000;
+  }
+}
