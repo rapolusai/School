@@ -167,7 +167,8 @@ export function SyllabusCoverageReportView() {
                         {t("lessons.coverage.overdue")}
                       </th>
                       <th scope="col">{t("lessons.coverage.lastTaught")}</th>
-                      <th scope="col" className="no-print">
+                      {/* relative: keeps the hidden label inside the scrolling table, so the page never scrolls sideways */}
+                      <th scope="col" className="no-print relative">
                         <span className="sr-only">{t("lessons.coverage.topics")}</span>
                       </th>
                     </tr>
