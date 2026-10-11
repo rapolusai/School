@@ -292,7 +292,7 @@ function TripPanel({ route, kind, onBack }: { route: MyRoute; kind: TripKind; on
       <>
         {head}
         <section className="card flex flex-col items-start gap-3" data-testid="trip-not-started">
-          <p className="text-ink-2">{t("transport.trip.notStarted", { count: route.students })}</p>
+          <p className="text-ink-2">{plural(t, "transport.trip.notStarted", route.students)}</p>
           <p className="text-[13px] text-ink-3">{t("transport.trip.locationNote")}</p>
           <FormAlert message={problem} />
           <button

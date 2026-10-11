@@ -3,7 +3,7 @@
 import { ArrowDown, ArrowLeft, ArrowUp, Pencil, Plus, Trash2, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { TextField } from "@/components/ui/field";
+import { SelectField, TextField } from "@/components/ui/field";
 import { Pill } from "@/components/ui/pill";
 import { ErrorState, FormAlert, LoadingRows, PageHead } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
@@ -465,24 +465,20 @@ function StopsEditor({ route, onCancel, onSaved }: { route: RouteDetail; onCance
                   autoComplete="off"
                 />
               </div>
-              <label className="field">
-                <span className="field-label">{t("transport.stop.zone")}</span>
-                <select
-                  className="input"
-                  name={`stops[${i}].feeZoneId`}
-                  value={row.feeZoneId}
-                  onChange={(e) => update(row.key, { feeZoneId: e.target.value })}
-                  aria-invalid={at("feeZoneId") ? true : undefined}
-                >
-                  <option value="">{t("transport.stop.noZone")}</option>
-                  {zoneOptions.map((zone) => (
-                    <option key={zone.id} value={zone.id}>
-                      {zone.name} · {t("transport.zone.perYear", { amount: formatPaise(zone.annualFeePaise) })}
-                    </option>
-                  ))}
-                </select>
-                {at("feeZoneId") ? <span className="field-error">{at("feeZoneId")}</span> : null}
-              </label>
+              <SelectField
+                label={t("transport.stop.zone")}
+                name={`stops[${i}].feeZoneId`}
+                value={row.feeZoneId}
+                onChange={(e) => update(row.key, { feeZoneId: e.target.value })}
+                error={at("feeZoneId")}
+                options={[
+                  { value: "", label: t("transport.stop.noZone") },
+                  ...zoneOptions.map((zone) => ({
+                    value: zone.id,
+                    label: `${zone.name} · ${t("transport.zone.perYear", { amount: formatPaise(zone.annualFeePaise) })}`,
+                  })),
+                ]}
+              />
               {row.students > 0 ? <p className="field-hint">{plural(t, "transport.stop.students", row.students)}</p> : null}
             </li>
           );
