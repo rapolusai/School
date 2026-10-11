@@ -16,6 +16,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import com.akshara.audit.AuditService;
 import com.akshara.audit.AuditService.Actor;
+import com.akshara.exams.GradingService;
 import com.akshara.identity.RoleCatalog;
 import com.akshara.identity.UserAccount;
 import com.akshara.identity.UserService;
@@ -53,14 +54,16 @@ public class SchoolProvisioning {
     private final AuditService audit;
     private final PasswordEncoder passwordEncoder;
     private final TransactionTemplate tx;
+    private final GradingService grading;
 
     public SchoolProvisioning(TenantDirectory tenants, UserService userService, AuditService audit,
-            PasswordEncoder passwordEncoder, PlatformTransactionManager transactionManager) {
+            PasswordEncoder passwordEncoder, PlatformTransactionManager transactionManager, GradingService grading) {
         this.tenants = tenants;
         this.userService = userService;
         this.audit = audit;
         this.passwordEncoder = passwordEncoder;
         this.tx = new TransactionTemplate(transactionManager);
+        this.grading = grading;
     }
 
     /**
@@ -77,6 +80,7 @@ public class SchoolProvisioning {
         try {
             UUID adminId = TenantContext.runAs(tenant.id(), () -> tx.execute(s -> {
                 userService.createDefaultRoles();
+                grading.addBuiltInSchemes();
                 Actor actor = createdBy != null ? createdBy : new Actor(null, school.adminName().trim());
                 UserAccount admin = userService.createUser(school.adminName(), school.adminEmail(), passwordHash,
                         List.of(RoleCatalog.SCHOOL_ADMIN), actor);

@@ -415,4 +415,37 @@ public class AttendanceInsights {
     private static LocalDate max(LocalDate a, LocalDate b) {
         return a.isAfter(b) ? a : b;
     }
+
+    // ------------------------------------------------------------------ per student, for report cards
+
+    /**
+     * Each student's marks of each kind between two dates (both included), whole-school holidays left out, for the
+     * exams module's report cards. Not scoped to the caller: the caller decides who may see the students. Students
+     * with nothing marked are missing from the map.
+     */
+    public Map<UUID, AttendanceCounts> countsPerStudent(Collection<UUID> studentIds, LocalDate from, LocalDate to) {
+        TenantContext.require();
+        if (studentIds.isEmpty() || from == null || to == null || to.isBefore(from)) {
+            return Map.of();
+        }
+        Set<LocalDate> holidays = ChronoUnit.DAYS.between(from, to) <= SchoolCalendar.MAX_RANGE_DAYS
+                ? calendar.holidaysBetween(from, to).keySet() : Set.of();
+        TypedQuery<Object[]> q = entityManager.createQuery("select e.studentId, e.status, count(e) "
+                + "from AttendanceEntry e join AttendanceRegister r on r.id = e.registerId "
+                + "where e.studentId in :ids and r.attendanceDate between :from and :to"
+                + (holidays.isEmpty() ? "" : " and r.attendanceDate not in :holidays")
+                + " group by e.studentId, e.status", Object[].class)
+                .setParameter("ids", Set.copyOf(studentIds))
+                .setParameter("from", from)
+                .setParameter("to", to);
+        if (!holidays.isEmpty()) {
+            q.setParameter("holidays", holidays);
+        }
+        Map<UUID, AttendanceCounts> result = new HashMap<>();
+        for (Object[] row : q.getResultList()) {
+            result.merge((UUID) row[0], AttendanceCounts.NONE.plus((AttendanceStatus) row[1],
+                    ((Number) row[2]).intValue()), AttendanceCounts::plus);
+        }
+        return result;
+    }
 }

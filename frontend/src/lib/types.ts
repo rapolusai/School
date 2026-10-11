@@ -120,3 +120,4 @@ export * from "./types/portal";
 export * from "./types/reports";
 export * from "./types/library";
 export * from "./types/payroll";
+export * from "./types/exams";

@@ -53,6 +53,7 @@ describe("navFor", () => {
     expect(keys(SCHOOL_ADMIN)).toEqual([
       "dashboard",
       "attendance",
+      "exams",
       "students",
       "setup",
       "fees",
@@ -69,6 +70,7 @@ describe("navFor", () => {
     expect(keys(PRINCIPAL)).toEqual([
       "dashboard",
       "attendance",
+      "exams",
       "students",
       "setup",
       "fees",
@@ -91,7 +93,7 @@ describe("navFor", () => {
   });
 
   it("gives a teacher the dashboard, attendance, students, school setup and circulars", () => {
-    expect(keys(TEACHER)).toEqual(["dashboard", "attendance", "students", "setup", "notices", "reports"]);
+    expect(keys(TEACHER)).toEqual(["dashboard", "attendance", "exams", "students", "setup", "notices", "reports"]);
   });
 
   it("gives a librarian the library under the School group, and the reports hub for its reports", () => {
@@ -106,6 +108,7 @@ describe("navFor", () => {
     expect(keys(user(["TEACHER"], [...TEACHER.permissions, "library.read"]))).toEqual([
       "dashboard",
       "attendance",
+      "exams",
       "students",
       "library",
       "setup",
@@ -122,6 +125,7 @@ describe("navFor", () => {
   it("groups attendance, students and setup under the School group", () => {
     expect(navFor(SCHOOL_ADMIN).filter((item) => item.group === "academics").map((item) => item.key)).toEqual([
       "attendance",
+      "exams",
       "students",
       "setup",
     ]);
@@ -140,6 +144,7 @@ describe("navFor", () => {
       "family-fees",
       "family-leave",
       "family-library",
+      "family-results",
       "myPrivacy",
     ]);
   });
@@ -156,6 +161,7 @@ describe("navFor", () => {
       "calendar",
       "family-leave",
       "family-library",
+      "family-results",
       "myPrivacy",
     ]);
     expect(keys(student)).toEqual([
@@ -166,6 +172,7 @@ describe("navFor", () => {
       "calendar",
       "family-leave",
       "family-library",
+      "family-results",
     ]);
     expect(navFor(parent)[0]).toMatchObject({ href: "/app/dashboard", labelKey: "portal.nav.home" });
     // The phone bottom bar shows the first four: Home, Attendance, Homework and Fees (Notices for a student).
@@ -179,7 +186,16 @@ describe("navFor", () => {
 
   it("keeps the staff menu for a teacher who is also a parent", () => {
     const both = user(["TEACHER", "PARENT"], [...TEACHER.permissions, "child.view"]);
-    expect(keys(both)).toEqual(["dashboard", "attendance", "students", "setup", "notices", "myPrivacy", "reports"]);
+    expect(keys(both)).toEqual([
+      "dashboard",
+      "attendance",
+      "exams",
+      "students",
+      "setup",
+      "notices",
+      "myPrivacy",
+      "reports",
+    ]);
   });
 
   it("gives a parent their privacy page in the family menu", () => {
@@ -191,6 +207,7 @@ describe("navFor", () => {
     expect(keys(admin)).toEqual([
       "dashboard",
       "attendance",
+      "exams",
       "students",
       "setup",
       "fees",
@@ -225,6 +242,7 @@ describe("navFor", () => {
     expect(keys(admin)).toEqual([
       "dashboard",
       "attendance",
+      "exams",
       "students",
       "setup",
       "fees",
@@ -251,6 +269,7 @@ describe("navFor", () => {
     expect(keys(user(["TEACHER"], [...TEACHER.permissions, "leave.request"]))).toEqual([
       "dashboard",
       "attendance",
+      "exams",
       "students",
       "setup",
       "leave",
@@ -261,6 +280,17 @@ describe("navFor", () => {
     expect(keys(PARENT)).not.toContain("myPayslips");
     expect(navItemForPath("/app/payroll/runs/r1")?.key).toBe("payroll");
     expect(navItemForPath("/app/my-payslips/p1")?.key).toBe("myPayslips");
+  });
+
+  it("opens exams with any exams permission and the reports hub with exams.read", () => {
+    const reader = user(["CUSTOM"], ["dashboard.view", "exams.read"]);
+    expect(keys(reader)).toEqual(["dashboard", "exams", "reports"]);
+    const setup = user(["CUSTOM"], ["dashboard.view", "exams.setup"]);
+    expect(keys(setup)).toEqual(["dashboard", "exams"]);
+    expect(keys(user(["CUSTOM"], ["dashboard.view"]))).toEqual(["dashboard"]);
+    expect(navFor(reader).find((item) => item.key === "exams")).toMatchObject({ href: "/app/exams", group: "academics" });
+    expect(navItemForPath("/app/exams/marks/p1/s1")?.key).toBe("exams");
+    expect(navItemForPath("/app/family/results")?.key).toBe("family-results");
   });
 
   it("gives a platform admin only the platform items: Schools, Billing and Platform health", () => {

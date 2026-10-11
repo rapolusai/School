@@ -41,6 +41,7 @@ import com.akshara.support.SchoolFixtures;
 import com.akshara.support.TestApi;
 import com.akshara.support.TestApi.School;
 import com.akshara.support.TestApi.Session;
+import com.jayway.jsonpath.JsonPath;
 
 /**
  * Guards the database itself: every table that holds a school's data must have row-level security with the
@@ -79,7 +80,10 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
             "library.loan", "library.fine", "library.reservation", "library.stock_check", "library.stock_check_item",
             "payroll.settings", "payroll.pt_slab", "payroll.salary_component", "payroll.salary_structure",
             "payroll.salary_structure_line", "payroll.staff_pay_profile", "payroll.payroll_run", "payroll.payslip",
-            "payroll.payslip_line", "payroll.adjustment");
+            "payroll.payslip_line", "payroll.adjustment",
+            "exams.grading_scheme", "exams.grade_band", "exams.settings", "exams.class_scheme", "exams.term",
+            "exams.exam", "exams.exam_class", "exams.paper", "exams.mark_sheet", "exams.mark", "exams.term_record",
+            "exams.hpc_entry");
 
     @Autowired
     HomeworkService homework;
@@ -205,6 +209,7 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         childLeave(school, lata, student, day.isAfter(LAST_DAY) ? LAST_DAY : day);
         libraryRecords(admin, student, tara);
         payrollRecords(admin, tara);
+        examRecords(admin, yearId, classId, section, subject, student);
         School other = api.signup();
 
         try (Connection app = appConnection(); Connection owner = ownerConnection()) {
@@ -215,7 +220,9 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
                 select(app, school.tenantId());
                 assertThat(count(app, table)).as(table + " in its school").isEqualTo(owned);
                 select(app, other.tenantId());
-                assertThat(count(app, table)).as(table + " in another school").isZero();
+                // Only the other school's own rows: none, except what every school starts with (grading schemes).
+                assertThat(count(app, table)).as(table + " in another school")
+                        .isEqualTo(countAsOwner(owner, table, other.tenantId()));
                 // Writes aimed at the other school match nothing.
                 try (PreparedStatement update = app.prepareStatement(
                         "update " + table + " set tenant_id = tenant_id where tenant_id = ?")) {
@@ -469,6 +476,39 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         api.post("/api/payroll/runs/" + run + "/adjustments", admin.accessToken(), """
                 {"userId":"%s","kind":"BONUS","amountPaise":100000,"reason":"Festival bonus"}""".formatted(tara))
                 .andExpect(status().isCreated());
+    }
+
+    /**
+     * Exam records: the built-in grading schemes (added at sign-up) given to the class, the settings, a term with an
+     * exam for the class and its English paper, the student's marks, and the term record with the holistic progress
+     * card (Class 1 has one).
+     */
+    private void examRecords(Session admin, String yearId, String classId, String section, String subject,
+            String student) throws Exception {
+        List<String> schemes = JsonPath.read(api.get("/api/exams/grading-schemes", admin.accessToken())
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(),
+                "$[?(@.kind == 'SCHOLASTIC')].id");
+        String scheme = schemes.getFirst();
+        api.put("/api/exams/class-schemes?yearId=" + yearId, admin.accessToken(), """
+                {"classIds":["%s"],"schemeId":"%s"}""".formatted(classId, scheme)).andExpect(status().isOk());
+        api.put("/api/exams/settings", admin.accessToken(), """
+                {"ranksEnabled":true,"hpcUpToLevel":5}""").andExpect(status().isOk());
+        String term = TestApi.read(api.post("/api/exams/terms", admin.accessToken(), """
+                {"academicYearId":"%s","name":"Term 1","startsOn":"2026-06-01","endsOn":"2026-12-31"}"""
+                .formatted(yearId)).andExpect(status().isCreated()), "$.terms[0].id");
+        String exam = TestApi.read(api.post("/api/exams", admin.accessToken(), """
+                {"termId":"%s","name":"Unit Test 1","classIds":["%s"]}""".formatted(term, classId))
+                .andExpect(status().isCreated()), "$.terms[0].exams[0].id");
+        String paper = TestApi.read(api.put("/api/exams/" + exam + "/classes/" + classId + "/papers",
+                admin.accessToken(), """
+                {"papers":[{"subjectId":"%s","maxTheory":40}]}""".formatted(subject))
+                .andExpect(status().isOk()), "$.papers[0].id");
+        api.put("/api/exams/papers/" + paper + "/sections/" + section + "/marks", admin.accessToken(), """
+                {"version":null,"entries":[{"studentId":"%s","theory":31}]}""".formatted(student))
+                .andExpect(status().isOk());
+        api.put("/api/exams/terms/" + term + "/sections/" + section + "/records", admin.accessToken(), """
+                {"entries":[{"studentId":"%s","workEducation":"A","remark":"Reads well.","language":"PROFICIENT"}]}"""
+                .formatted(student)).andExpect(status().isOk());
     }
 
     /** The student's mother asks for a day of leave for her child. */

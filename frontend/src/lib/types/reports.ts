@@ -132,6 +132,8 @@ export type DashboardSummary = {
   homework: { waitingForReview: number } | null;
   timetable: { clashes: number; warnings: number; periodsToCover: number; periodsCovered: number } | null;
   myDay: MyDay | null;
+  /** Marks waiting to be entered and results ready to publish (exams.manage or exams.publish). */
+  exams?: { marksToEnter: number; resultsToPublish: number } | null;
 };
 
 /* ------------------------------------------------------------------ reports */

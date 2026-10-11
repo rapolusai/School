@@ -53,6 +53,14 @@ describe("reportGroupsFor", () => {
     // Searching the catalogue (library.read, every member of staff) opens no library report.
     expect(keys([...TEACHER, "library.read"])).toEqual(keys(TEACHER));
   });
+
+  it("adds result analysis to academics for exams.read", () => {
+    expect(keys([...PRINCIPAL, "exams.read"]).find(([group]) => group === "academics")).toEqual([
+      "academics",
+      ["homework", "examAnalysis", "clashes"],
+    ]);
+    expect(keys(["dashboard.view", "exams.manage"])).toEqual([]);
+  });
 });
 
 describe("ReportsHubView", () => {

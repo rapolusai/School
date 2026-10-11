@@ -50,53 +50,61 @@ public final class MessageTemplates {
     /** Sent to a student's primary contact when a library book the student reserved is ready to collect. */
     public static final String LIBRARY_HOLD_READY = "library.hold_ready";
 
-    private static final Map<String, Map<String, String>> TEMPLATES = Map.of(
-            ABSENCE_ALERT, Map.of(
+    /** Sent to a student's primary contact when the school publishes an exam's results for the student's class. */
+    public static final String RESULTS_PUBLISHED = "exams.results_published";
+
+    private static final Map<String, Map<String, String>> TEMPLATES = Map.ofEntries(
+            Map.entry(ABSENCE_ALERT, Map.of(
                     ENGLISH, "Dear {guardian}, {student} ({class}) was marked absent at {school} on {date}. "
                             + "Please contact the school if this is unexpected.",
                     HINDI, "प्रिय {guardian}, {student} ({class}) को {date} को {school} में अनुपस्थित दर्ज किया गया है। "
-                            + "यदि यह अपेक्षित नहीं है, तो कृपया विद्यालय से संपर्क करें।"),
-            FEE_RECEIPT, Map.of(
+                            + "यदि यह अपेक्षित नहीं है, तो कृपया विद्यालय से संपर्क करें।")),
+            Map.entry(FEE_RECEIPT, Map.of(
                     ENGLISH, "Dear {guardian}, {school} received {amount} towards the fees of {student} on {date}. "
                             + "Receipt no. {receiptNo}. Thank you.",
                     HINDI, "प्रिय {guardian}, {school} को {date} को {student} की फीस के लिए {amount} प्राप्त हुए। "
-                            + "रसीद संख्या {receiptNo}। धन्यवाद।"),
-            FEE_REMINDER, Map.of(
+                            + "रसीद संख्या {receiptNo}। धन्यवाद।")),
+            Map.entry(FEE_REMINDER, Map.of(
                     ENGLISH, "Dear {guardian}, fees of {amount} for {student} at {school} are overdue since {date}. "
                             + "Please pay at the school office or online. Ignore this if you have already paid.",
                     HINDI, "प्रिय {guardian}, {school} में {student} की {amount} फीस {date} से बकाया है। "
-                            + "कृपया विद्यालय कार्यालय में या ऑनलाइन भुगतान करें। यदि आप भुगतान कर चुके हैं, तो इसे अनदेखा करें।"),
-            CIRCULAR, Map.of(
+                            + "कृपया विद्यालय कार्यालय में या ऑनलाइन भुगतान करें। यदि आप भुगतान कर चुके हैं, तो इसे अनदेखा करें।")),
+            Map.entry(CIRCULAR, Map.of(
                     ENGLISH, "Circular from {school}: {title}. {summary}",
-                    HINDI, "{school} का परिपत्र: {title}। {summary}"),
-            CALENDAR_REMINDER, Map.of(
+                    HINDI, "{school} का परिपत्र: {title}। {summary}")),
+            Map.entry(CALENDAR_REMINDER, Map.of(
                     ENGLISH, "Reminder from {school}: {title} on {date}.",
-                    HINDI, "{school} की ओर से अनुस्मारक: {date} को {title}।"),
-            ENQUIRY_ACKNOWLEDGEMENT, Map.of(
+                    HINDI, "{school} की ओर से अनुस्मारक: {date} को {title}।")),
+            Map.entry(ENQUIRY_ACKNOWLEDGEMENT, Map.of(
                     ENGLISH, "Thank you for your enquiry at {school} for {child} ({class}). "
                             + "Our admissions team will contact you soon.",
                     HINDI, "{school} में {child} ({class}) के प्रवेश के बारे में पूछताछ के लिए धन्यवाद। "
-                            + "हमारी प्रवेश टीम जल्द ही आपसे संपर्क करेगी।"),
-            HOMEWORK_ASSIGNED, Map.of(
+                            + "हमारी प्रवेश टीम जल्द ही आपसे संपर्क करेगी।")),
+            Map.entry(HOMEWORK_ASSIGNED, Map.of(
                     ENGLISH, "Dear {guardian}, new {subject} homework for {student} ({class}) at {school}: {title}. "
                             + "Due on {date}.",
                     HINDI, "प्रिय {guardian}, {school} में {student} ({class}) के लिए {subject} का नया गृहकार्य: "
-                            + "{title}। जमा करने की अंतिम तिथि {date} है।"),
-            HOMEWORK_DUE, Map.of(
+                            + "{title}। जमा करने की अंतिम तिथि {date} है।")),
+            Map.entry(HOMEWORK_DUE, Map.of(
                     ENGLISH, "Dear {guardian}, {student} ({class}) has not yet submitted the {subject} homework "
                             + "\"{title}\" due on {date} at {school}.",
                     HINDI, "प्रिय {guardian}, {student} ({class}) ने {school} का {subject} गृहकार्य \"{title}\" अभी "
-                            + "तक जमा नहीं किया है। अंतिम तिथि {date} है।"),
-            LIBRARY_OVERDUE, Map.of(
+                            + "तक जमा नहीं किया है। अंतिम तिथि {date} है।")),
+            Map.entry(LIBRARY_OVERDUE, Map.of(
                     ENGLISH, "Dear {guardian}, {student} has not yet returned the library book \"{title}\" to "
                             + "{school}. It was due on {date}. Please return it soon; a fine applies for late days.",
                     HINDI, "प्रिय {guardian}, {student} ने {school} के पुस्तकालय की पुस्तक \"{title}\" अभी तक नहीं "
-                            + "लौटाई है। इसे {date} तक लौटाना था। कृपया इसे जल्द लौटाएँ; देरी के दिनों का जुर्माना लगता है।"),
-            LIBRARY_HOLD_READY, Map.of(
+                            + "लौटाई है। इसे {date} तक लौटाना था। कृपया इसे जल्द लौटाएँ; देरी के दिनों का जुर्माना लगता है।")),
+            Map.entry(LIBRARY_HOLD_READY, Map.of(
                     ENGLISH, "Dear {guardian}, the library book \"{title}\" that {student} reserved at {school} is "
                             + "ready to collect until {date}.",
                     HINDI, "प्रिय {guardian}, {school} के पुस्तकालय में {student} द्वारा आरक्षित पुस्तक \"{title}\" "
-                            + "{date} तक लेने के लिए तैयार है।"));
+                            + "{date} तक लेने के लिए तैयार है।")),
+            Map.entry(RESULTS_PUBLISHED, Map.of(
+                    ENGLISH, "Dear {guardian}, the {exam} results of {student} ({class}) at {school} are now "
+                            + "available. Open the school app to see the report card.",
+                    HINDI, "प्रिय {guardian}, {school} में {student} ({class}) के {exam} के परिणाम अब उपलब्ध हैं। "
+                            + "रिपोर्ट कार्ड देखने के लिए विद्यालय ऐप खोलें।")));
 
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{(\\w+)}");
     private static final DateTimeFormatter ENGLISH_DATE = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH);

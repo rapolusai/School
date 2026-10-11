@@ -94,12 +94,15 @@ class DemoDataSeederIT extends IntegrationTest {
     @Autowired
     DemoPayrollData payrollData;
 
+    @Autowired
+    DemoExamsData examsData;
+
     @Test
     void seedsADemoSchoolWithClassesAndStudentsOnce() throws Exception {
         DemoDataSeeder seeder = new DemoDataSeeder(provisioning, tenants, users, passwordEncoder, DEMO_PASSWORD,
                 academics, students, transactionManager, admissions, attendanceData, demoFees, staffData,
                 communicationData, timetableHomeworkData, demoBilling, demoPrivacy, portalData, libraryData,
-                payrollData);
+                payrollData, examsData);
         seeder.run(null);
         // A second start leaves the existing demo school alone.
         seeder.run(null);
@@ -414,5 +417,40 @@ class DemoDataSeederIT extends IntegrationTest {
                 .andExpect(jsonPath("$.person.name").value("Ravi Kumar"))
                 .andExpect(jsonPath("$.person.panMasked").value(startsWith("XXXXXX")))
                 .andExpect(jsonPath("$.school.name").value("Akshara Demo School"));
+        // Exams: Periodic Test 1 for Class 5 marked, locked and published, so the demo parent sees Arjun's results
+        // and report card; the Half-Yearly date sheet for Classes 2 and 5 is published.
+        api.get("/api/exams/structure", principal.accessToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.terms[*].name", contains("Term 1", "Term 2")))
+                .andExpect(jsonPath("$.termWeightTotal").value(100))
+                .andExpect(jsonPath("$.terms[0].exams[*].name", contains(DemoExamsData.PERIODIC_TEST,
+                        DemoExamsData.HALF_YEARLY)))
+                .andExpect(jsonPath("$.terms[0].examWeightTotal").value(100));
+        api.get("/api/me/children/" + arjun + "/results", parent.accessToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.results[*].examName", contains(DemoExamsData.PERIODIC_TEST)))
+                .andExpect(jsonPath("$.results[0].percent").value(89.5))
+                .andExpect(jsonPath("$.results[0].grade").value("A2"))
+                .andExpect(jsonPath("$.results[0].result").value("PASS"));
+        String termOne = TestApi.read(api.get("/api/me/children/" + arjun + "/results", parent.accessToken()),
+                "$.terms[0].id");
+        api.get("/api/me/children/" + arjun + "/report-card?termId=" + termOne, parent.accessToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.publishedOnly").value(true))
+                .andExpect(jsonPath("$.columns[*].name", contains(DemoExamsData.PERIODIC_TEST)))
+                .andExpect(jsonPath("$.cards.length()").value(1))
+                .andExpect(jsonPath("$.cards[0].fullName").value("Arjun Sharma"))
+                .andExpect(jsonPath("$.cards[0].coScholastic.workEducation").value("A"))
+                .andExpect(jsonPath("$.cards[0].hpc.socioEmotional").value("ADVANCED"));
+        if (today.isBefore(DemoExamsData.EXAM_STARTS)) {
+            api.get("/api/me/children/" + diya + "/results", parent.accessToken())
+                    .andExpect(jsonPath("$.results").isEmpty())
+                    .andExpect(jsonPath("$.upcoming[0].examName").value(DemoExamsData.HALF_YEARLY))
+                    .andExpect(jsonPath("$.upcoming[0].papers.length()").value(6));
+        }
+        api.get("/api/exams/marks", ravi.accessToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.exams[0].examName").value(DemoExamsData.PERIODIC_TEST))
+                .andExpect(jsonPath("$.exams[0].sheets[*].status", everyItem(is("LOCKED"))));
     }
 }

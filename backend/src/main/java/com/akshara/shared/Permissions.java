@@ -70,6 +70,15 @@ public final class Permissions {
     public static final String PAYROLL_MANAGE = "payroll.manage";
     /** Approving a month's payroll, which locks it. */
     public static final String PAYROLL_APPROVE = "payroll.approve";
+    /** Exam structure, date sheets, results, report cards and result analysis (read only). */
+    public static final String EXAMS_READ = "exams.read";
+    /** Grading schemes, terms and exams with their papers and weightage, and publishing date sheets. */
+    public static final String EXAMS_SETUP = "exams.setup";
+    /**
+     * Publishing results to families, unlocking submitted marks, and entering marks for every section. Without it,
+     * exams.manage covers the subjects a teacher teaches (timetable) and the sections they are class teacher of.
+     */
+    public static final String EXAMS_PUBLISH = "exams.publish";
 
     public static final String PLATFORM_ADMIN = "platform.admin";
 
@@ -80,7 +89,8 @@ public final class Permissions {
             ATTENDANCE_MANAGE, MESSAGES_READ, FEES_MANAGE, STAFF_READ, STAFF_MANAGE, LEAVE_REQUEST, LEAVE_APPROVE,
             STAFF_ATTENDANCE_MANAGE, NOTICES_READ, NOTICES_APPROVE, CALENDAR_MANAGE, TIMETABLE_READ, TIMETABLE_MANAGE,
             HOMEWORK_MANAGE, BILLING_READ, PRIVACY_MANAGE,
-            LIBRARY_READ, LIBRARY_MANAGE, PAYROLL_READ, PAYROLL_MANAGE, PAYROLL_APPROVE);
+            LIBRARY_READ, LIBRARY_MANAGE, PAYROLL_READ, PAYROLL_MANAGE, PAYROLL_APPROVE, EXAMS_READ, EXAMS_SETUP,
+            EXAMS_PUBLISH);
 
     private Permissions() {
     }

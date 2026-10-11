@@ -14,6 +14,7 @@ import type {
   StudentHomework,
   StudentHomeworkRow,
 } from "@/lib/types";
+import { familyResults } from "@/test/exams-fixtures";
 import { ARJUN_FEES } from "@/test/fees-fixtures";
 import { renderAs } from "@/test/render";
 import { DashboardView } from "../dashboard-view";
@@ -35,6 +36,8 @@ const m = vi.hoisted(() => ({
   boardPage: vi.fn(),
   upcoming: vi.fn(),
   markRead: vi.fn(),
+  childResults: vi.fn(),
+  myResults: vi.fn(),
 }));
 
 vi.mock("@/lib/api", async (importOriginal) => {
@@ -70,6 +73,10 @@ vi.mock("@/lib/communication-api", async (importOriginal) => {
     boardApi: { ...actual.boardApi, page: m.boardPage, markRead: m.markRead },
     calendarApi: { ...actual.calendarApi, upcoming: m.upcoming },
   };
+});
+vi.mock("@/lib/exams-api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/exams-api")>();
+  return { ...actual, examsApi: { ...actual.examsApi, childResults: m.childResults, myResults: m.myResults } };
 });
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
@@ -268,6 +275,10 @@ beforeEach(() => {
   );
   m.boardPage.mockResolvedValue(BOARD);
   m.upcoming.mockResolvedValue([]);
+  m.childResults.mockImplementation((id: string) =>
+    Promise.resolve(id === "st1" ? familyResults("st1") : familyResults("st2", { results: [], upcoming: [] })),
+  );
+  m.myResults.mockResolvedValue(familyResults("st1"));
 });
 
 afterEach(() => {
@@ -312,6 +323,14 @@ describe("FamilyHome for a parent", () => {
       "href",
       "/app/family/leave?child=st1",
     );
+    const results = screen.getByTestId("family-results-card");
+    expect(await within(results).findByText("Periodic Test 1")).toBeInTheDocument();
+    expect(results).toHaveTextContent("89.5% · A2");
+    expect(results).toHaveTextContent("Half-Yearly Examination starts on 7 Dec 2026");
+    expect(within(results).getByRole("link", { name: /Results and report card/ })).toHaveAttribute(
+      "href",
+      "/app/family/results?child=st1",
+    );
   });
 
   it("switches child and remembers the choice on this device", async () => {
@@ -326,6 +345,7 @@ describe("FamilyHome for a parent", () => {
     expect(window.localStorage.getItem(CHILD_STORAGE_KEY)).toBe("st2");
     expect(m.child).toHaveBeenCalledWith("st2");
     expect(m.homeworkChild).toHaveBeenCalledWith("st2");
+    expect(await within(screen.getByTestId("family-results-card")).findByText("No results have been published yet.")).toBeInTheDocument();
   });
 
   it("opens on the child chosen last time", async () => {
@@ -372,6 +392,10 @@ describe("FamilyHome for a student", () => {
     const leave = screen.getByTestId("family-leave-card");
     expect(within(leave).getByRole("link", { name: /Leave requests/ })).toHaveAttribute("href", "/app/family/leave");
     expect(m.myAttendance).toHaveBeenCalled();
+    const results = screen.getByTestId("family-results-card");
+    expect(await within(results).findByText("Periodic Test 1")).toBeInTheDocument();
+    expect(within(results).getByRole("link", { name: /Results and report card/ })).toHaveAttribute("href", "/app/family/results");
+    expect(m.childResults).not.toHaveBeenCalled();
     expect(m.childFees).not.toHaveBeenCalled();
     expect(m.myChildren).not.toHaveBeenCalled();
   });

@@ -1,6 +1,8 @@
 import {
   Activity,
+  Award,
   BarChart3,
+  BookOpenCheck,
   Building2,
   CalendarDays,
   CalendarOff,
@@ -33,8 +35,8 @@ import type { MessageKey } from "./i18n/en";
 import type { Me } from "./types";
 
 /** Permission codes from docs/api/phase-0.md, phase-1.md, phase-1-attendance.md, phase-1-staff.md,
- * phase-1-communication.md, phase-1-timetable-homework.md, phase-1-billing.md, phase-2-library.md and
- * phase-2-payroll.md. */
+ * phase-1-communication.md, phase-1-timetable-homework.md, phase-1-billing.md, phase-2-library.md,
+ * phase-2-payroll.md and phase-2-exams.md. */
 export const PERMISSIONS = {
   dashboardView: "dashboard.view",
   usersRead: "users.read",
@@ -75,6 +77,10 @@ export const PERMISSIONS = {
   payrollRead: "payroll.read",
   payrollManage: "payroll.manage",
   payrollApprove: "payroll.approve",
+  examsRead: "exams.read",
+  examsManage: "exams.manage",
+  examsSetup: "exams.setup",
+  examsPublish: "exams.publish",
 } as const;
 
 export type NavGroup = "overview" | "academics" | "finance" | "staff" | "communication" | "administration" | "platform";
@@ -104,6 +110,7 @@ export const REPORT_PERMISSIONS: readonly string[] = [
   PERMISSIONS.timetableManage,
   PERMISSIONS.libraryManage,
   PERMISSIONS.payrollRead,
+  PERMISSIONS.examsRead,
 ];
 
 /** Every navigation item, in display order. */
@@ -142,6 +149,17 @@ export const NAV_ITEMS: readonly NavItem[] = [
     shortLabelKey: "nav.homework.short",
     icon: NotebookPen,
     permission: PERMISSIONS.homeworkManage,
+    group: "academics",
+  },
+  {
+    key: "exams",
+    href: "/app/exams",
+    labelKey: "nav.exams",
+    shortLabelKey: "nav.exams.short",
+    icon: BookOpenCheck,
+    permission: PERMISSIONS.examsManage,
+    // Teachers enter marks with exams.manage; readers, setup and publishing roles open it too.
+    anyOf: [PERMISSIONS.examsRead, PERMISSIONS.examsSetup, PERMISSIONS.examsPublish],
     group: "academics",
   },
   {
@@ -441,6 +459,15 @@ export const FAMILY_NAV_ITEMS: readonly NavItem[] = [
     labelKey: "nav.library",
     shortLabelKey: "nav.library.short",
     icon: LibraryBig,
+    permission: PERMISSIONS.dashboardView,
+    group: "academics",
+  },
+  {
+    key: "family-results",
+    href: "/app/family/results",
+    labelKey: "nav.results",
+    shortLabelKey: "nav.results.short",
+    icon: Award,
     permission: PERMISSIONS.dashboardView,
     group: "academics",
   },

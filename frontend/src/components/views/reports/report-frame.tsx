@@ -121,6 +121,7 @@ export function ReportFrame({
   filterSummary,
   problem,
   excel,
+  downloadLabel,
   ready,
   children,
 }: {
@@ -133,6 +134,8 @@ export function ReportFrame({
   problem: string | null;
   /** the Excel path and the file name to use if the server sends none; null while it cannot be exported */
   excel: { path: string; fileName: string } | null;
+  /** the download button's label when the export is not Excel (a CSV file); "Excel" otherwise */
+  downloadLabel?: string;
   /** the report has loaded, so it can be printed */
   ready: boolean;
   children: React.ReactNode;
@@ -176,7 +179,7 @@ export function ReportFrame({
               disabled={!excel || !ready || problem !== null || downloading}
             >
               <Download size={18} aria-hidden="true" />
-              {downloading ? t("common.working") : t("reports.excel")}
+              {downloading ? t("common.working") : (downloadLabel ?? t("reports.excel"))}
             </button>
             <button
               type="button"
