@@ -90,6 +90,8 @@ class DemoDataSeederIT extends IntegrationTest {
 
     @Autowired
     DemoLibraryData libraryData;
+
+    @Autowired
     DemoPayrollData payrollData;
 
     @Test
