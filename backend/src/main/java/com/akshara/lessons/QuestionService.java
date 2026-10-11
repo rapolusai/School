@@ -238,6 +238,11 @@ public class QuestionService {
 
     // ------------------------------------------------------------------ checks
 
+    /**
+     * Cleans and checks a question. Only reads; a refused question (the CSV import checks every row) must not mark
+     * the caller's transaction for rollback.
+     */
+    @Transactional(noRollbackFor = ApiException.class)
     Checked check(QuestionForm form) {
         ClassView c = support.classInBody(form.classId(), "classId");
         LessonsSupport.subjectOfClass(c, form.subjectId(), "subjectId");

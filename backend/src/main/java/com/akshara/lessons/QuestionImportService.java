@@ -233,7 +233,7 @@ public class QuestionImportService {
         String v = value.strip().toUpperCase(Locale.ROOT).replaceAll("[\\s/()-]+", "_").replaceAll("_+$", "");
         return switch (v) {
             case "MCQ", "MCQ_SINGLE", "MCQ_ONE", "SINGLE", "MULTIPLE_CHOICE" -> QuestionType.MCQ_SINGLE;
-            case "MCQ_MULTI", "MCQ_MULTIPLE", "MCQ_SEVERAL", "MULTI" -> QuestionType.MCQ_MULTI;
+            case "MCQ_MULTI", "MCQ_MULTIPLE", "MCQ_SEVERAL", "MULTI", "SEVERAL" -> QuestionType.MCQ_MULTI;
             case "TRUE_FALSE", "TF", "TRUE_OR_FALSE" -> QuestionType.TRUE_FALSE;
             case "SHORT_ANSWER", "SHORT" -> QuestionType.SHORT_ANSWER;
             case "FILL_BLANK", "FILL_IN_THE_BLANK", "FILL_IN_THE_BLANKS", "FILL", "BLANK" -> QuestionType.FILL_BLANK;

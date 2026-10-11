@@ -78,10 +78,13 @@ public class MaterialService {
             return List.of();
         }
         LessonsAccess.Scope scope = access.scope(year.get().id());
+        // A section's material: its own, and its class's material for every section.
+        UUID sectionClass = filter.sectionId() == null ? null
+                : support.findSection(filter.sectionId()).map(SectionInfo::classId).orElse(null);
         List<Material> found = materials.findByAcademicYearId(year.get().id()).stream()
                 .filter(m -> filter.classId() == null || m.getClassId().equals(filter.classId()))
-                .filter(m -> filter.sectionId() == null || m.getSectionId() == null
-                        || m.getSectionId().equals(filter.sectionId()))
+                .filter(m -> filter.sectionId() == null || filter.sectionId().equals(m.getSectionId())
+                        || (m.getSectionId() == null && m.getClassId().equals(sectionClass)))
                 .filter(m -> filter.subjectId() == null || m.getSubjectId().equals(filter.subjectId()))
                 .filter(m -> !filter.mine() || (me != null && me.equals(m.getCreatedById())))
                 .sorted(Comparator.comparing(Material::getPublishOn).reversed()
