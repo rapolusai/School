@@ -53,6 +53,18 @@ public final class MessageTemplates {
     /** Sent to a student's primary contact when the school publishes an exam's results for the student's class. */
     public static final String RESULTS_PUBLISHED = "exams.results_published";
 
+    /** Sent to a student's primary contact when the bus attendant marks the student boarded (if the school opts in). */
+    public static final String TRANSPORT_BOARDED = "transport.boarded";
+
+    /** Sent to a student's primary contact when the bus attendant marks the student dropped at their stop. */
+    public static final String TRANSPORT_DROPPED = "transport.dropped";
+
+    /** Sent to a student's primary contact when the bus reaches the stop before the student's stop. */
+    public static final String TRANSPORT_APPROACHING = "transport.approaching";
+
+    /** Sent to the contacts of the students still waiting for the bus when the attendant reports a delay. */
+    public static final String TRANSPORT_DELAYED = "transport.delayed";
+
     private static final Map<String, Map<String, String>> TEMPLATES = Map.ofEntries(
             Map.entry(ABSENCE_ALERT, Map.of(
                     ENGLISH, "Dear {guardian}, {student} ({class}) was marked absent at {school} on {date}. "
@@ -104,7 +116,24 @@ public final class MessageTemplates {
                     ENGLISH, "Dear {guardian}, the {exam} results of {student} ({class}) at {school} are now "
                             + "available. Open the school app to see the report card.",
                     HINDI, "प्रिय {guardian}, {school} में {student} ({class}) के {exam} के परिणाम अब उपलब्ध हैं। "
-                            + "रिपोर्ट कार्ड देखने के लिए विद्यालय ऐप खोलें।")));
+                            + "रिपोर्ट कार्ड देखने के लिए विद्यालय ऐप खोलें।")),
+            Map.entry(TRANSPORT_BOARDED, Map.of(
+                    ENGLISH, "Dear {guardian}, {student} boarded the {school} bus ({route}) at {stop} at {time}.",
+                    HINDI, "प्रिय {guardian}, {student} {time} बजे {stop} पर {school} की बस ({route}) में सवार हुए।")),
+            Map.entry(TRANSPORT_DROPPED, Map.of(
+                    ENGLISH, "Dear {guardian}, {student} was dropped at {stop} by the {school} bus ({route}) at "
+                            + "{time}.",
+                    HINDI, "प्रिय {guardian}, {school} की बस ({route}) ने {student} को {time} बजे {stop} पर उतारा।")),
+            Map.entry(TRANSPORT_APPROACHING, Map.of(
+                    ENGLISH, "Dear {guardian}, the {school} bus ({route}) is approaching {stop}. Please be ready "
+                            + "for {student}.",
+                    HINDI, "प्रिय {guardian}, {school} की बस ({route}) {stop} के पास पहुँच रही है। कृपया {student} के "
+                            + "लिए तैयार रहें।")),
+            Map.entry(TRANSPORT_DELAYED, Map.of(
+                    ENGLISH, "Dear {guardian}, the {school} bus ({route}) for {student} is running about {minutes} "
+                            + "minutes late: {reason}.",
+                    HINDI, "प्रिय {guardian}, {student} की {school} बस ({route}) लगभग {minutes} मिनट देर से चल रही है: "
+                            + "{reason}।")));
 
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{(\\w+)}");
     private static final DateTimeFormatter ENGLISH_DATE = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH);

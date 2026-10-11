@@ -83,7 +83,9 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
             "payroll.payslip_line", "payroll.adjustment",
             "exams.grading_scheme", "exams.grade_band", "exams.settings", "exams.class_scheme", "exams.term",
             "exams.exam", "exams.exam_class", "exams.paper", "exams.mark_sheet", "exams.mark", "exams.term_record",
-            "exams.hpc_entry");
+            "exams.hpc_entry",
+            "transport.settings", "transport.fee_zone", "transport.vehicle", "transport.crew_member", "transport.route",
+            "transport.stop", "transport.allocation", "transport.trip", "transport.trip_event", "transport.position");
 
     @Autowired
     HomeworkService homework;
@@ -210,6 +212,7 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         libraryRecords(admin, student, tara);
         payrollRecords(admin, tara);
         examRecords(admin, yearId, classId, section, subject, student);
+        transportRecords(admin, student, tara);
         School other = api.signup();
 
         try (Connection app = appConnection(); Connection owner = ownerConnection()) {
@@ -509,6 +512,41 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         api.put("/api/exams/terms/" + term + "/sections/" + section + "/records", admin.accessToken(), """
                 {"entries":[{"studentId":"%s","workEducation":"A","remark":"Reads well.","language":"PROFICIENT"}]}"""
                 .formatted(student)).andExpect(status().isOk());
+    }
+
+    /**
+     * One row in every transport table: the alert settings, a fee zone, a vehicle, a member of staff as its driver, a
+     * route with a stop in the zone, the student's place on it, and today's morning trip with a mark and a position.
+     */
+    private void transportRecords(Session admin, String student, String staffUserId) throws Exception {
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Kolkata"));
+        api.put("/api/transport/settings", admin.accessToken(), """
+                {"boardedAlerts":true,"droppedAlerts":true,"approachingAlerts":false,"delayAlerts":true}""")
+                .andExpect(status().isOk());
+        String zone = TestApi.read(api.post("/api/transport/fee-zones", admin.accessToken(), """
+                {"name":"Zone A","minKm":0,"maxKm":5,"annualFeePaise":1200000}""")
+                .andExpect(status().isCreated()), "$.id");
+        String vehicle = TestApi.read(api.post("/api/transport/vehicles", admin.accessToken(), """
+                {"registrationNo":"TS09 UB 4410","type":"BUS","seats":40,"fitnessExpiry":"%s"}"""
+                .formatted(today.plusYears(1))).andExpect(status().isCreated()), "$.id");
+        String driver = TestApi.read(api.post("/api/transport/crew", admin.accessToken(), """
+                {"userId":"%s","kind":"DRIVER","licenceNo":"TS09 20150001234","licenceExpiry":"%s"}"""
+                .formatted(staffUserId, today.plusYears(3))).andExpect(status().isCreated()), "$.id");
+        String route = TestApi.read(api.post("/api/transport/routes", admin.accessToken(), """
+                {"name":"Route 1","vehicleId":"%s","driverId":"%s"}""".formatted(vehicle, driver))
+                .andExpect(status().isCreated()), "$.id");
+        String stop = TestApi.read(api.put("/api/transport/routes/" + route + "/stops", admin.accessToken(), """
+                {"stops":[{"name":"Gate Stop","latitude":17.41,"longitude":78.44,"feeZoneId":"%s"}]}"""
+                .formatted(zone)).andExpect(status().isOk()), "$.stops[0].id");
+        api.post("/api/transport/allocations", admin.accessToken(), """
+                {"studentId":"%s","routeId":"%s","stopId":"%s","startDate":"%s"}"""
+                .formatted(student, route, stop, today)).andExpect(status().isCreated());
+        String trip = TestApi.read(api.post("/api/transport/routes/" + route + "/trips", admin.accessToken(), """
+                {"kind":"MORNING"}""").andExpect(status().isCreated()), "$.id");
+        api.put("/api/transport/trips/" + trip + "/students/" + student, admin.accessToken(), """
+                {"status":"BOARDED"}""").andExpect(status().isOk());
+        api.post("/api/transport/trips/" + trip + "/positions", admin.accessToken(), """
+                {"latitude":17.41,"longitude":78.44}""").andExpect(status().isOk());
     }
 
     /** The student's mother asks for a day of leave for her child. */

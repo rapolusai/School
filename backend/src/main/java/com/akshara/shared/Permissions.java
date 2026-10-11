@@ -79,6 +79,15 @@ public final class Permissions {
      * exams.manage covers the subjects a teacher teaches (timetable) and the sections they are class teacher of.
      */
     public static final String EXAMS_PUBLISH = "exams.publish";
+    /** Routes, vehicles and crew, the live trip board and the transport reports (read only). */
+    public static final String TRANSPORT_READ = "transport.read";
+    /** Vehicles, drivers and attendants, routes and stops, fee zones, student allocations and transport alerts. */
+    public static final String TRANSPORT_MANAGE = "transport.manage";
+    /**
+     * Running a trip from a phone: start it, share the bus's position, mark students boarded, dropped or absent and
+     * report a delay. Without transport.manage, only the trips of routes the user is the driver or attendant of.
+     */
+    public static final String TRANSPORT_TRIP = "transport.trip";
 
     public static final String PLATFORM_ADMIN = "platform.admin";
 
@@ -90,7 +99,7 @@ public final class Permissions {
             STAFF_ATTENDANCE_MANAGE, NOTICES_READ, NOTICES_APPROVE, CALENDAR_MANAGE, TIMETABLE_READ, TIMETABLE_MANAGE,
             HOMEWORK_MANAGE, BILLING_READ, PRIVACY_MANAGE,
             LIBRARY_READ, LIBRARY_MANAGE, PAYROLL_READ, PAYROLL_MANAGE, PAYROLL_APPROVE, EXAMS_READ, EXAMS_SETUP,
-            EXAMS_PUBLISH);
+            EXAMS_PUBLISH, TRANSPORT_READ, TRANSPORT_MANAGE, TRANSPORT_TRIP);
 
     private Permissions() {
     }

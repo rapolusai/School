@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 
 import jakarta.persistence.EntityManager;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +46,9 @@ import com.akshara.students.StudentStatus;
  * <p>Dues are created for every active student of the class when a structure is published, and lazily for students
  * enrolled later: the first time their fees are read or paid, or a school-wide fee report runs. Other modules can call
  * {@link #generateForStudent(UUID)} directly (for example from a future "student enrolled" event).
+ *
+ * <p>Besides the structure, a student can owe per-student charges from other modules ({@link StudentChargeSource}, for
+ * example the school bus); {@link #refreshStudentCharges(UUID)} re-prices a student's dues after those change.
  */
 @Service
 @Transactional
@@ -77,12 +81,14 @@ public class FeeDuesService {
     private final StudentRoster roster;
     private final AcademicsDirectory academics;
     private final EntityManager entityManager;
+    private final ObjectProvider<StudentChargeSource> chargeSources;
 
     FeeDuesService(StudentDueRepository dues, FeeStructureRepository structures, FeeInstalmentRepository instalments,
             FeeInstalmentShareRepository shares, FeeHeadRepository heads, ConcessionRepository concessions,
             ConcessionHeadRepository concessionHeads, PaymentAllocationRepository allocations,
             LateFeeWaiverRepository waivers, LateFeeRuleRepository lateFeeRules, ReceiptRepository receipts,
-            StudentRoster roster, AcademicsDirectory academics, EntityManager entityManager) {
+            StudentRoster roster, AcademicsDirectory academics, EntityManager entityManager,
+            ObjectProvider<StudentChargeSource> chargeSources) {
         this.dues = dues;
         this.structures = structures;
         this.instalments = instalments;
@@ -97,6 +103,7 @@ public class FeeDuesService {
         this.roster = roster;
         this.academics = academics;
         this.entityManager = entityManager;
+        this.chargeSources = chargeSources;
     }
 
     // ------------------------------------------------------------------ generation
@@ -212,6 +219,25 @@ public class FeeDuesService {
         return created;
     }
 
+    /**
+     * Brings a student's current-year dues in line after their per-student charges ({@link StudentChargeSource})
+     * changed: creates the year's dues when the student has none yet, otherwise re-prices what they owe from each
+     * structure the same way a concession change does. Paid amounts are never reduced. Safe to call from any module
+     * inside its own transaction; does nothing when no academic year is current.
+     */
+    public void refreshStudentCharges(UUID studentId) {
+        TenantContext.require();
+        Optional<YearInfo> year = academics.currentYear();
+        if (year.isEmpty()) {
+            return;
+        }
+        lockStudent(studentId);
+        if (generateForStudent(studentId)) {
+            return;
+        }
+        regenerateStudent(studentId, year.get().id());
+    }
+
     /** Re-prices a student's dues of a year after their concessions changed. */
     void regenerateStudent(UUID studentId, UUID academicYearId) {
         Map<UUID, FeeHead> headById = headsById();
@@ -297,15 +323,26 @@ public class FeeDuesService {
         List<FeeMath.Cell> cells = new ArrayList<>();
         Comparator<FeeInstalmentShare> byHead = Comparator.comparing(
                 (FeeInstalmentShare s) -> headOrder(headById.get(s.getHeadId()))).thenComparing(s -> s.getHeadId());
+        Map<UUID, Map<UUID, Long>> extra = charges(studentId, data, headById);
         for (FeeInstalment instalment : data.instalments()) {
             List<FeeInstalmentShare> list = new ArrayList<>(data.shares().getOrDefault(instalment.getId(), List.of()));
             list.sort(byHead);
+            Map<UUID, Long> charged = new LinkedHashMap<>(extra.getOrDefault(instalment.getId(), Map.of()));
             for (FeeInstalmentShare share : list) {
-                if (share.getAmountPaise() <= 0) {
+                long amount = share.getAmountPaise() + Optional.ofNullable(charged.remove(share.getHeadId()))
+                        .orElse(0L);
+                if (amount <= 0) {
                     continue;
                 }
                 instalmentList.add(instalment);
-                cells.add(new FeeMath.Cell(share.getHeadId(), share.getAmountPaise()));
+                cells.add(new FeeMath.Cell(share.getHeadId(), amount));
+            }
+            // Charges under heads the structure does not use in this instalment, in head order.
+            List<UUID> others = new ArrayList<>(charged.keySet());
+            others.sort(Comparator.comparing((UUID id) -> headOrder(headById.get(id))).thenComparing(id -> id));
+            for (UUID headId : others) {
+                instalmentList.add(instalment);
+                cells.add(new FeeMath.Cell(headId, charged.get(headId)));
             }
         }
         long[] concession = FeeMath.concessions(cells,
@@ -314,6 +351,45 @@ public class FeeDuesService {
         for (int i = 0; i < cells.size(); i++) {
             result.add(new Target(instalmentList.get(i), cells.get(i).headId(), cells.get(i).grossPaise(),
                     concession[i]));
+        }
+        return result;
+    }
+
+    /**
+     * Per-student charges from other modules on the structure's instalments: instalment id → head id → amount. Each
+     * charge goes to the first active head of its kind; charges for unknown instalments, of a kind without an active
+     * head, or of no amount are left out.
+     */
+    private Map<UUID, Map<UUID, Long>> charges(UUID studentId, StructureData data, Map<UUID, FeeHead> headById) {
+        List<StudentChargeSource> sources = chargeSources.orderedStream().toList();
+        if (sources.isEmpty() || data.instalments().isEmpty()) {
+            return Map.of();
+        }
+        List<StudentChargeSource.ChargeInstalment> list = data.instalments().stream()
+                .map(i -> new StudentChargeSource.ChargeInstalment(i.getId(), i.getSeq(), i.getLabel(),
+                        i.getDueDate()))
+                .toList();
+        Set<UUID> known = list.stream().map(StudentChargeSource.ChargeInstalment::id).collect(Collectors.toSet());
+        Map<FeeHeadKind, Optional<UUID>> headOfKind = new HashMap<>();
+        Map<UUID, Map<UUID, Long>> result = new HashMap<>();
+        for (StudentChargeSource source : sources) {
+            for (StudentChargeSource.StudentCharge charge : source.chargesFor(studentId,
+                    data.structure().getAcademicYearId(), list)) {
+                if (charge == null || charge.kind() == null || charge.amountPaise() <= 0
+                        || !known.contains(charge.instalmentId())) {
+                    continue;
+                }
+                Optional<UUID> head = headOfKind.computeIfAbsent(charge.kind(), kind -> headById.values().stream()
+                        .filter(h -> h.isActive() && h.getKind() == kind)
+                        .min(Comparator.comparingInt(FeeHead::getDisplayOrder).thenComparing(FeeHead::getName)
+                                .thenComparing(FeeHead::getId))
+                        .map(FeeHead::getId));
+                if (head.isEmpty()) {
+                    continue;
+                }
+                result.computeIfAbsent(charge.instalmentId(), k -> new LinkedHashMap<>())
+                        .merge(head.get(), charge.amountPaise(), Long::sum);
+            }
         }
         return result;
     }
