@@ -57,6 +57,15 @@ public final class Permissions {
     public static final String BILLING_READ = "billing.read";
     /** The privacy notice, the grievance officer, paper consent, and parents' data requests (exports, erasure). */
     public static final String PRIVACY_MANAGE = "privacy.manage";
+    /** Payroll screens, payslips of everyone and the payroll reports (bank account numbers and PAN masked). */
+    public static final String PAYROLL_READ = "payroll.read";
+    /**
+     * Payroll settings, salary structures, staff pay details (full account numbers and PAN on request, audited),
+     * monthly runs, adjustments, marking a month paid and the bank, PF, ESI, PT and TDS files.
+     */
+    public static final String PAYROLL_MANAGE = "payroll.manage";
+    /** Approving a month's payroll, which locks it. */
+    public static final String PAYROLL_APPROVE = "payroll.approve";
 
     public static final String PLATFORM_ADMIN = "platform.admin";
 
@@ -66,7 +75,7 @@ public final class Permissions {
             EXAMS_MANAGE, NOTICES_SEND, CHILD_VIEW, ACADEMICS_READ, ADMISSIONS_READ, ADMISSIONS_MANAGE,
             ATTENDANCE_MANAGE, MESSAGES_READ, FEES_MANAGE, STAFF_READ, STAFF_MANAGE, LEAVE_REQUEST, LEAVE_APPROVE,
             STAFF_ATTENDANCE_MANAGE, NOTICES_READ, NOTICES_APPROVE, CALENDAR_MANAGE, TIMETABLE_READ, TIMETABLE_MANAGE,
-            HOMEWORK_MANAGE, BILLING_READ, PRIVACY_MANAGE);
+            HOMEWORK_MANAGE, BILLING_READ, PRIVACY_MANAGE, PAYROLL_READ, PAYROLL_MANAGE, PAYROLL_APPROVE);
 
     private Permissions() {
     }

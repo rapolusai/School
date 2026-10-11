@@ -8,6 +8,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -87,11 +88,14 @@ class DemoDataSeederIT extends IntegrationTest {
     @Autowired
     DemoPortalData portalData;
 
+    @Autowired
+    DemoPayrollData payrollData;
+
     @Test
     void seedsADemoSchoolWithClassesAndStudentsOnce() throws Exception {
         DemoDataSeeder seeder = new DemoDataSeeder(provisioning, tenants, users, passwordEncoder, DEMO_PASSWORD,
                 academics, students, transactionManager, admissions, attendanceData, demoFees, staffData,
-                communicationData, timetableHomeworkData, demoBilling, demoPrivacy, portalData);
+                communicationData, timetableHomeworkData, demoBilling, demoPrivacy, portalData, payrollData);
         seeder.run(null);
         // A second start leaves the existing demo school alone.
         seeder.run(null);
@@ -356,5 +360,26 @@ class DemoDataSeederIT extends IntegrationTest {
                     .andExpect(jsonPath("$.pending.length()").value(1))
                     .andExpect(jsonPath("$.recent[0].status").value("APPROVED"));
         }
+        // Payroll: every active member of staff has a structure and fake bank details; last month is approved by the
+        // School Admin and paid, and the demo teacher sees his own payslip with the account masked.
+        String lastMonth = YearMonth.now(ZoneId.of("Asia/Kolkata")).minusMonths(1).toString();
+        api.get("/api/payroll/runs", accounts.accessToken())
+                .andExpect(jsonPath("$.runs.length()").value(1))
+                .andExpect(jsonPath("$.runs[0].month").value(lastMonth))
+                .andExpect(jsonPath("$.runs[0].status").value("PAID"))
+                .andExpect(jsonPath("$.runs[0].approvedByName").value("Priya Nair"))
+                .andExpect(jsonPath("$.runs[0].totals.staffCount").value(greaterThan(10)))
+                .andExpect(jsonPath("$.needStructure").value(0));
+        api.get("/api/payroll/staff", accounts.accessToken())
+                .andExpect(jsonPath("$.staff[*].hasBank", everyItem(is(true))))
+                .andExpect(jsonPath("$.needBankDetails").value(0));
+        String payslip = TestApi.read(api.get("/api/me/payslips", ravi.accessToken())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].month").value(lastMonth))
+                .andExpect(jsonPath("$[0].status").value("PAID")), "$[0].id");
+        api.get("/api/me/payslips/" + payslip, ravi.accessToken())
+                .andExpect(jsonPath("$.person.name").value("Ravi Kumar"))
+                .andExpect(jsonPath("$.person.panMasked").value(startsWith("XXXXXX")))
+                .andExpect(jsonPath("$.school.name").value("Akshara Demo School"));
     }
 }

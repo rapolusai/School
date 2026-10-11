@@ -14,6 +14,7 @@ import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +50,8 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
 
     /** Tables that are not owned by one school. Everything else must be isolated. */
     static final Set<String> NOT_SCHOOL_OWNED = Set.of("platform.tenant", "platform.platform_admin",
-            "public.flyway_schema_history", "billing.subscription", "billing.invoice_counter");
+            "public.flyway_schema_history", "billing.subscription", "billing.invoice_counter",
+            "payroll.statutory_rate", "payroll.tax_rule", "payroll.tax_slab", "payroll.pt_slab_default");
 
     /** Tables whose isolation comes from a parent row instead of their own tenant_id. */
     static final Set<String> ISOLATED_THROUGH_PARENT = Set.of("identity.user_role");
@@ -72,7 +74,8 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
             "homework.homework_section", "homework.submission", "homework.settings", "billing.invoice",
             "billing.invoice_payment", "privacy.grievance_officer", "privacy.privacy_notice",
             "privacy.consent_record", "privacy.data_request", "privacy.request_event", "privacy.data_export",
-            "attendance.leave_request");
+            "attendance.leave_request",
+            "payroll.settings", "payroll.pt_slab", "payroll.salary_component", "payroll.salary_structure", "payroll.salary_structure_line", "payroll.staff_pay_profile", "payroll.payroll_run", "payroll.payslip", "payroll.payslip_line", "payroll.adjustment");
 
     @Autowired
     HomeworkService homework;
@@ -196,6 +199,7 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         Session lata = parentSignIn(school, admin, student);
         privacyRecords(admin, lata, student);
         childLeave(school, lata, student, day.isAfter(LAST_DAY) ? LAST_DAY : day);
+        payrollRecords(admin, tara);
         School other = api.signup();
 
         try (Connection app = appConnection(); Connection owner = ownerConnection()) {
@@ -396,6 +400,34 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
                     at.plusSeconds(3600));
             return null;
         });
+    }
+
+    /**
+     * Payroll: settings, the school's own professional tax slabs, the standard components, Tara's pay details and
+     * salary structure, this month's run (payslip and lines) and an adjustment in it.
+     */
+    private void payrollRecords(Session admin, String tara) throws Exception {
+        String month = YearMonth.now(ZoneId.of("Asia/Kolkata")).toString();
+        api.put("/api/payroll/settings", admin.accessToken(), """
+                {"payDay":1,"prorationBasis":"CALENDAR_DAYS","pfEnabled":true,"pfOnFullWages":false,
+                 "esiEnabled":true,"ptEnabled":true,"ptState":"TG"}""").andExpect(status().isOk());
+        api.put("/api/payroll/settings/pt-slabs/TG", admin.accessToken(), """
+                {"effectiveFrom":"2025-04-01","slabs":[{"appliesTo":"ALL","fromPaise":0,"toPaise":1500000,
+                 "amountPaise":0},{"appliesTo":"ALL","fromPaise":1500001,"amountPaise":20000}]}""")
+                .andExpect(status().isOk());
+        String basic = TestApi.read(api.post("/api/payroll/components/standard", admin.accessToken(), null)
+                .andExpect(status().isOk()), "$[?(@.code == 'BASIC')].id").replaceAll("[\\[\\]\"]", "");
+        api.put("/api/payroll/staff/" + tara + "/pay-profile", admin.accessToken(), """
+                {"bankAccountNumber":"000000123456","bankIfsc":"AKSH0000001","pan":"ABCDE1234F",
+                 "pfMember":true,"ptWomenSlab":false}""").andExpect(status().isOk());
+        api.post("/api/payroll/staff/" + tara + "/structures", admin.accessToken(), """
+                {"effectiveFrom":"%s","lines":[{"componentId":"%s","monthlyPaise":3000000}]}"""
+                .formatted(month, basic)).andExpect(status().isCreated());
+        String run = TestApi.read(api.post("/api/payroll/runs", admin.accessToken(), """
+                {"month":"%s"}""".formatted(month)).andExpect(status().isCreated()), "$.id");
+        api.post("/api/payroll/runs/" + run + "/adjustments", admin.accessToken(), """
+                {"userId":"%s","kind":"BONUS","amountPaise":100000,"reason":"Festival bonus"}""".formatted(tara))
+                .andExpect(status().isCreated());
     }
 
     /** The student's mother asks for a day of leave for her child. */
