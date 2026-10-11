@@ -97,12 +97,15 @@ class DemoDataSeederIT extends IntegrationTest {
     @Autowired
     DemoExamsData examsData;
 
+    @Autowired
+    DemoChatData chatData;
+
     @Test
     void seedsADemoSchoolWithClassesAndStudentsOnce() throws Exception {
         DemoDataSeeder seeder = new DemoDataSeeder(provisioning, tenants, users, passwordEncoder, DEMO_PASSWORD,
                 academics, students, transactionManager, admissions, attendanceData, demoFees, staffData,
                 communicationData, timetableHomeworkData, demoBilling, demoPrivacy, portalData, libraryData,
-                payrollData, examsData);
+                payrollData, examsData, chatData);
         seeder.run(null);
         // A second start leaves the existing demo school alone.
         seeder.run(null);
@@ -452,5 +455,25 @@ class DemoDataSeederIT extends IntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.exams[0].examName").value(DemoExamsData.PERIODIC_TEST))
                 .andExpect(jsonPath("$.exams[0].sheets[*].status", everyItem(is("LOCKED"))));
+        // Messages: Anitha Sharma and Ravi Kumar wrote about Arjun; her last message is unread for him. A Class 5 PTM
+        // has her booking with him and two made by the office.
+        api.get("/api/chat/unread", ravi.accessToken())
+                .andExpect(jsonPath("$.unread").value(1))
+                .andExpect(jsonPath("$.conversations").value(1));
+        api.get("/api/me/chat/conversations", parent.accessToken())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].withName").value("Ravi Kumar"))
+                .andExpect(jsonPath("$[0].student.name").value("Arjun Sharma"))
+                .andExpect(jsonPath("$[0].unread").value(0));
+        api.get("/api/ptm/events", principal.accessToken())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].title").value(DemoChatData.PTM_TITLE))
+                .andExpect(jsonPath("$[0].booked").value(3));
+        api.get("/api/me/ptm", parent.accessToken())
+                .andExpect(jsonPath("$.children[0].name").value("Arjun Sharma"))
+                .andExpect(jsonPath("$.children[0].events[0].teachers[0].name").value("Ravi Kumar"))
+                .andExpect(jsonPath("$.children[0].events[0].teachers[0].booking.startsAt").value("09:30:00"));
+        api.get("/api/ptm/my", ravi.accessToken())
+                .andExpect(jsonPath("$[0].schedule.booked").value(3));
     }
 }

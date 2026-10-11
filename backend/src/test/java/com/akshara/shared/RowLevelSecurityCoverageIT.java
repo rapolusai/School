@@ -23,6 +23,8 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import com.akshara.attendance.ChildLeaveService;
 import com.akshara.attendance.ChildLeaveService.Application;
@@ -83,7 +85,8 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
             "payroll.payslip_line", "payroll.adjustment",
             "exams.grading_scheme", "exams.grade_band", "exams.settings", "exams.class_scheme", "exams.term",
             "exams.exam", "exams.exam_class", "exams.paper", "exams.mark_sheet", "exams.mark", "exams.term_record",
-            "exams.hpc_entry");
+            "exams.hpc_entry",
+            "chat.settings", "chat.staff_away", "chat.conversation", "chat.message", "chat.report", "chat.ptm_event", "chat.ptm_section", "chat.ptm_teacher", "chat.ptm_slot", "chat.ptm_booking");
 
     @Autowired
     HomeworkService homework;
@@ -210,6 +213,7 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         libraryRecords(admin, student, tara);
         payrollRecords(admin, tara);
         examRecords(admin, yearId, classId, section, subject, student);
+        chatRecords(school, admin, lata, student, section);
         School other = api.signup();
 
         try (Connection app = appConnection(); Connection owner = ownerConnection()) {
@@ -391,6 +395,44 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
                 .andExpect(status().isCreated()), "$.id");
         api.post("/api/library/stock-checks/" + check + "/scans", admin.accessToken(), """
                 {"accessionNo":"%s"}""".formatted(accession)).andExpect(status().isOk());
+    }
+
+    /**
+     * One row in every chat table: the school's message hours, a teacher's away note, Lata's conversation with her
+     * daughter's teacher with a message and its attachment, her report of it, and a PTM for the section (its class,
+     * teachers and slots) with the slot she booked.
+     */
+    private void chatRecords(School school, Session admin, Session lata, String student, String section)
+            throws Exception {
+        api.put("/api/chat/settings", admin.accessToken(), """
+                {"availableDays":["MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY"],"availableFrom":"08:30",
+                 "availableTo":"17:00","notifyNewMessages":true}""").andExpect(status().isOk());
+        Session tara = api.login(school.code(), "tara@" + school.code() + ".akshara.test", TestApi.PASSWORD);
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Kolkata"));
+        api.put("/api/chat/away", tara.accessToken(), """
+                {"returnsOn":"%s","note":"On training"}""".formatted(today.plusDays(5))).andExpect(status().isOk());
+        String teacher = TestApi.read(api.get("/api/me/chat/contacts", lata.accessToken()), "$.contacts[0].personId");
+        String conversation = TestApi.read(api.post("/api/me/chat/conversations", lata.accessToken(), """
+                {"studentId":"%s","teacherUserId":"%s"}""".formatted(student, teacher))
+                .andExpect(status().isCreated()), "$.id");
+        mvc.perform(MockMvcRequestBuilders.multipart("/api/me/chat/conversations/" + conversation + "/messages")
+                .file(new MockMultipartFile("files", "note.txt", "text/plain",
+                        "Asha's note".getBytes(StandardCharsets.UTF_8)))
+                .param("body", "Hello")
+                .header("Authorization", "Bearer " + lata.accessToken()))
+                .andExpect(status().isCreated());
+        api.post("/api/me/chat/conversations/" + conversation + "/reports", lata.accessToken(), """
+                {"reason":"Please look at this"}""").andExpect(status().isCreated());
+        api.put("/api/ptm/settings", admin.accessToken(), """
+                {"remindersEnabled":true}""").andExpect(status().isOk());
+        api.post("/api/ptm/events", admin.accessToken(), """
+                {"title":"PTM","date":"%s","startsAt":"09:00","endsAt":"10:00","slotMinutes":15,"mode":"IN_PERSON",
+                 "sectionIds":["%s"],"includeSubjectTeachers":true}""".formatted(today.plusDays(7), section))
+                .andExpect(status().isCreated());
+        String slot = TestApi.read(api.get("/api/me/ptm", lata.accessToken()),
+                "$.children[0].events[0].teachers[0].slots[0].id");
+        api.post("/api/me/ptm/bookings", lata.accessToken(), """
+                {"slotId":"%s","studentId":"%s"}""".formatted(slot, student)).andExpect(status().isCreated());
     }
 
     private static boolean canUpdateTenantId(Connection connection, String table) throws SQLException {

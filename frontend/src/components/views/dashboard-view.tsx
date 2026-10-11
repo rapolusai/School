@@ -30,6 +30,7 @@ import type { Tenant } from "@/lib/types";
 import { useApiData } from "@/lib/use-api-data";
 import { AdmissionsCard } from "./admissions/admissions-card";
 import { AttendanceTodayCard, MarkAttendanceCards } from "./attendance/attendance-cards";
+import { ChatDashboardCards } from "./chat/chat-views";
 import { NoticesCard, UpcomingCard } from "./communication/dashboard-cards";
 import { ChildrenHomeworkCards, StudentHomeworkCard } from "./homework/homework-cards";
 import { MyChildren, MyClass } from "./my-children";
@@ -148,6 +149,7 @@ export function DashboardView() {
 
       {tenant ? <TrialBanner tenant={tenant} now={now} /> : null}
       {isStaffMember(me) ? <StaffDashboard /> : null}
+      {hasPermission(me, PERMISSIONS.chatUse) ? <ChatDashboardCards /> : null}
 
       {canChildren ? <MyChildren /> : null}
       {canChildren ? <ChildrenHomeworkCards /> : null}
