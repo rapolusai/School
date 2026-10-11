@@ -3723,6 +3723,7 @@ export const en = {
   "exams.analysis.sections": "By section",
   "exams.analysis.belowPass": "Below the pass mark",
   "exams.analysis.noneBelow": "Every student passed every subject.",
+  "exams.analysis.weakSubjects": "Subjects to work on",
   "exams.analysis.rule": "{scheme}: pass mark {pass}% in each subject. Change compares the subject average with the previous exam's.",
   "exams.family.published": "Published results",
   "exams.family.none": "No results have been published yet.",

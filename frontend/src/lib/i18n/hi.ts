@@ -3722,6 +3722,7 @@ export const hi: Record<MessageKey, string> = {
   "exams.analysis.sections": "सेक्शन अनुसार",
   "exams.analysis.belowPass": "उत्तीर्ण अंक से नीचे",
   "exams.analysis.noneBelow": "हर विद्यार्थी हर विषय में उत्तीर्ण है।",
+  "exams.analysis.weakSubjects": "सुधार के विषय",
   "exams.analysis.rule": "{scheme}: हर विषय में उत्तीर्ण अंक {pass}%। बदलाव विषय औसत की पिछली परीक्षा से तुलना करता है।",
   "exams.family.published": "प्रकाशित परिणाम",
   "exams.family.none": "अभी कोई परिणाम प्रकाशित नहीं हुआ।",

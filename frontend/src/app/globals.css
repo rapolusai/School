@@ -4117,6 +4117,41 @@
   .exam-doc .hpc-scale > span[data-on="true"] {
     background: #555 !important;
   }
+  /* One A4 page per report card: block layout (flex columns fragment badly), tighter spacing, the
+     overall row printed once at the end of the table, and a grade beside its marks. */
+  .exam-doc .exam-page,
+  .exam-doc .exam-page .flex-col {
+    display: block !important;
+  }
+  .exam-doc .exam-page {
+    font-size: 10pt;
+  }
+  .exam-doc .exam-page > * + * {
+    margin-top: 8px;
+  }
+  .exam-doc .exam-page .flex-col > * + * {
+    margin-top: 3px;
+  }
+  .exam-doc .exam-page .hpc-levels {
+    margin-bottom: 6px;
+  }
+  .exam-doc .exam-page > .exam-signs {
+    margin-top: 32px;
+  }
+  .exam-doc .exam-page-head {
+    padding-bottom: 6px;
+  }
+  .exam-doc .exam-table tfoot {
+    display: table-row-group;
+  }
+  .exam-doc .exam-table td .block {
+    display: inline;
+    margin-left: 4px;
+  }
+  .exam-doc .exam-page tr,
+  .exam-doc .exam-page .hpc-level {
+    break-inside: avoid;
+  }
   .hall-ticket {
     border-color: #000;
   }

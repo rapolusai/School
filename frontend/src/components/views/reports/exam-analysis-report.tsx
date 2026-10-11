@@ -6,7 +6,7 @@ import { ErrorState, LoadingRows } from "@/components/ui/states";
 import { examPaths, examsApi } from "@/lib/exams-api";
 import { formatDateTime } from "@/lib/format";
 import { localeFor, plural, useI18n } from "@/lib/i18n";
-import type { ExamAnalysis, ExamStructure } from "@/lib/types";
+import type { ExamAnalysis, ExamStructure, WeakSubject } from "@/lib/types";
 import { useApiData } from "@/lib/use-api-data";
 import { BarChart } from "./charts";
 import { Figure, ReportFrame } from "./report-frame";
@@ -17,6 +17,11 @@ export function changeText(change: number | null | undefined): string {
   if (change === null || change === undefined) return "—";
   const rounded = Math.round(change * 100) / 100;
   return rounded > 0 ? `+${formatScore(rounded)}` : formatScore(rounded);
+}
+
+/** "Mathematics 25% · Hindi AB": the subjects a student fell short in. Pure, exported for tests. */
+export function weakText(subjects: WeakSubject[]): string {
+  return subjects.map((w) => `${w.subjectName} ${w.code ?? formatPct(w.percent)}`).join(" · ");
 }
 
 /** Every exam of the year with its classes, in term order, for the filters. Pure, exported for tests. */
@@ -252,19 +257,46 @@ function AnalysisBody({ report }: { report: ExamAnalysis }) {
       {report.belowPass.length === 0 ? (
         <p className="text-sm text-good">{t("exams.analysis.noneBelow")}</p>
       ) : (
-        <ul className="rowcards" data-testid="analysis-below-pass">
-          {report.belowPass.map((s) => (
-            <li key={s.studentId} className="rowcard">
-              <div className="min-w-0 flex-1">
-                <b className="block font-semibold">{s.fullName}</b>
-                <span className="block text-[12.5px] text-ink-3">
-                  {[s.sectionLabel, ...s.subjects.map((w) => `${w.subjectName} ${w.code ?? formatPct(w.percent)}`)].join(" · ")}
-                </span>
-              </div>
-              <b className="num">{formatPct(s.percent)}</b>
-            </li>
-          ))}
-        </ul>
+        <>
+          <div className="table-wrap hidden md:block">
+            <table className="table report-table" data-testid="analysis-below-pass">
+              <caption className="sr-only">{t("exams.analysis.belowPass")}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">{t("exams.col.student")}</th>
+                  <th scope="col">{t("exams.section")}</th>
+                  <th scope="col">{t("exams.analysis.weakSubjects")}</th>
+                  <th scope="col" className="r">
+                    {t("exams.col.percent")}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {report.belowPass.map((s) => (
+                  <tr key={s.studentId}>
+                    <th scope="row">{s.fullName}</th>
+                    <td>{s.sectionLabel}</td>
+                    <td>{weakText(s.subjects)}</td>
+                    <td className="r num">{formatPct(s.percent)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <ul className="rowcards md:hidden" data-testid="analysis-below-pass-cards">
+            {report.belowPass.map((s) => (
+              <li key={s.studentId} className="rowcard">
+                <div className="min-w-0 flex-1">
+                  <b className="block font-semibold">{s.fullName}</b>
+                  <span className="block text-[12.5px] text-ink-3">
+                    {[s.sectionLabel, weakText(s.subjects)].join(" · ")}
+                  </span>
+                </div>
+                <b className="num">{formatPct(s.percent)}</b>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
       <p className="text-[12.5px] text-ink-3">
         {t("exams.analysis.rule", {

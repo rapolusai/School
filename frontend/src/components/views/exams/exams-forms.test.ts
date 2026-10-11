@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { translate, type Translate } from "@/lib/i18n";
 import type { ExamMarks, ExamStructure, MarkSheetRow, StudentTermRecord } from "@/lib/types";
 import { examPaper } from "@/test/exams-fixtures";
-import { changeText, examOptions } from "../reports/exam-analysis-report";
+import { changeText, examOptions, weakText } from "../reports/exam-analysis-report";
 import { paperDrafts, paperProblem, toPaperRequests, type PaperDraft } from "./exam-class-view";
 import { checkWeights, validateExam, validateTerm } from "./exams-home";
 import { formatPct, formatScore, maxParts } from "./exams-shared";
@@ -233,11 +233,17 @@ describe("marks, report cards and analysis", () => {
     });
   });
 
-  it("shows the change since the last exam and lists exams for the filters", () => {
+  it("shows the change since the last exam, the weak subjects and the exams for the filters", () => {
     expect(changeText(4.5)).toBe("+4.5");
     expect(changeText(-2)).toBe("-2");
     expect(changeText(0)).toBe("0");
     expect(changeText(null)).toBe("—");
+    expect(
+      weakText([
+        { subjectName: "Mathematics", percent: 25, code: null },
+        { subjectName: "Hindi", percent: null, code: "AB" },
+      ]),
+    ).toBe("Mathematics 25% · Hindi AB");
     const structure = {
       terms: [
         {

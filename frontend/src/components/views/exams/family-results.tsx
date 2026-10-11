@@ -51,7 +51,11 @@ function ParentResults({ initialChildId }: { initialChildId?: string }) {
         </section>
       ) : (
         <>
-          <ChildSwitcher list={list} value={child.id} onChange={choose} />
+          {list.length > 1 ? (
+            <div className="no-print self-start">
+              <ChildSwitcher list={list} value={child.id} onChange={choose} />
+            </div>
+          ) : null}
           <ResultsBody
             key={child.id}
             cacheKey={`exams:family:${child.id}`}
@@ -109,7 +113,8 @@ function ResultsBody({
   }
   return (
     <>
-      <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
+      {/* Printing gives only the report card. */}
+      <div className="no-print grid grid-cols-1 gap-3.5 lg:grid-cols-2">
         <PublishedList data={data} />
         <Upcoming data={data} />
       </div>
@@ -203,7 +208,7 @@ function CardSection({
   if (published.length === 0) return null;
   return (
     <section className="flex flex-col gap-3" aria-labelledby="family-card">
-      <div className="flex flex-wrap items-end gap-3">
+      <div className="no-print flex flex-wrap items-end gap-3">
         <h2 id="family-card" className="mr-auto">
           {t("exams.family.reportCard")}
         </h2>
