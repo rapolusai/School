@@ -54,7 +54,10 @@ export type TileKey =
   | "substitutions"
   | "clashes"
   | "marksToEnter"
-  | "resultsToPublish";
+  | "resultsToPublish"
+  | "plansToSubmit"
+  | "answersToMark"
+  | "plansToApprove";
 
 const EVERY_TILE: TileKey[] = [
   "sectionsToMark",
@@ -76,6 +79,9 @@ const EVERY_TILE: TileKey[] = [
   "clashes",
   "marksToEnter",
   "resultsToPublish",
+  "plansToSubmit",
+  "answersToMark",
+  "plansToApprove",
 ];
 
 /** The tiles of each layout, in order. A tile shows only when its card came back (the person holds its permission). */
@@ -94,8 +100,19 @@ export const LAYOUT_TILES: Record<DashboardLayout, TileKey[]> = {
     "clashes",
     "resultsToPublish",
     "marksToEnter",
+    "plansToApprove",
   ],
-  teacher: ["sectionsToMark", "attendanceToday", "homework", "marksToEnter", "substitutions", "leaveWaiting"],
+  teacher: [
+    "sectionsToMark",
+    "attendanceToday",
+    "homework",
+    "marksToEnter",
+    "plansToSubmit",
+    "answersToMark",
+    "substitutions",
+    "leaveWaiting",
+    "plansToApprove",
+  ],
   accountant: ["feesToday", "feesMonth", "outstanding", "overdue", "students"],
   frontOffice: ["enquiries", "followUps", "offers", "students"],
   staff: EVERY_TILE,
@@ -336,6 +353,7 @@ export function tilesFor(
       };
     },
     ...examTiles(summary, t, can),
+    ...lessonTiles(summary, t, can),
   };
 
   return LAYOUT_TILES[layout].map((key) => build[key]()).filter((tile): tile is Tile => tile !== null);
@@ -369,6 +387,53 @@ function examTiles(
             sub: t("exams.tile.resultsToPublishSub"),
             href: "/app/exams",
             attention: e.resultsToPublish > 0,
+          }
+        : null,
+  };
+}
+
+/**
+ * The lessons tiles (docs/api/phase-2-lessons.md): the teacher's plans to submit for this week or earlier and short
+ * answers waiting for marking (lessons.manage), and plans waiting for approval (lessons.approve).
+ */
+function lessonTiles(
+  summary: DashboardSummary,
+  t: Translate,
+  can: (permission: string) => boolean,
+): Record<"plansToSubmit" | "answersToMark" | "plansToApprove", () => Tile | null> {
+  const l = summary.lessons;
+  return {
+    plansToSubmit: () =>
+      l && can(PERMISSIONS.lessonsManage)
+        ? {
+            key: "plansToSubmit",
+            label: t("lessons.tile.plansToSubmit"),
+            value: String(l.plansToSubmit),
+            sub: t("lessons.tile.plansToSubmitSub"),
+            href: "/app/lessons",
+            attention: l.plansToSubmit > 0,
+          }
+        : null,
+    answersToMark: () =>
+      l && can(PERMISSIONS.lessonsManage)
+        ? {
+            key: "answersToMark",
+            label: t("lessons.tile.answersToMark"),
+            value: String(l.answersToMark),
+            sub: t("lessons.tile.answersToMarkSub"),
+            href: "/app/lessons/tests",
+            attention: l.answersToMark > 0,
+          }
+        : null,
+    plansToApprove: () =>
+      l && can(PERMISSIONS.lessonsApprove)
+        ? {
+            key: "plansToApprove",
+            label: t("lessons.tile.plansToApprove"),
+            value: String(l.plansToApprove),
+            sub: t("lessons.tile.plansToApproveSub"),
+            href: "/app/lessons/approvals",
+            attention: l.plansToApprove > 0,
           }
         : null,
   };

@@ -8,6 +8,7 @@ import { ErrorState, LoadingRows, PageHead } from "@/components/ui/states";
 import { CountsBar, formatPercent } from "@/components/views/attendance/attendance-shared";
 import { UpcomingCard } from "@/components/views/communication/dashboard-cards";
 import { FamilyResultsCard } from "@/components/views/exams/family-results";
+import { FamilyStudyCard } from "@/components/views/lessons/family-study";
 import { NoticeMeta, NoticeReader } from "@/components/views/communication/notice-reader";
 import { nextDue } from "@/components/views/fees/child-fees";
 import { isToDo, LearnerHomeworkRows } from "@/components/views/homework/learner-homework";
@@ -22,6 +23,7 @@ import { isParent } from "@/lib/family";
 import { feesApi } from "@/lib/fees-api";
 import { classLabel, firstName, formatLongDate, formatPaise, formatPlainDate, hourInIndia, initials } from "@/lib/format";
 import { homeworkApi } from "@/lib/homework-api";
+import { lessonsApi } from "@/lib/lessons-api";
 import { localeFor, plural, translateOr, useI18n, type MessageKey } from "@/lib/i18n";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { portalApi } from "@/lib/portal-api";
@@ -150,7 +152,7 @@ function NoticesAndUpcoming() {
 
 /**
  * Everything about one child (or the student themselves): their card, then today, this month,
- * homework, leave and results. Each piece loads once here and is shared by the cards that need it.
+ * homework, leave, results and study. Each piece loads once here and is shared by the cards that need it.
  */
 function ChildPanel({ child, self }: { child: Child; self: boolean }) {
   const id = child.id;
@@ -170,6 +172,9 @@ function ChildPanel({ child, self }: { child: Child; self: boolean }) {
   const results = useApiData(self ? "exams:family:me" : `exams:family:${id}`, () =>
     self ? examsApi.myResults() : examsApi.childResults(id),
   );
+  const study = useApiData(self ? "lessons:study:me" : `lessons:study:${id}`, () =>
+    self ? lessonsApi.myStudy() : lessonsApi.childStudy(id),
+  );
   const query = self ? "" : `?child=${encodeURIComponent(id)}`;
   return (
     <>
@@ -185,6 +190,7 @@ function ChildPanel({ child, self }: { child: Child; self: boolean }) {
         />
         <LeaveCard data={leave} self={self} href={`/app/family/leave${query}`} />
         <FamilyResultsCard data={results} href={`/app/family/results${query}`} />
+        <FamilyStudyCard data={study} href={`/app/family/study${query}`} />
       </div>
     </>
   );

@@ -134,6 +134,8 @@ export type DashboardSummary = {
   myDay: MyDay | null;
   /** Marks waiting to be entered and results ready to publish (exams.manage or exams.publish). */
   exams?: { marksToEnter: number; resultsToPublish: number } | null;
+  /** Lesson plans to submit, short answers to mark (lessons.manage) and plans waiting for approval (lessons.approve). */
+  lessons?: { plansToSubmit: number; answersToMark: number; plansToApprove: number } | null;
 };
 
 /* ------------------------------------------------------------------ reports */
