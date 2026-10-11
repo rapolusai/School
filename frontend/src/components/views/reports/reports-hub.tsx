@@ -11,6 +11,7 @@ import {
   ClipboardList,
   FileSpreadsheet,
   Filter,
+  Handshake,
   History,
   Landmark,
   LibraryBig,
@@ -269,6 +270,15 @@ export const REPORT_LINKS: readonly ReportLink[] = [
     permission: PERMISSIONS.libraryManage,
     icon: ScanBarcode,
     excel: true,
+  },
+  {
+    key: "ptmAttendance",
+    group: "academics",
+    href: "/app/reports/ptm",
+    title: "ptm.report.title",
+    description: "ptm.report.description",
+    permission: PERMISSIONS.ptmManage,
+    icon: Handshake,
   },
 ];
 

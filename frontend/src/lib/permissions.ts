@@ -9,6 +9,7 @@ import {
   ClipboardList,
   ClipboardCheck,
   GraduationCap,
+  Handshake,
   House,
   IdCard,
   Landmark,
@@ -17,6 +18,7 @@ import {
   Megaphone,
   LockKeyhole,
   MessageSquareText,
+  MessagesSquare,
   Newspaper,
   NotebookPen,
   ReceiptIndianRupee,
@@ -36,7 +38,7 @@ import type { Me } from "./types";
 
 /** Permission codes from docs/api/phase-0.md, phase-1.md, phase-1-attendance.md, phase-1-staff.md,
  * phase-1-communication.md, phase-1-timetable-homework.md, phase-1-billing.md, phase-2-library.md,
- * phase-2-payroll.md and phase-2-exams.md. */
+ * phase-2-payroll.md, phase-2-exams.md and phase-2-chat.md. */
 export const PERMISSIONS = {
   dashboardView: "dashboard.view",
   usersRead: "users.read",
@@ -81,6 +83,9 @@ export const PERMISSIONS = {
   examsManage: "exams.manage",
   examsSetup: "exams.setup",
   examsPublish: "exams.publish",
+  chatUse: "chat.use",
+  chatOversee: "chat.oversee",
+  ptmManage: "ptm.manage",
 } as const;
 
 export type NavGroup = "overview" | "academics" | "finance" | "staff" | "communication" | "administration" | "platform";
@@ -111,6 +116,7 @@ export const REPORT_PERMISSIONS: readonly string[] = [
   PERMISSIONS.libraryManage,
   PERMISSIONS.payrollRead,
   PERMISSIONS.examsRead,
+  PERMISSIONS.ptmManage,
 ];
 
 /** Every navigation item, in display order. */
@@ -327,6 +333,28 @@ export const NAV_ITEMS: readonly NavItem[] = [
     group: "communication",
   },
   {
+    // Parent-teacher messages (docs/api/phase-2-chat.md); /app/messages is the outgoing SMS and email log.
+    key: "chat",
+    href: "/app/chat",
+    labelKey: "nav.chat",
+    shortLabelKey: "nav.chat.short",
+    icon: MessagesSquare,
+    permission: PERMISSIONS.chatUse,
+    anyOf: [PERMISSIONS.chatOversee],
+    group: "communication",
+  },
+  {
+    // Leadership sets up meetings with ptm.manage; teachers (chat.use) see their own schedule.
+    key: "ptm",
+    href: "/app/ptm",
+    labelKey: "nav.ptm",
+    shortLabelKey: "nav.ptm.short",
+    icon: Handshake,
+    permission: PERMISSIONS.ptmManage,
+    anyOf: [PERMISSIONS.chatUse],
+    group: "communication",
+  },
+  {
     key: "privacy",
     href: "/app/privacy",
     labelKey: "nav.privacy",
@@ -480,6 +508,25 @@ export const FAMILY_NAV_ITEMS: readonly NavItem[] = [
     permission: PERMISSIONS.childView,
     group: "overview",
     parentOnly: true,
+  },
+  {
+    // Messages with the children's teachers and meeting bookings are for parents (child.view), not students.
+    key: "family-chat",
+    href: "/app/family/chat",
+    labelKey: "nav.familyChat",
+    shortLabelKey: "nav.familyChat.short",
+    icon: MessagesSquare,
+    permission: PERMISSIONS.childView,
+    group: "communication",
+  },
+  {
+    key: "family-ptm",
+    href: "/app/family/ptm",
+    labelKey: "nav.ptm",
+    shortLabelKey: "nav.ptm.short",
+    icon: Handshake,
+    permission: PERMISSIONS.childView,
+    group: "communication",
   },
 ];
 

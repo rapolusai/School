@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Pill } from "@/components/ui/pill";
 import { ErrorState, LoadingRows, PageHead } from "@/components/ui/states";
 import { CountsBar, formatPercent } from "@/components/views/attendance/attendance-shared";
+import { FamilyMessagesCard } from "@/components/views/chat/chat-views";
 import { UpcomingCard } from "@/components/views/communication/dashboard-cards";
 import { FamilyResultsCard } from "@/components/views/exams/family-results";
 import { NoticeMeta, NoticeReader } from "@/components/views/communication/notice-reader";
@@ -100,6 +101,7 @@ function ParentHome() {
           </>
         )}
       </section>
+      <FamilyMessagesCard />
       {canNotices ? <NoticesAndUpcoming /> : null}
     </>
   );

@@ -146,6 +146,8 @@ describe("navFor", () => {
       "family-library",
       "family-results",
       "myPrivacy",
+      "family-chat",
+      "family-ptm",
     ]);
   });
 
@@ -163,6 +165,8 @@ describe("navFor", () => {
       "family-library",
       "family-results",
       "myPrivacy",
+      "family-chat",
+      "family-ptm",
     ]);
     expect(keys(student)).toEqual([
       "dashboard",
@@ -291,6 +295,62 @@ describe("navFor", () => {
     expect(navFor(reader).find((item) => item.key === "exams")).toMatchObject({ href: "/app/exams", group: "academics" });
     expect(navItemForPath("/app/exams/marks/p1/s1")?.key).toBe("exams");
     expect(navItemForPath("/app/family/results")?.key).toBe("family-results");
+  });
+
+  it("gives Chat and PTM under Communication by chat and PTM permissions, apart from the message log", () => {
+    // Seeded in docs/api/phase-2-chat.md: Teacher holds chat.use; Principal and School Admin all three.
+    const teacher = user(["TEACHER"], [...TEACHER.permissions, "chat.use"]);
+    expect(keys(teacher)).toEqual(["dashboard", "attendance", "exams", "students", "setup", "notices", "chat", "ptm", "reports"]);
+    const principal = user(["PRINCIPAL"], [...PRINCIPAL.permissions, "chat.use", "chat.oversee", "ptm.manage"]);
+    expect(keys(principal)).toEqual([
+      "dashboard",
+      "attendance",
+      "exams",
+      "students",
+      "setup",
+      "fees",
+      "users",
+      "roles",
+      "audit",
+      "messages",
+      "notices",
+      "chat",
+      "ptm",
+      "reports",
+    ]);
+    expect(navFor(principal).find((item) => item.key === "chat")).toMatchObject({
+      href: "/app/chat",
+      group: "communication",
+      labelKey: "nav.chat",
+    });
+    expect(navFor(principal).find((item) => item.key === "ptm")).toMatchObject({ href: "/app/ptm", group: "communication" });
+    // Oversight alone opens Chat; meeting setup alone opens PTM and the reports hub for the attendance summary.
+    expect(keys(user(["CUSTOM"], ["dashboard.view", "chat.oversee"]))).toEqual(["dashboard", "chat"]);
+    expect(keys(user(["CUSTOM"], ["dashboard.view", "ptm.manage"]))).toEqual(["dashboard", "ptm", "reports"]);
+    expect(keys(TEACHER)).not.toContain("chat");
+    expect(navItemForPath("/app/chat/oversight/c1")?.key).toBe("chat");
+    expect(navItemForPath("/app/ptm/e1/print")?.key).toBe("ptm");
+    expect(navItemForPath("/app/messages")?.key).toBe("messages");
+  });
+
+  it("gives parents Messages and PTM after the bottom bar's four, and nothing of them to students", () => {
+    const parent = user(["PARENT"], ["dashboard.view", "child.view", "notices.read"]);
+    expect(navFor(parent).find((item) => item.key === "family-chat")).toMatchObject({
+      href: "/app/family/chat",
+      labelKey: "nav.familyChat",
+    });
+    expect(navFor(parent).find((item) => item.key === "family-ptm")).toMatchObject({ href: "/app/family/ptm" });
+    expect(navFor(parent).slice(0, 4).map((item) => item.key)).toEqual([
+      "dashboard",
+      "family-attendance",
+      "family-homework",
+      "family-fees",
+    ]);
+    const student = user(["STUDENT"], ["dashboard.view", "notices.read"]);
+    expect(keys(student)).not.toContain("family-chat");
+    expect(keys(student)).not.toContain("family-ptm");
+    expect(navItemForPath("/app/family/chat")?.key).toBe("family-chat");
+    expect(navItemForPath("/app/family/ptm")?.key).toBe("family-ptm");
   });
 
   it("gives a platform admin only the platform items: Schools, Billing and Platform health", () => {
