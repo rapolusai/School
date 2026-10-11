@@ -118,3 +118,4 @@ export * from "./types/billing";
 export * from "./types/privacy";
 export * from "./types/portal";
 export * from "./types/reports";
+export * from "./types/payroll";

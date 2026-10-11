@@ -9,6 +9,7 @@ import {
   GraduationCap,
   House,
   IdCard,
+  Landmark,
   LayoutDashboard,
   Megaphone,
   LockKeyhole,
@@ -16,6 +17,7 @@ import {
   Newspaper,
   NotebookPen,
   ReceiptIndianRupee,
+  ReceiptText,
   School,
   ScrollText,
   ShieldCheck,
@@ -30,7 +32,7 @@ import type { MessageKey } from "./i18n/en";
 import type { Me } from "./types";
 
 /** Permission codes from docs/api/phase-0.md, phase-1.md, phase-1-attendance.md, phase-1-staff.md,
- * phase-1-communication.md, phase-1-timetable-homework.md and phase-1-billing.md. */
+ * phase-1-communication.md, phase-1-timetable-homework.md, phase-1-billing.md and phase-2-payroll.md. */
 export const PERMISSIONS = {
   dashboardView: "dashboard.view",
   usersRead: "users.read",
@@ -66,6 +68,9 @@ export const PERMISSIONS = {
   homeworkManage: "homework.manage",
   billingRead: "billing.read",
   privacyManage: "privacy.manage",
+  payrollRead: "payroll.read",
+  payrollManage: "payroll.manage",
+  payrollApprove: "payroll.approve",
 } as const;
 
 export type NavGroup = "overview" | "academics" | "finance" | "staff" | "communication" | "administration" | "platform";
@@ -93,6 +98,7 @@ export const REPORT_PERMISSIONS: readonly string[] = [
   PERMISSIONS.staffRead,
   PERMISSIONS.homeworkManage,
   PERMISSIONS.timetableManage,
+  PERMISSIONS.payrollRead,
 ];
 
 /** Every navigation item, in display order. */
@@ -179,6 +185,15 @@ export const NAV_ITEMS: readonly NavItem[] = [
     group: "finance",
   },
   {
+    key: "payroll",
+    href: "/app/payroll",
+    labelKey: "nav.payroll",
+    shortLabelKey: "nav.payroll.short",
+    icon: Landmark,
+    permission: PERMISSIONS.payrollRead,
+    group: "finance",
+  },
+  {
     key: "staff",
     href: "/app/staff",
     labelKey: "nav.staff",
@@ -202,6 +217,17 @@ export const NAV_ITEMS: readonly NavItem[] = [
     labelKey: "nav.leave",
     shortLabelKey: "nav.leave.short",
     icon: CalendarOff,
+    permission: PERMISSIONS.leaveRequest,
+    group: "staff",
+  },
+  {
+    // Every staff role holds leave.request and parents and students never do: "My payslips" is for staff only
+    // (docs/api/phase-2-payroll.md). Someone with no payslip yet sees an empty list.
+    key: "myPayslips",
+    href: "/app/my-payslips",
+    labelKey: "nav.myPayslips",
+    shortLabelKey: "nav.myPayslips.short",
+    icon: ReceiptText,
     permission: PERMISSIONS.leaveRequest,
     group: "staff",
   },
