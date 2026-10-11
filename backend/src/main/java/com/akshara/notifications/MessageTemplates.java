@@ -53,6 +53,12 @@ public final class MessageTemplates {
     /** Sent to a student's primary contact when the school publishes an exam's results for the student's class. */
     public static final String RESULTS_PUBLISHED = "exams.results_published";
 
+    /** Sent to a student's primary contact when a new online test is published (if the school opts in). */
+    public static final String ONLINE_TEST = "lessons.online_test";
+
+    /** Sent to a student's own sign-in email when a new online test is published (if the school opts in). */
+    public static final String ONLINE_TEST_STUDENT = "lessons.online_test_student";
+
     private static final Map<String, Map<String, String>> TEMPLATES = Map.ofEntries(
             Map.entry(ABSENCE_ALERT, Map.of(
                     ENGLISH, "Dear {guardian}, {student} ({class}) was marked absent at {school} on {date}. "
@@ -104,7 +110,17 @@ public final class MessageTemplates {
                     ENGLISH, "Dear {guardian}, the {exam} results of {student} ({class}) at {school} are now "
                             + "available. Open the school app to see the report card.",
                     HINDI, "प्रिय {guardian}, {school} में {student} ({class}) के {exam} के परिणाम अब उपलब्ध हैं। "
-                            + "रिपोर्ट कार्ड देखने के लिए विद्यालय ऐप खोलें।")));
+                            + "रिपोर्ट कार्ड देखने के लिए विद्यालय ऐप खोलें।")),
+            Map.entry(ONLINE_TEST, Map.of(
+                    ENGLISH, "Dear {guardian}, a new {subject} online test for {student} ({class}) at {school}: "
+                            + "{title}. It closes on {date} at {time}.",
+                    HINDI, "प्रिय {guardian}, {school} में {student} ({class}) के लिए {subject} की नई ऑनलाइन परीक्षा: "
+                            + "{title}। यह {date} को {time} बजे बंद होगी।")),
+            Map.entry(ONLINE_TEST_STUDENT, Map.of(
+                    ENGLISH, "Dear {student}, a new {subject} online test is ready for you at {school}: {title}. "
+                            + "Take it in the school app before {date} at {time}.",
+                    HINDI, "प्रिय {student}, {school} में आपके लिए {subject} की नई ऑनलाइन परीक्षा तैयार है: {title}। "
+                            + "इसे {date} को {time} बजे से पहले विद्यालय ऐप में दें।")));
 
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{(\\w+)}");
     private static final DateTimeFormatter ENGLISH_DATE = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH);

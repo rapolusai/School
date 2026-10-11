@@ -97,12 +97,15 @@ class DemoDataSeederIT extends IntegrationTest {
     @Autowired
     DemoExamsData examsData;
 
+    @Autowired
+    DemoLessonsData lessonsData;
+
     @Test
     void seedsADemoSchoolWithClassesAndStudentsOnce() throws Exception {
         DemoDataSeeder seeder = new DemoDataSeeder(provisioning, tenants, users, passwordEncoder, DEMO_PASSWORD,
                 academics, students, transactionManager, admissions, attendanceData, demoFees, staffData,
                 communicationData, timetableHomeworkData, demoBilling, demoPrivacy, portalData, libraryData,
-                payrollData, examsData);
+                payrollData, examsData, lessonsData);
         seeder.run(null);
         // A second start leaves the existing demo school alone.
         seeder.run(null);
@@ -452,5 +455,26 @@ class DemoDataSeederIT extends IntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.exams[0].examName").value(DemoExamsData.PERIODIC_TEST))
                 .andExpect(jsonPath("$.exams[0].sheets[*].status", everyItem(is("LOCKED"))));
+        // Lessons: the Class 5 syllabi, Ravi's plan waiting for the principal, the question bank, the two pieces
+        // of material and Arjun's released score in the closed online test, which his mother sees too.
+        api.get("/api/lessons/syllabi", principal.accessToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].subjectName", containsInAnyOrder("Mathematics", "English",
+                        "Environmental Studies")));
+        api.get("/api/lessons/plans/queue", principal.accessToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].teacherName", contains("Ravi Kumar")));
+        api.get("/api/lessons/questions", ravi.accessToken()).andExpect(jsonPath("$.length()").value(30));
+        api.get("/api/me/study", student.accessToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.material.length()").value(2))
+                .andExpect(jsonPath("$.tests[?(@.title == '" + DemoLessonsData.OPEN_TEST + "')].canStart",
+                        contains(true)));
+        api.get("/api/me/children/" + arjun + "/study", parent.accessToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tests[?(@.title == '" + DemoLessonsData.CLOSED_TEST + "')].score",
+                        contains(7.5)))
+                .andExpect(jsonPath("$.tests[?(@.title == '" + DemoLessonsData.CLOSED_TEST + "')].maxScore",
+                        contains(9.0)));
     }
 }

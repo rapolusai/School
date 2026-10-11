@@ -29,6 +29,7 @@ import com.akshara.communication.CircularService.CircularList;
 import com.akshara.communication.CommunicationTypes.Status;
 import com.akshara.communication.NoticeCaller;
 import com.akshara.exams.ExamInsights;
+import com.akshara.lessons.LessonsInsights;
 import com.akshara.fees.FeeInsights;
 import com.akshara.fees.FeeInsights.DayTotal;
 import com.akshara.fees.FeeReportService;
@@ -101,9 +102,16 @@ public class DashboardService {
     public record ExamsCard(int marksToEnter, int resultsToPublish) {
     }
 
+    /**
+     * A teacher's lesson plans to submit (this week or earlier) and short answers to mark in their online tests, and
+     * (lessons.approve) plans waiting for approval.
+     */
+    public record LessonsCard(int plansToSubmit, int answersToMark, int plansToApprove) {
+    }
+
     public record Summary(LocalDate date, String academicYearName, StudentsCard students, Overview attendance,
             FeesCard fees, AdmissionsCard admissions, TodaySummary staff, LeaveCard leave, CircularsCard circulars,
-            HomeworkCard homework, TimetableCard timetable, MyDayCard myDay, ExamsCard exams) {
+            HomeworkCard homework, TimetableCard timetable, MyDayCard myDay, ExamsCard exams, LessonsCard lessons) {
     }
 
     private final AcademicsDirectory academics;
@@ -120,12 +128,13 @@ public class DashboardService {
     private final TimetableService timetable;
     private final SubstitutionService substitutions;
     private final ExamInsights exams;
+    private final LessonsInsights lessons;
 
     DashboardService(AcademicsDirectory academics, StudentInsights students, AttendanceInsights attendance,
             FeeReportService feeReports, FeeInsights fees, AdmissionsService admissionsService,
             AdmissionsInsights admissions, StaffAttendanceService staffAttendance, LeaveInsights leave,
             CircularService circulars, HomeworkInsights homework, TimetableService timetable,
-            SubstitutionService substitutions, ExamInsights exams) {
+            SubstitutionService substitutions, ExamInsights exams, LessonsInsights lessons) {
         this.academics = academics;
         this.students = students;
         this.attendance = attendance;
@@ -140,6 +149,7 @@ public class DashboardService {
         this.timetable = timetable;
         this.substitutions = substitutions;
         this.exams = exams;
+        this.lessons = lessons;
     }
 
     public Summary summary() {
@@ -160,7 +170,9 @@ public class DashboardService {
                 can.contains(Permissions.HOMEWORK_MANAGE) ? new HomeworkCard(homework.waitingForReview()) : null,
                 can.contains(Permissions.TIMETABLE_MANAGE) ? timetable(today) : null,
                 can.contains(Permissions.TIMETABLE_READ) ? myDay(today) : null,
-                can.contains(Permissions.EXAMS_MANAGE) || can.contains(Permissions.EXAMS_PUBLISH) ? exams() : null);
+                can.contains(Permissions.EXAMS_MANAGE) || can.contains(Permissions.EXAMS_PUBLISH) ? exams() : null,
+                can.contains(Permissions.LESSONS_MANAGE) || can.contains(Permissions.LESSONS_APPROVE)
+                        ? lessons(today) : null);
     }
 
     private StudentsCard students(Optional<YearInfo> year, LocalDate today) {
@@ -199,6 +211,11 @@ public class DashboardService {
     private ExamsCard exams() {
         ExamInsights.Due due = exams.due();
         return new ExamsCard(due.marksToEnter(), due.resultsToPublish());
+    }
+
+    private LessonsCard lessons(LocalDate today) {
+        LessonsInsights.Due due = lessons.due(today);
+        return new LessonsCard(due.plansToSubmit(), due.answersToMark(), due.plansToApprove());
     }
 
     private TimetableCard timetable(LocalDate today) {

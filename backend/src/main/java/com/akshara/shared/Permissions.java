@@ -79,6 +79,15 @@ public final class Permissions {
      * exams.manage covers the subjects a teacher teaches (timetable) and the sections they are class teacher of.
      */
     public static final String EXAMS_PUBLISH = "exams.publish";
+    /** Viewing lesson plans, the syllabus and its coverage, and study material (staff). */
+    public static final String LESSONS_READ = "lessons.read";
+    /**
+     * A teacher's own lesson plans, study material, question bank and online tests, for the sections and subjects
+     * they teach (timetable).
+     */
+    public static final String LESSONS_MANAGE = "lessons.manage";
+    /** Approving or returning lesson plans, and every section and subject (School Admin, Principal, coordinators). */
+    public static final String LESSONS_APPROVE = "lessons.approve";
 
     public static final String PLATFORM_ADMIN = "platform.admin";
 
@@ -90,7 +99,7 @@ public final class Permissions {
             STAFF_ATTENDANCE_MANAGE, NOTICES_READ, NOTICES_APPROVE, CALENDAR_MANAGE, TIMETABLE_READ, TIMETABLE_MANAGE,
             HOMEWORK_MANAGE, BILLING_READ, PRIVACY_MANAGE,
             LIBRARY_READ, LIBRARY_MANAGE, PAYROLL_READ, PAYROLL_MANAGE, PAYROLL_APPROVE, EXAMS_READ, EXAMS_SETUP,
-            EXAMS_PUBLISH);
+            EXAMS_PUBLISH, LESSONS_READ, LESSONS_MANAGE, LESSONS_APPROVE);
 
     private Permissions() {
     }
