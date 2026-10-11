@@ -179,6 +179,20 @@ final class PayrollSchool {
         return monday;
     }
 
+    /**
+     * Kiran Rao, a teacher on ₹15,000 (within ESI) with full pay details, who left on the 10th of last month. Returns
+     * the user id.
+     */
+    String leaver() throws Exception {
+        String kiran = staff("Kiran Rao", "kiran", "TEACHER", "T-3", primary, LocalDate.of(2022, 7, 1), "Teacher");
+        profile(kiran, "000000666777", null, "100000000004", "1000000004");
+        structure(kiran, twoMonthsAgo, Map.of("BASIC", 8_000_00L, "HRA", 4_000_00L, "SPECIAL", 3_000_00L));
+        api.post("/api/staff/" + kiran + "/leaving", admin.accessToken(), """
+                {"leftOn":"%s","reason":"Moved to another city"}""".formatted(lastMonth.atDay(10)))
+                .andExpect(status().isOk());
+        return kiran;
+    }
+
     /** Gives the principal's role payroll.read only, as a school could; the principal must sign in again. */
     void principalCanReadPayroll() throws Exception {
         try (Connection owner = PayrollIntegrationTest.owner();

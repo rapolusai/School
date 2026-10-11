@@ -147,8 +147,8 @@ public class PayrollExportService {
 
     /**
      * The ESI monthly contribution file for everyone covered with an insurance number: IP number, name, days paid,
-     * wages, the reason code for zero days (1 on leave, 2 left service; 0 otherwise) and the last working day of
-     * someone who left in the month.
+     * wages, the reason code (2 "left service" for someone who left in the month, with their last working day; 1 "on
+     * leave" for zero days; 0 otherwise) and the last working day.
      */
     public Download esi(UUID runId, Actor actor) {
         PayrollRun run = locked(runId);
@@ -162,7 +162,7 @@ public class PayrollExportService {
             int paidDays = Integer.parseInt(days(s.getPayableDays()));
             boolean leftThisMonth = s.getDateOfLeaving() != null && !YearMonth.from(s.getDateOfLeaving())
                     .isAfter(month);
-            String reason = paidDays > 0 ? "0" : leftThisMonth ? "2" : "1";
+            String reason = leftThisMonth ? "2" : paidDays > 0 ? "0" : "1";
             csv.row(s.getEsiNumber(), s.getEmployeeName(), paidDays, new Money(s.getEsiWagesPaise()), reason,
                     leftThisMonth ? ESI_DATE.format(s.getDateOfLeaving()) : null);
         }
