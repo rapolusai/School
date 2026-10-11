@@ -53,6 +53,18 @@ public final class MessageTemplates {
     /** Sent to a student's primary contact when the school publishes an exam's results for the student's class. */
     public static final String RESULTS_PUBLISHED = "exams.results_published";
 
+    /** Tells a member of staff that a parent wrote to them in the app (never the message itself). */
+    public static final String CHAT_TO_STAFF = "chat.to_staff";
+
+    /** Tells a parent that a member of staff wrote to them in the app (never the message itself). */
+    public static final String CHAT_TO_PARENT = "chat.to_parent";
+
+    /** Reminds a parent of a parent-teacher meeting slot, the day before and an hour before (if the school opts in). */
+    public static final String PTM_REMINDER = "ptm.reminder";
+
+    /** As {@link #PTM_REMINDER}, for a meeting by video call (the link is in the app). */
+    public static final String PTM_REMINDER_VIDEO = "ptm.reminder_video";
+
     private static final Map<String, Map<String, String>> TEMPLATES = Map.ofEntries(
             Map.entry(ABSENCE_ALERT, Map.of(
                     ENGLISH, "Dear {guardian}, {student} ({class}) was marked absent at {school} on {date}. "
@@ -104,7 +116,27 @@ public final class MessageTemplates {
                     ENGLISH, "Dear {guardian}, the {exam} results of {student} ({class}) at {school} are now "
                             + "available. Open the school app to see the report card.",
                     HINDI, "प्रिय {guardian}, {school} में {student} ({class}) के {exam} के परिणाम अब उपलब्ध हैं। "
-                            + "रिपोर्ट कार्ड देखने के लिए विद्यालय ऐप खोलें।")));
+                            + "रिपोर्ट कार्ड देखने के लिए विद्यालय ऐप खोलें।")),
+            Map.entry(CHAT_TO_STAFF, Map.of(
+                    ENGLISH, "Dear {teacher}, {parent}, a parent of {student}, sent you a message in the {school} "
+                            + "app. Open the app to read and reply.",
+                    HINDI, "प्रिय {teacher}, {student} के अभिभावक {parent} ने आपको {school} ऐप में संदेश भेजा है। "
+                            + "पढ़ने और उत्तर देने के लिए ऐप खोलें।")),
+            Map.entry(CHAT_TO_PARENT, Map.of(
+                    ENGLISH, "Dear {guardian}, {teacher} sent you a message about {student} in the {school} app. "
+                            + "Open the app to read and reply.",
+                    HINDI, "प्रिय {guardian}, {teacher} ने {school} ऐप में {student} के बारे में आपको संदेश भेजा है। "
+                            + "पढ़ने और उत्तर देने के लिए ऐप खोलें।")),
+            Map.entry(PTM_REMINDER, Map.of(
+                    ENGLISH, "Dear {guardian}, reminder from {school}: your meeting with {teacher} about {student} "
+                            + "is on {date} at {time}, {place}.",
+                    HINDI, "प्रिय {guardian}, {school} की ओर से अनुस्मारक: {student} के बारे में {teacher} के साथ "
+                            + "आपकी बैठक {date} को {time} बजे, {place} में है।")),
+            Map.entry(PTM_REMINDER_VIDEO, Map.of(
+                    ENGLISH, "Dear {guardian}, reminder from {school}: your video meeting with {teacher} about "
+                            + "{student} is on {date} at {time}. The link is in the school app.",
+                    HINDI, "प्रिय {guardian}, {school} की ओर से अनुस्मारक: {student} के बारे में {teacher} के साथ "
+                            + "आपकी वीडियो बैठक {date} को {time} बजे है। लिंक विद्यालय ऐप में है।")));
 
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{(\\w+)}");
     private static final DateTimeFormatter ENGLISH_DATE = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH);

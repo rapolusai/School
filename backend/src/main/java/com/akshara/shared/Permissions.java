@@ -79,6 +79,18 @@ public final class Permissions {
      * exams.manage covers the subjects a teacher teaches (timetable) and the sections they are class teacher of.
      */
     public static final String EXAMS_PUBLISH = "exams.publish";
+    /**
+     * Talk to parents in the app (conversations about a student). Teachers reach the parents of the students they teach;
+     * with chat.oversee, any parent.
+     */
+    public static final String CHAT_USE = "chat.use";
+    /**
+     * Read any conversation for safeguarding (audited every time), close and reopen conversations, review reports and
+     * set the staff's availability for messages.
+     */
+    public static final String CHAT_OVERSEE = "chat.oversee";
+    /** Set up parent-teacher meetings, book for families and see every teacher's schedule and the attendance summary. */
+    public static final String PTM_MANAGE = "ptm.manage";
 
     public static final String PLATFORM_ADMIN = "platform.admin";
 
@@ -90,7 +102,8 @@ public final class Permissions {
             STAFF_ATTENDANCE_MANAGE, NOTICES_READ, NOTICES_APPROVE, CALENDAR_MANAGE, TIMETABLE_READ, TIMETABLE_MANAGE,
             HOMEWORK_MANAGE, BILLING_READ, PRIVACY_MANAGE,
             LIBRARY_READ, LIBRARY_MANAGE, PAYROLL_READ, PAYROLL_MANAGE, PAYROLL_APPROVE, EXAMS_READ, EXAMS_SETUP,
-            EXAMS_PUBLISH);
+            EXAMS_PUBLISH,
+            CHAT_USE, CHAT_OVERSEE, PTM_MANAGE);
 
     private Permissions() {
     }

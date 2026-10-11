@@ -36,4 +36,24 @@ public class TimetableDirectory {
                 .forEach(s -> result.add(new Teaching(s.getSectionId(), s.getSubjectId())));
         return result;
     }
+
+    /** A teacher of a section and a subject they teach there. */
+    public record SectionTeacher(UUID teacherId, UUID subjectId) {
+    }
+
+    /**
+     * Who teaches a section in the year, and what: its teacher assignments and timetable periods (messages and
+     * parent-teacher meetings).
+     */
+    public Set<SectionTeacher> teachersOf(UUID sectionId, UUID academicYearId) {
+        TenantContext.require();
+        Set<SectionTeacher> result = new LinkedHashSet<>();
+        assignments.findByAcademicYearIdAndSectionId(academicYearId, sectionId).stream()
+                .filter(a -> a.getTeacherId() != null)
+                .forEach(a -> result.add(new SectionTeacher(a.getTeacherId(), a.getSubjectId())));
+        slots.findByAcademicYearIdAndSectionId(academicYearId, sectionId).stream()
+                .filter(s -> s.getTeacherId() != null)
+                .forEach(s -> result.add(new SectionTeacher(s.getTeacherId(), s.getSubjectId())));
+        return result;
+    }
 }
