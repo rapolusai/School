@@ -272,6 +272,25 @@ describe("tilesFor", () => {
     ]);
   });
 
+  it("adds marks to enter and results to publish when the summary has exams", () => {
+    const exams = { marksToEnter: 3, resultsToPublish: 1 };
+    const teacher = tilesFor({ ...TEACHER_SUMMARY, exams }, "teacher", t, (p) => p !== "exams.publish" && p !== "leave.approve");
+    expect(teacher.map((tile) => tile.key)).toEqual(["sectionsToMark", "attendanceToday", "homework", "marksToEnter", "substitutions"]);
+    expect(teacher[3]).toMatchObject({
+      label: "Marks to enter",
+      value: "3",
+      sub: "Papers written, marks not submitted",
+      href: "/app/exams/marks",
+      attention: true,
+    });
+    const leaders = tilesFor({ ...SUMMARY, exams }, "leadership", t, all(true));
+    expect(leaders.map((tile) => tile.key).slice(-2)).toEqual(["resultsToPublish", "marksToEnter"]);
+    expect(leaders.find((tile) => tile.key === "resultsToPublish")).toMatchObject({ value: "1", href: "/app/exams" });
+    const noPublish = tilesFor({ ...SUMMARY, exams }, "leadership", t, (p) => p !== "exams.publish");
+    expect(noPublish.map((tile) => tile.key)).not.toContain("resultsToPublish");
+    expect(tilesFor(SUMMARY, "leadership", t, all(true)).map((tile) => tile.key)).not.toContain("marksToEnter");
+  });
+
   it("links a tile only to a screen the person may open", () => {
     const tiles = tilesFor(SUMMARY, "leadership", t, (p) => p !== "staff.read" && p !== "notices.send");
     const byKey = Object.fromEntries(tiles.map((tile) => [tile.key, tile]));

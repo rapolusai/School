@@ -3748,9 +3748,13 @@
   .marks-input[aria-invalid="true"] {
     border-color: var(--bad);
   }
+  .marks-table td.marks-part {
+    text-align: right;
+  }
   .marks-part .field-error {
     display: block;
     max-width: 160px;
+    margin-left: auto;
   }
   .marks-label {
     display: none;
@@ -3837,8 +3841,12 @@
     .marks-table td.marks-code-cell {
       grid-column: 1 / -1;
     }
-    .marks-table td.r {
+    .marks-table td.r,
+    .marks-table td.marks-part {
       text-align: left;
+    }
+    .marks-part .field-error {
+      margin-left: 0;
     }
     .marks-label {
       display: block;
@@ -3956,6 +3964,17 @@
   .exam-table td,
   .exam-table th {
     padding: 7px 8px;
+  }
+  /* Column heads (exam names with their weight) wrap, so a phone shows every column without scrolling. */
+  .exam-table thead th {
+    white-space: normal;
+    vertical-align: bottom;
+  }
+  @media (max-width: 479px) {
+    .exam-table td,
+    .exam-table th {
+      padding: 6px 4px;
+    }
   }
   .exam-table td.c,
   .exam-table th.c {

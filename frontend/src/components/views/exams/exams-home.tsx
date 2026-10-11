@@ -263,7 +263,7 @@ function WeightsSummary({ structure, onEdit }: { structure: ExamStructure; onEdi
   const complete = total === 100;
   return (
     <section className="card flex flex-wrap items-center gap-x-4 gap-y-2" data-testid="term-weights">
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 basis-full sm:basis-0">
         <h2 className="text-base">{t("exams.weights.title")}</h2>
         <p className="mt-1 text-[13.5px] text-ink-2">
           {structure.terms

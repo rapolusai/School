@@ -47,6 +47,14 @@ describe("reportGroupsFor", () => {
     expect(keys(FRONT_OFFICE)).toEqual([["admissions", ["funnel", "applications"]]]);
     expect(keys(["dashboard.view", "child.view"])).toEqual([]);
   });
+
+  it("adds result analysis to academics for exams.read", () => {
+    expect(keys([...PRINCIPAL, "exams.read"]).find(([group]) => group === "academics")).toEqual([
+      "academics",
+      ["homework", "examAnalysis", "clashes"],
+    ]);
+    expect(keys(["dashboard.view", "exams.manage"])).toEqual([]);
+  });
 });
 
 describe("ReportsHubView", () => {
