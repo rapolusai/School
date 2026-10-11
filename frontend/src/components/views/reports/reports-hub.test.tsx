@@ -23,6 +23,7 @@ const PRINCIPAL = [
 const TEACHER = ["dashboard.view", "attendance.read", "homework.manage", "timetable.read"];
 const ACCOUNTANT = ["dashboard.view", "fees.read", "fees.collect"];
 const FRONT_OFFICE = ["dashboard.view", "admissions.read", "admissions.manage"];
+const LIBRARIAN = ["dashboard.view", "library.read", "library.manage"];
 
 const keys = (permissions: string[]) =>
   reportGroupsFor(subject(permissions)).map(({ group, links }) => [group, links.map((l) => l.key)]);
@@ -46,6 +47,11 @@ describe("reportGroupsFor", () => {
     expect(keys(ACCOUNTANT)).toEqual([["fees", ["collection", "outstanding", "overdue", "receipts"]]]);
     expect(keys(FRONT_OFFICE)).toEqual([["admissions", ["funnel", "applications"]]]);
     expect(keys(["dashboard.view", "child.view"])).toEqual([]);
+    expect(keys(LIBRARIAN)).toEqual([
+      ["library", ["libraryOverdue", "libraryIssued", "libraryPopular", "libraryMember", "libraryStock"]],
+    ]);
+    // Searching the catalogue (library.read, every member of staff) opens no library report.
+    expect(keys([...TEACHER, "library.read"])).toEqual(keys(TEACHER));
   });
 });
 
@@ -80,6 +86,14 @@ describe("ReportsHubView", () => {
     renderAs(ACCOUNTANT, <ReportsHubView />, ["ACCOUNTANT"]);
     expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(["Fees"]);
     expect(screen.queryByTestId("report-link-absentees")).not.toBeInTheDocument();
+  });
+
+  it("shows a librarian the library reports, with the stock check among them", () => {
+    renderAs(LIBRARIAN, <ReportsHubView />, ["LIBRARIAN"]);
+    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(["Library"]);
+    expect(screen.getByTestId("report-link-libraryOverdue")).toHaveAttribute("href", "/app/reports/library-overdue");
+    expect(screen.getByTestId("report-link-libraryStock")).toHaveAttribute("href", "/app/library/stock");
+    expect(screen.getByTestId("report-link-libraryPopular")).toHaveTextContent("Excel");
   });
 
   it("turns away someone without any report permission", () => {

@@ -2,13 +2,18 @@
 
 import {
   ArrowRight,
+  BookMarked,
   CalendarCheck2,
   ClipboardCheck,
   ClipboardList,
   FileSpreadsheet,
   Filter,
+  History,
+  LibraryBig,
   NotebookPen,
   Receipt,
+  ScanBarcode,
+  TrendingUp,
   TriangleAlert,
   UserX,
   Wallet,
@@ -23,7 +28,7 @@ import { hasAnyPermission, hasPermission, PERMISSIONS, REPORT_PERMISSIONS } from
 
 type PermissionSubject = Parameters<typeof hasPermission>[0];
 
-export const REPORT_GROUPS = ["attendance", "fees", "admissions", "staff", "academics"] as const;
+export const REPORT_GROUPS = ["attendance", "fees", "admissions", "staff", "academics", "library"] as const;
 export type ReportGroup = (typeof REPORT_GROUPS)[number];
 
 export type ReportLink = {
@@ -44,6 +49,7 @@ const GROUP_LABELS: Record<ReportGroup, MessageKey> = {
   admissions: "reports.group.admissions",
   staff: "reports.group.staff",
   academics: "reports.group.academics",
+  library: "reports.group.library",
 };
 
 /** Every report, new and existing, with the permission that opens it. */
@@ -169,6 +175,56 @@ export const REPORT_LINKS: readonly ReportLink[] = [
     description: "reports.link.clashes.description",
     permission: PERMISSIONS.timetableManage,
     icon: TriangleAlert,
+  },
+  {
+    key: "libraryOverdue",
+    group: "library",
+    href: "/app/reports/library-overdue",
+    title: "library.report.overdue.title",
+    description: "library.report.overdue.description",
+    permission: PERMISSIONS.libraryManage,
+    icon: BookMarked,
+    excel: true,
+  },
+  {
+    key: "libraryIssued",
+    group: "library",
+    href: "/app/reports/library-issued",
+    title: "library.report.issued.title",
+    description: "library.report.issued.description",
+    permission: PERMISSIONS.libraryManage,
+    icon: LibraryBig,
+    excel: true,
+  },
+  {
+    key: "libraryPopular",
+    group: "library",
+    href: "/app/reports/library-popular",
+    title: "library.report.popular.title",
+    description: "library.report.popular.description",
+    permission: PERMISSIONS.libraryManage,
+    icon: TrendingUp,
+    excel: true,
+  },
+  {
+    key: "libraryMember",
+    group: "library",
+    href: "/app/reports/library-member",
+    title: "library.report.member.title",
+    description: "library.report.member.description",
+    permission: PERMISSIONS.libraryManage,
+    icon: History,
+    excel: true,
+  },
+  {
+    key: "libraryStock",
+    group: "library",
+    href: "/app/library/stock",
+    title: "library.report.stock.title",
+    description: "library.report.stock.description",
+    permission: PERMISSIONS.libraryManage,
+    icon: ScanBarcode,
+    excel: true,
   },
 ];
 
