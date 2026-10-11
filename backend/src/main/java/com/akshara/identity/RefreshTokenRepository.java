@@ -12,6 +12,9 @@ interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID> {
 
     Optional<RefreshToken> findByTokenHash(String tokenHash);
 
+    /** False once the chain has ended: sign-out and reuse detection revoke every live token in it. */
+    boolean existsByFamilyIdAndRevokedAtIsNull(UUID familyId);
+
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("update RefreshToken t set t.revokedAt = ?2 where t.familyId = ?1 and t.revokedAt is null")
     int revokeFamily(UUID familyId, Instant at);
