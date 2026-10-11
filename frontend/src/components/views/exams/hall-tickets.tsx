@@ -13,11 +13,28 @@ import { useApiData } from "@/lib/use-api-data";
 import { formatScore, shortTime } from "./exams-shared";
 
 /** The school's name, board, city and address over a printed page. */
+/** The school's text logo: the first letters of up to three words of its name ("Akshara Demo School" → "ADS"). */
+export function schoolInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .map((word) => word.replace(/[^\p{L}\p{N}]/gu, ""))
+    .filter(Boolean)
+    .slice(0, 3)
+    .map((word) => word[0].toUpperCase())
+    .join("");
+}
+
 export function SchoolHead({ school, title, sub }: { school: ExamSchoolHeader; title: string; sub?: string }) {
   const { t } = useI18n();
   const place = [school.address, school.city].filter(Boolean).join(", ");
+  const initials = schoolInitials(school.name);
   return (
     <header className="exam-page-head">
+      {initials ? (
+        <span className="exam-logo" aria-hidden="true">
+          {initials}
+        </span>
+      ) : null}
       <span className="exam-school">{school.name}</span>
       {place ? <p>{place}</p> : null}
       <p>

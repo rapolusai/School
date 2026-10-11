@@ -3623,6 +3623,8 @@ export const en = {
   "exams.area.healthPhysical": "Health and physical education",
   "exams.area.discipline": "Discipline",
   "exams.hpc.title": "Holistic progress card (NEP 2020)",
+  "exams.hpc.for": "Holistic progress card of {name}",
+  "exams.hpc.domains": "Progress in each domain",
   "exams.hpc.physical": "Physical development",
   "exams.hpc.socioEmotional": "Social and emotional",
   "exams.hpc.cognitive": "Thinking and understanding",

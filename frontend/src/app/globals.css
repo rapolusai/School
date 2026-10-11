@@ -3916,6 +3916,22 @@
     border-bottom: 2px solid var(--line);
     text-align: center;
   }
+  .exam-logo {
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    height: 44px;
+    padding: 0 8px;
+    margin-bottom: 4px;
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    font-family: var(--f-display);
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
   .exam-page-head .exam-school {
     font-family: var(--f-display);
     font-size: 20px;

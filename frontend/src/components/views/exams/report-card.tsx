@@ -40,7 +40,52 @@ export function ReportCardPages({ cards }: { cards: ReportCards }) {
   );
 }
 
+/** A student's report card page and, for classes that have it, the holistic progress card as a page of its own. */
 export function ReportCardPage({ cards, card }: { cards: ReportCards; card: ReportCard }) {
+  return (
+    <>
+      <ScholasticPage cards={cards} card={card} />
+      {cards.hpcEnabled && card.hpc ? <HpcPage cards={cards} card={card} hpc={card.hpc} /> : null}
+    </>
+  );
+}
+
+function periodName(t: Translate, cards: ReportCards): string {
+  return cards.kind === "TERM" && cards.termName ? cards.termName : t("exams.reportCards.wholeYear");
+}
+
+/** Student, class, roll and admission number, and the class teacher. */
+function StudentFacts({ cards, card }: { cards: ReportCards; card: ReportCard }) {
+  const { t } = useI18n();
+  return (
+    <dl className="exam-facts">
+      <div>
+        <dt>{t("exams.card.student")}</dt>
+        <dd>{card.fullName}</dd>
+      </div>
+      <div>
+        <dt>{t("exams.card.class")}</dt>
+        <dd>{card.classLabel}</dd>
+      </div>
+      <div>
+        <dt>{t("exams.card.roll")}</dt>
+        <dd className="num">{card.rollNo ?? "—"}</dd>
+      </div>
+      <div>
+        <dt>{t("exams.card.admissionNo")}</dt>
+        <dd>{card.admissionNo}</dd>
+      </div>
+      {cards.classTeacherName ? (
+        <div>
+          <dt>{t("exams.card.classTeacher")}</dt>
+          <dd>{cards.classTeacherName}</dd>
+        </div>
+      ) : null}
+    </dl>
+  );
+}
+
+function ScholasticPage({ cards, card }: { cards: ReportCards; card: ReportCard }) {
   const { t } = useI18n();
   const title =
     cards.kind === "TERM" && cards.termName
@@ -50,30 +95,7 @@ export function ReportCardPage({ cards, card }: { cards: ReportCards; card: Repo
   return (
     <article className="card exam-page" aria-label={t("exams.card.for", { name: card.fullName })} data-testid="report-card">
       <SchoolHead school={cards.school} title={title} sub={t("exams.card.year", { year: cards.academicYearName })} />
-      <dl className="exam-facts">
-        <div>
-          <dt>{t("exams.card.student")}</dt>
-          <dd>{card.fullName}</dd>
-        </div>
-        <div>
-          <dt>{t("exams.card.class")}</dt>
-          <dd>{card.classLabel}</dd>
-        </div>
-        <div>
-          <dt>{t("exams.card.roll")}</dt>
-          <dd className="num">{card.rollNo ?? "—"}</dd>
-        </div>
-        <div>
-          <dt>{t("exams.card.admissionNo")}</dt>
-          <dd>{card.admissionNo}</dd>
-        </div>
-        {cards.classTeacherName ? (
-          <div>
-            <dt>{t("exams.card.classTeacher")}</dt>
-            <dd>{cards.classTeacherName}</dd>
-          </div>
-        ) : null}
-      </dl>
+      <StudentFacts cards={cards} card={card} />
 
       <div className="flex flex-col gap-2">
         <p className="exam-section-title">{t("exams.card.scholastic")}</p>
@@ -181,8 +203,6 @@ export function ReportCardPage({ cards, card }: { cards: ReportCards; card: Repo
         </div>
       ) : null}
 
-      {cards.hpcEnabled && card.hpc ? <HpcBlock hpc={card.hpc} /> : null}
-
       {card.remark ? (
         <div className="flex flex-col gap-1">
           <p className="exam-section-title">{t("exams.card.remark")}</p>
@@ -206,6 +226,27 @@ export function ReportCardPage({ cards, card }: { cards: ReportCards; card: Repo
   );
 }
 
+/** The NEP 2020 holistic progress card of a term or the year, printed as its own A4 card. */
+function HpcPage({ cards, card, hpc }: { cards: ReportCards; card: ReportCard; hpc: Hpc }) {
+  const { t } = useI18n();
+  return (
+    <article className="card exam-page" aria-label={t("exams.hpc.for", { name: card.fullName })} data-testid="hpc-card">
+      <SchoolHead
+        school={cards.school}
+        title={t("exams.hpc.title")}
+        sub={`${periodName(t, cards)} · ${t("exams.card.year", { year: cards.academicYearName })}`}
+      />
+      <StudentFacts cards={cards} card={card} />
+      <HpcBlock hpc={hpc} />
+      <div className="exam-signs">
+        <span>{t("exams.sign.classTeacher")}</span>
+        <span>{t("exams.sign.principal")}</span>
+        <span>{t("exams.sign.parent")}</span>
+      </div>
+    </article>
+  );
+}
+
 /** The holistic progress card: a level per domain on a four-step scale, and the three reflections. */
 function HpcBlock({ hpc }: { hpc: Hpc }) {
   const { t } = useI18n();
@@ -216,7 +257,7 @@ function HpcBlock({ hpc }: { hpc: Hpc }) {
   ] as const;
   return (
     <div className="flex flex-col gap-2.5" data-testid="card-hpc">
-      <p className="exam-section-title">{t("exams.hpc.title")}</p>
+      <p className="exam-section-title">{t("exams.hpc.domains")}</p>
       <div className="hpc-levels">
         {HPC_DOMAINS.map((domain) => {
           const level = hpc[domain];

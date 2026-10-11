@@ -3622,6 +3622,8 @@ export const hi: Record<MessageKey, string> = {
   "exams.area.healthPhysical": "स्वास्थ्य और शारीरिक शिक्षा",
   "exams.area.discipline": "अनुशासन",
   "exams.hpc.title": "समग्र प्रगति कार्ड (NEP 2020)",
+  "exams.hpc.for": "{name} का समग्र प्रगति कार्ड",
+  "exams.hpc.domains": "हर क्षेत्र में प्रगति",
   "exams.hpc.physical": "शारीरिक विकास",
   "exams.hpc.socioEmotional": "सामाजिक और भावनात्मक",
   "exams.hpc.cognitive": "सोचना और समझना",

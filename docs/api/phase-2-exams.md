@@ -120,7 +120,7 @@ points only). Ranks follow standard competition ranking ("1, 2, 2, 4"), only whe
 **Term cards** have the term's exams as columns and each subject's percentage weighted by exam weight; **year cards**
 have the terms as columns weighted by term weight. Exams or terms without a percentage yet are left out and the rest
 re-weighted. Cards carry attendance over the term or year (attendance module), co-scholastic grades, the class
-teacher's remark (≤ 500) and, up to `hpcUpToLevel`, the holistic progress card: a level (`BEGINNER`, `PROGRESSING`,
+teacher's remark (≤ 500) and, up to `hpcUpToLevel`, the holistic progress card (printed as its own A4 card): a level (`BEGINNER`, `PROGRESSING`,
 `PROFICIENT`, `ADVANCED`) for six domains and the teacher's, child's and parent's reflections (≤ 1,000 each).
 **Publishing** is explicit and per exam and class; it is audited (`results.published`) with the publisher's name,
 and families see only published results (staff see every exam). The analysis gives averages, highest and lowest,

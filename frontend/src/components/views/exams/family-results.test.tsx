@@ -6,6 +6,7 @@ import type { Child } from "@/lib/types";
 import { familyResults, reportCard, reportCards } from "@/test/exams-fixtures";
 import { renderAs } from "@/test/render";
 import { defaultPeriod, FamilyResultsView } from "./family-results";
+import { schoolInitials } from "./hall-tickets";
 import { cellText, ReportCardPages, scaleText } from "./report-card";
 
 const m = vi.hoisted(() => ({
@@ -81,6 +82,13 @@ describe("report card helpers", () => {
     expect(scaleText(reportCards().scheme.bands)).toBe("A1 91%+ · A2 81%+ · D 33%+ · E 0%+");
   });
 
+  it("makes the school's text logo from its name", () => {
+    expect(schoolInitials("Akshara Demo School")).toBe("ADS");
+    expect(schoolInitials("  St. Mary's   Convent High School ")).toBe("SMC");
+    expect(schoolInitials("विद्या भारती")).toBe("वभ");
+    expect(schoolInitials("")).toBe("");
+  });
+
   it("opens the latest term with published results", () => {
     expect(defaultPeriod(familyResults())).toEqual({ termId: "t1" });
     const both = familyResults("st1", {
@@ -95,7 +103,7 @@ describe("report card helpers", () => {
 });
 
 describe("ReportCardPages", () => {
-  it("prints the scholastic table, result, attendance, co-scholastic areas and the holistic progress card", () => {
+  it("prints the scholastic table, result, attendance and co-scholastic areas, and the holistic progress card on its own", () => {
     renderAs(["exams.read"], <ReportCardPages cards={reportCards()} />);
     const card = screen.getByRole("article", { name: "Report card of Arjun Sharma" });
     expect(within(card).getByText("Report card: Term 1")).toBeInTheDocument();
@@ -108,7 +116,11 @@ describe("ReportCardPages", () => {
     expect(card).toHaveTextContent("Grade point average10");
     expect(within(card).queryByText("Rank in section")).not.toBeInTheDocument();
     expect(within(card).getByTestId("card-co-scholastic")).toHaveTextContent("Art educationB");
-    const hpc = within(card).getByTestId("card-hpc");
+    expect(within(card).queryByTestId("card-hpc")).not.toBeInTheDocument();
+    const hpcCard = screen.getByRole("article", { name: "Holistic progress card of Arjun Sharma" });
+    expect(hpcCard).toHaveTextContent("Term 1 · Academic year 2026-27");
+    expect(hpcCard).toHaveTextContent("AKS/2025/036");
+    const hpc = within(hpcCard).getByTestId("card-hpc");
     expect(hpc).toHaveTextContent("Art and creativityProgressing");
     expect(hpc).toHaveTextContent("Parent's feedback");
     expect(hpc).not.toHaveTextContent("Child's own reflection");
