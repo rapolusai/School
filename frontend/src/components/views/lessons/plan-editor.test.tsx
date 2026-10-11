@@ -55,6 +55,9 @@ describe("validatePlan", () => {
     expect(validatePlan(values({ weekStart: "" }), YEAR)).toEqual({ weekStart: "lessons.v.date" });
     expect(validatePlan(values({ weekStart: "2026-05-25" }), YEAR)).toEqual({ weekStart: "lessons.v.weekInYear" });
     expect(validatePlan(values({ weekStart: "2027-04-05" }), YEAR)).toEqual({ weekStart: "lessons.v.weekInYear" });
+    // A week that starts before the year but runs into it can be planned (a year starting on a Wednesday).
+    expect(validatePlan(values({ weekStart: "2026-03-30" }), { startsOn: "2026-04-01", endsOn: "2027-03-31" })).toEqual({});
+    expect(validatePlan(values({ weekStart: "2027-03-29" }), YEAR)).toEqual({});
     // Any day of the week names the week; the day must fall Monday to Sunday of it.
     expect(validatePlan(values({ weekStart: "2026-10-14", planDate: "2026-10-18" }), YEAR)).toEqual({});
     expect(validatePlan(values({ planDate: "2026-10-19" }), YEAR)).toEqual({ planDate: "lessons.v.planDate" });

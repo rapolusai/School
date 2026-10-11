@@ -39,7 +39,8 @@ export function validatePlan(values: PlanValues, year?: Pick<LessonsYear, "start
   if (!values.topicId && !values.title.trim()) problems.title = "lessons.v.titleOrTopic";
   else if (values.title.trim().length > LESSONS_LIMITS.title) problems.title = "lessons.v.titleLong";
   if (!isPlainDate(values.weekStart)) problems.weekStart = "lessons.v.date";
-  else if (year && (values.weekStart < year.startsOn || mondayOf(values.weekStart) > year.endsOn)) {
+  else if (year && (plusDays(mondayOf(values.weekStart), 6) < year.startsOn || mondayOf(values.weekStart) > year.endsOn)) {
+    // Like the API: the week (Monday to Sunday) must overlap the year, so the first and last weeks can be planned.
     problems.weekStart = "lessons.v.weekInYear";
   }
   if (values.planDate) {
@@ -254,7 +255,7 @@ export function PlanDialog({
             name="weekStart"
             type="date"
             value={values.weekStart}
-            min={year?.startsOn}
+            min={year ? mondayOf(year.startsOn) : undefined}
             max={year?.endsOn}
             onChange={(e) => set("weekStart", e.target.value)}
             hint={monday ? t("lessons.plan.weekHint", { date: formatPlainDate(monday, locale) }) : undefined}
