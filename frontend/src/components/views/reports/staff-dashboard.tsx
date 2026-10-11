@@ -52,7 +52,9 @@ export type TileKey =
   | "circulars"
   | "homework"
   | "substitutions"
-  | "clashes";
+  | "clashes"
+  | "marksToEnter"
+  | "resultsToPublish";
 
 const EVERY_TILE: TileKey[] = [
   "sectionsToMark",
@@ -72,6 +74,8 @@ const EVERY_TILE: TileKey[] = [
   "homework",
   "substitutions",
   "clashes",
+  "marksToEnter",
+  "resultsToPublish",
 ];
 
 /** The tiles of each layout, in order. A tile shows only when its card came back (the person holds its permission). */
@@ -88,8 +92,10 @@ export const LAYOUT_TILES: Record<DashboardLayout, TileKey[]> = {
     "circulars",
     "homework",
     "clashes",
+    "resultsToPublish",
+    "marksToEnter",
   ],
-  teacher: ["sectionsToMark", "attendanceToday", "homework", "substitutions", "leaveWaiting"],
+  teacher: ["sectionsToMark", "attendanceToday", "homework", "marksToEnter", "substitutions", "leaveWaiting"],
   accountant: ["feesToday", "feesMonth", "outstanding", "overdue", "students"],
   frontOffice: ["enquiries", "followUps", "offers", "students"],
   staff: EVERY_TILE,
@@ -329,9 +335,43 @@ export function tilesFor(
         attention: tt.clashes > 0 || tt.periodsCovered < tt.periodsToCover,
       };
     },
+    ...examTiles(summary, t, can),
   };
 
   return LAYOUT_TILES[layout].map((key) => build[key]()).filter((tile): tile is Tile => tile !== null);
+}
+
+/** The exams tiles: marks to enter for papers already written, and exam classes ready to publish. */
+function examTiles(
+  summary: DashboardSummary,
+  t: Translate,
+  can: (permission: string) => boolean,
+): Record<"marksToEnter" | "resultsToPublish", () => Tile | null> {
+  const e = summary.exams;
+  return {
+    marksToEnter: () =>
+      e
+        ? {
+            key: "marksToEnter",
+            label: t("exams.tile.marksToEnter"),
+            value: String(e.marksToEnter),
+            sub: t("exams.tile.marksToEnterSub"),
+            href: "/app/exams/marks",
+            attention: e.marksToEnter > 0,
+          }
+        : null,
+    resultsToPublish: () =>
+      e && can(PERMISSIONS.examsPublish)
+        ? {
+            key: "resultsToPublish",
+            label: t("exams.tile.resultsToPublish"),
+            value: String(e.resultsToPublish),
+            sub: t("exams.tile.resultsToPublishSub"),
+            href: "/app/exams",
+            attention: e.resultsToPublish > 0,
+          }
+        : null,
+  };
 }
 
 /** Which chart cards to show: the layout's, in order, when their data came back. Pure; exported for tests. */

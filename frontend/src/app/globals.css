@@ -3705,3 +3705,400 @@
     background: transparent !important;
   }
 }
+
+/* ------------------------------------------------- phase 2: exams, marks entry and report cards */
+@layer components {
+  /* Marks entry: a table on desktop, one card per student on phones (see the media query below). */
+  .marks-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  .marks-table th {
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 8px 8px;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  .marks-table th.r,
+  .marks-table td.r {
+    text-align: right;
+  }
+  .marks-table td {
+    padding: 8px 8px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+  }
+  .marks-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+  .marks-table .marks-roll {
+    width: 48px;
+    color: var(--ink-2);
+  }
+  .marks-input {
+    width: 88px;
+    text-align: right;
+  }
+  .marks-input[aria-invalid="true"] {
+    border-color: var(--bad);
+  }
+  .marks-part .field-error {
+    display: block;
+    max-width: 160px;
+  }
+  .marks-label {
+    display: none;
+  }
+  .marks-codes {
+    display: inline-flex;
+    gap: 4px;
+  }
+  .marks-codes button {
+    min-width: 44px;
+    height: 42px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+  .marks-codes button:hover:not(:disabled) {
+    border-color: var(--ink-3);
+  }
+  .marks-codes button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .marks-codes button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+  .marks-codes button[aria-pressed="true"] {
+    background: var(--info-soft);
+    border-color: var(--info);
+    color: var(--info);
+  }
+  .marks-codes button[aria-pressed="true"][data-code="AB"] {
+    background: var(--bad-soft);
+    border-color: var(--bad);
+    color: var(--bad);
+  }
+  .marks-total,
+  .marks-grade {
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .marks-row-left td {
+    color: var(--ink-3);
+  }
+  @media (max-width: 767px) {
+    .marks-table,
+    .marks-table tbody {
+      display: block;
+    }
+    .marks-table thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+    .marks-table tr {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+      gap: 8px 10px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .marks-table tbody tr:last-child {
+      border-bottom: 0;
+    }
+    .marks-table td {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 0;
+      border: 0;
+      min-width: 0;
+    }
+    .marks-table td.marks-roll {
+      display: none;
+    }
+    .marks-table td.marks-student,
+    .marks-table td.marks-code-cell {
+      grid-column: 1 / -1;
+    }
+    .marks-table td.r {
+      text-align: left;
+    }
+    .marks-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-3);
+    }
+    .marks-input {
+      width: 100%;
+    }
+    .marks-codes {
+      width: 100%;
+    }
+    .marks-codes button {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+  }
+
+  /* A paper row in the date sheet editor: stacked on phones, a row on wide screens. */
+  .paper-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .paper-row:last-child {
+    border-bottom: 0;
+  }
+  .paper-fields {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px 10px;
+  }
+  .paper-slot {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr));
+    gap: 8px 10px;
+  }
+  @media (max-width: 639px) {
+    .paper-slot {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  .paper-fields .field,
+  .paper-slot .field {
+    gap: 4px;
+  }
+
+  /* Results and report cards. */
+  .exam-doc {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .exam-page {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .exam-page-head {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--line);
+    text-align: center;
+  }
+  .exam-page-head .exam-school {
+    font-family: var(--f-display);
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .exam-page-head p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  .exam-page-head h2 {
+    margin-top: 6px;
+    font-size: 16px;
+  }
+  .exam-section-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-3);
+    margin: 0;
+  }
+  .exam-facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 8px 16px;
+    margin: 0;
+    font-size: 14px;
+  }
+  .exam-facts > div {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+  .exam-facts dt {
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+  .exam-facts dd {
+    margin: 0;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+  .exam-table td,
+  .exam-table th {
+    padding: 7px 8px;
+  }
+  .exam-table td.c,
+  .exam-table th.c {
+    text-align: center;
+  }
+  .exam-table tbody th {
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    white-space: normal;
+  }
+  .exam-table tfoot th,
+  .exam-table tfoot td {
+    font-weight: 700;
+    border-top: 2px solid var(--line);
+    border-bottom: 0;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .hpc-levels {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px 16px;
+  }
+  .hpc-level {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .hpc-scale {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 3px;
+  }
+  .hpc-scale > span {
+    height: 8px;
+    border-radius: 99px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+  }
+  .hpc-scale > span[data-on="true"] {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .exam-signs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 28px;
+    font-size: 12.5px;
+    color: var(--ink-2);
+    text-align: center;
+  }
+  .exam-signs > span {
+    border-top: 1px solid var(--ink-3);
+    padding-top: 6px;
+  }
+  .hall-ticket {
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    padding: 16px;
+  }
+}
+
+/* Printing hall tickets and report cards: one student per A4 page, black on white. */
+@media print {
+  @page a4exam {
+    size: A4;
+    margin: 12mm;
+  }
+  .exam-doc {
+    page: a4exam;
+  }
+  body:has(.exam-doc) {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  body:has(.exam-doc) .side,
+  body:has(.exam-doc) .top,
+  body:has(.exam-doc) .bottombar,
+  body:has(.exam-doc) .subnav,
+  body:has(.exam-doc) .page-head,
+  body:has(.exam-doc) .no-print,
+  body:has(.exam-doc) .skip-link,
+  body:has(.exam-doc) .toast {
+    display: none !important;
+  }
+  body:has(.exam-doc) .shell,
+  body:has(.exam-doc) .main,
+  body:has(.exam-doc) .content {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+  .exam-doc,
+  .exam-doc .card {
+    border: 0 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+  .exam-doc,
+  .exam-doc * {
+    color: #000 !important;
+  }
+  .exam-page {
+    break-after: page;
+  }
+  .exam-page:last-child {
+    break-after: auto;
+  }
+  .exam-doc .table-wrap {
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .exam-doc .table {
+    font-size: 9.5pt;
+  }
+  .exam-doc .table th,
+  .exam-doc .table td {
+    padding: 4px 6px !important;
+    border: 1px solid #999 !important;
+    background: transparent !important;
+  }
+  .exam-doc .pill {
+    border: 1px solid #000;
+    background: transparent !important;
+  }
+  .exam-doc .hpc-scale > span {
+    border-color: #000 !important;
+    print-color-adjust: exact;
+  }
+  .exam-doc .hpc-scale > span[data-on="true"] {
+    background: #555 !important;
+  }
+  .hall-ticket {
+    border-color: #000;
+  }
+}

@@ -3,6 +3,7 @@
 import {
   ArrowRight,
   CalendarCheck2,
+  ChartColumnBig,
   ClipboardCheck,
   ClipboardList,
   FileSpreadsheet,
@@ -159,6 +160,16 @@ export const REPORT_LINKS: readonly ReportLink[] = [
     description: "reports.homework.description",
     permission: PERMISSIONS.homeworkManage,
     icon: NotebookPen,
+    excel: true,
+  },
+  {
+    key: "examAnalysis",
+    group: "academics",
+    href: "/app/reports/exam-analysis",
+    title: "reports.examAnalysis.title",
+    description: "reports.examAnalysis.description",
+    permission: PERMISSIONS.examsRead,
+    icon: ChartColumnBig,
     excel: true,
   },
   {

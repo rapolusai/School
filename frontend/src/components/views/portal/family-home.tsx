@@ -7,6 +7,7 @@ import { Pill } from "@/components/ui/pill";
 import { ErrorState, LoadingRows, PageHead } from "@/components/ui/states";
 import { CountsBar, formatPercent } from "@/components/views/attendance/attendance-shared";
 import { UpcomingCard } from "@/components/views/communication/dashboard-cards";
+import { FamilyResultsCard } from "@/components/views/exams/family-results";
 import { NoticeMeta, NoticeReader } from "@/components/views/communication/notice-reader";
 import { nextDue } from "@/components/views/fees/child-fees";
 import { isToDo, LearnerHomeworkRows } from "@/components/views/homework/learner-homework";
@@ -16,6 +17,7 @@ import { api } from "@/lib/api";
 import { attendanceApi } from "@/lib/attendance-api";
 import { useAuth } from "@/lib/auth";
 import { boardApi } from "@/lib/communication-api";
+import { examsApi } from "@/lib/exams-api";
 import { isParent } from "@/lib/family";
 import { feesApi } from "@/lib/fees-api";
 import { classLabel, firstName, formatLongDate, formatPaise, formatPlainDate, hourInIndia, initials } from "@/lib/format";
@@ -148,7 +150,7 @@ function NoticesAndUpcoming() {
 
 /**
  * Everything about one child (or the student themselves): their card, then today, this month,
- * homework and leave. Each piece loads once here and is shared by the cards that need it.
+ * homework, leave and results. Each piece loads once here and is shared by the cards that need it.
  */
 function ChildPanel({ child, self }: { child: Child; self: boolean }) {
   const id = child.id;
@@ -165,6 +167,9 @@ function ChildPanel({ child, self }: { child: Child; self: boolean }) {
     self ? portalApi.myLeave() : portalApi.childLeave(id),
   );
   const fees = useApiData(self ? null : `me:child-fees:${id}`, () => feesApi.childFees(id));
+  const results = useApiData(self ? "exams:family:me" : `exams:family:${id}`, () =>
+    self ? examsApi.myResults() : examsApi.childResults(id),
+  );
   const query = self ? "" : `?child=${encodeURIComponent(id)}`;
   return (
     <>
@@ -179,6 +184,7 @@ function ChildPanel({ child, self }: { child: Child; self: boolean }) {
           hrefFor={(homeworkId) => `/app/homework/${encodeURIComponent(homeworkId)}${query}`}
         />
         <LeaveCard data={leave} self={self} href={`/app/family/leave${query}`} />
+        <FamilyResultsCard data={results} href={`/app/family/results${query}`} />
       </div>
     </>
   );
