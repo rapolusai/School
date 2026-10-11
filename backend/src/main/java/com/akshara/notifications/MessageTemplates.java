@@ -44,6 +44,12 @@ public final class MessageTemplates {
     /** Sent the evening before homework is due, to the contacts of students who have not submitted it. */
     public static final String HOMEWORK_DUE = "homework.due";
 
+    /** Sent to a student's primary contact when a library book is overdue (weekly, if the school opts in). */
+    public static final String LIBRARY_OVERDUE = "library.overdue";
+
+    /** Sent to a student's primary contact when a library book the student reserved is ready to collect. */
+    public static final String LIBRARY_HOLD_READY = "library.hold_ready";
+
     private static final Map<String, Map<String, String>> TEMPLATES = Map.of(
             ABSENCE_ALERT, Map.of(
                     ENGLISH, "Dear {guardian}, {student} ({class}) was marked absent at {school} on {date}. "
@@ -80,7 +86,17 @@ public final class MessageTemplates {
                     ENGLISH, "Dear {guardian}, {student} ({class}) has not yet submitted the {subject} homework "
                             + "\"{title}\" due on {date} at {school}.",
                     HINDI, "प्रिय {guardian}, {student} ({class}) ने {school} का {subject} गृहकार्य \"{title}\" अभी "
-                            + "तक जमा नहीं किया है। अंतिम तिथि {date} है।"));
+                            + "तक जमा नहीं किया है। अंतिम तिथि {date} है।"),
+            LIBRARY_OVERDUE, Map.of(
+                    ENGLISH, "Dear {guardian}, {student} has not yet returned the library book \"{title}\" to "
+                            + "{school}. It was due on {date}. Please return it soon; a fine applies for late days.",
+                    HINDI, "प्रिय {guardian}, {student} ने {school} के पुस्तकालय की पुस्तक \"{title}\" अभी तक नहीं "
+                            + "लौटाई है। इसे {date} तक लौटाना था। कृपया इसे जल्द लौटाएँ; देरी के दिनों का जुर्माना लगता है।"),
+            LIBRARY_HOLD_READY, Map.of(
+                    ENGLISH, "Dear {guardian}, the library book \"{title}\" that {student} reserved at {school} is "
+                            + "ready to collect until {date}.",
+                    HINDI, "प्रिय {guardian}, {school} के पुस्तकालय में {student} द्वारा आरक्षित पुस्तक \"{title}\" "
+                            + "{date} तक लेने के लिए तैयार है।"));
 
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{(\\w+)}");
     private static final DateTimeFormatter ENGLISH_DATE = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH);

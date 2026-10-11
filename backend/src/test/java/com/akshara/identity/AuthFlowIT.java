@@ -214,12 +214,13 @@ class AuthFlowIT extends IntegrationTest {
     }
 
     @Test
-    void signupCreatesTheSevenStandardRoles() throws Exception {
+    void signupCreatesTheEightStandardRoles() throws Exception {
         Session admin = api.login(api.signup());
         api.get("/api/roles", admin.accessToken())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(7))
+                .andExpect(jsonPath("$.length()").value(8))
                 .andExpect(jsonPath("$[*].code", hasItem("TEACHER")))
+                .andExpect(jsonPath("$[*].code", hasItem("LIBRARIAN")))
                 .andExpect(jsonPath("$[*].code", not(hasItem("SUPER_ADMIN"))));
     }
 

@@ -10,6 +10,7 @@ import {
   House,
   IdCard,
   LayoutDashboard,
+  LibraryBig,
   Megaphone,
   LockKeyhole,
   MessageSquareText,
@@ -30,7 +31,7 @@ import type { MessageKey } from "./i18n/en";
 import type { Me } from "./types";
 
 /** Permission codes from docs/api/phase-0.md, phase-1.md, phase-1-attendance.md, phase-1-staff.md,
- * phase-1-communication.md, phase-1-timetable-homework.md and phase-1-billing.md. */
+ * phase-1-communication.md, phase-1-timetable-homework.md, phase-1-billing.md and phase-2-library.md. */
 export const PERMISSIONS = {
   dashboardView: "dashboard.view",
   usersRead: "users.read",
@@ -66,6 +67,8 @@ export const PERMISSIONS = {
   homeworkManage: "homework.manage",
   billingRead: "billing.read",
   privacyManage: "privacy.manage",
+  libraryRead: "library.read",
+  libraryManage: "library.manage",
 } as const;
 
 export type NavGroup = "overview" | "academics" | "finance" | "staff" | "communication" | "administration" | "platform";
@@ -93,6 +96,7 @@ export const REPORT_PERMISSIONS: readonly string[] = [
   PERMISSIONS.staffRead,
   PERMISSIONS.homeworkManage,
   PERMISSIONS.timetableManage,
+  PERMISSIONS.libraryManage,
 ];
 
 /** Every navigation item, in display order. */
@@ -149,6 +153,15 @@ export const NAV_ITEMS: readonly NavItem[] = [
     shortLabelKey: "nav.admissions.short",
     icon: ClipboardList,
     permission: PERMISSIONS.admissionsRead,
+    group: "academics",
+  },
+  {
+    key: "library",
+    href: "/app/library",
+    labelKey: "nav.library",
+    shortLabelKey: "nav.library.short",
+    icon: LibraryBig,
+    permission: PERMISSIONS.libraryRead,
     group: "academics",
   },
   {
@@ -392,6 +405,15 @@ export const FAMILY_NAV_ITEMS: readonly NavItem[] = [
     labelKey: "nav.leave",
     shortLabelKey: "nav.leave.short",
     icon: CalendarOff,
+    permission: PERMISSIONS.dashboardView,
+    group: "academics",
+  },
+  {
+    key: "family-library",
+    href: "/app/family/library",
+    labelKey: "nav.library",
+    shortLabelKey: "nav.library.short",
+    icon: LibraryBig,
     permission: PERMISSIONS.dashboardView,
     group: "academics",
   },

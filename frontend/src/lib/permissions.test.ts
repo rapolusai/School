@@ -94,6 +94,26 @@ describe("navFor", () => {
     expect(keys(TEACHER)).toEqual(["dashboard", "attendance", "students", "setup", "notices", "reports"]);
   });
 
+  it("gives a librarian the library under the School group, and the reports hub for its reports", () => {
+    const librarian = user(["LIBRARIAN"], ["dashboard.view", "library.read", "library.manage", "notices.read"]);
+    expect(keys(librarian)).toEqual(["dashboard", "library", "board", "calendar", "reports"]);
+    expect(navFor(librarian).find((item) => item.key === "library")).toMatchObject({
+      href: "/app/library",
+      group: "academics",
+      labelKey: "nav.library",
+    });
+    // Every member of staff may search the catalogue; only library.manage opens the reports hub.
+    expect(keys(user(["TEACHER"], [...TEACHER.permissions, "library.read"]))).toEqual([
+      "dashboard",
+      "attendance",
+      "students",
+      "library",
+      "setup",
+      "notices",
+      "reports",
+    ]);
+  });
+
   it("gives front office students and setup without administration", () => {
     const frontOffice = user(["FRONT_OFFICE"], ["dashboard.view", "students.read", "students.manage", "academics.read"]);
     expect(keys(frontOffice)).toEqual(["dashboard", "students", "setup"]);
@@ -119,6 +139,7 @@ describe("navFor", () => {
       "family-homework",
       "family-fees",
       "family-leave",
+      "family-library",
       "myPrivacy",
     ]);
   });
@@ -134,9 +155,18 @@ describe("navFor", () => {
       "board",
       "calendar",
       "family-leave",
+      "family-library",
       "myPrivacy",
     ]);
-    expect(keys(student)).toEqual(["dashboard", "family-attendance", "family-homework", "board", "calendar", "family-leave"]);
+    expect(keys(student)).toEqual([
+      "dashboard",
+      "family-attendance",
+      "family-homework",
+      "board",
+      "calendar",
+      "family-leave",
+      "family-library",
+    ]);
     expect(navFor(parent)[0]).toMatchObject({ href: "/app/dashboard", labelKey: "portal.nav.home" });
     // The phone bottom bar shows the first four: Home, Attendance, Homework and Fees (Notices for a student).
     expect(navFor(student).slice(0, 4).map((item) => item.href)).toEqual([
@@ -253,6 +283,8 @@ describe("navItemForPath", () => {
     expect(navItemForPath("/app/my-privacy/requests/abc")?.key).toBe("myPrivacy");
     expect(navItemForPath("/app/family/leave")?.key).toBe("family-leave");
     expect(navItemForPath("/app/family/attendance")?.key).toBe("family-attendance");
+    expect(navItemForPath("/app/library/desk")?.key).toBe("library");
+    expect(navItemForPath("/app/family/library")?.key).toBe("family-library");
     expect(navItemForPath("/app/unknown")).toBeUndefined();
   });
 });

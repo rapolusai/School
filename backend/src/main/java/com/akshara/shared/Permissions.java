@@ -57,6 +57,10 @@ public final class Permissions {
     public static final String BILLING_READ = "billing.read";
     /** The privacy notice, the grievance officer, paper consent, and parents' data requests (exports, erasure). */
     public static final String PRIVACY_MANAGE = "privacy.manage";
+    /** Search the library catalogue (every member of staff). */
+    public static final String LIBRARY_READ = "library.read";
+    /** The library: catalogue, circulation desk, fines, holds, labels, stock checks, reports and settings. */
+    public static final String LIBRARY_MANAGE = "library.manage";
 
     public static final String PLATFORM_ADMIN = "platform.admin";
 
@@ -66,7 +70,8 @@ public final class Permissions {
             EXAMS_MANAGE, NOTICES_SEND, CHILD_VIEW, ACADEMICS_READ, ADMISSIONS_READ, ADMISSIONS_MANAGE,
             ATTENDANCE_MANAGE, MESSAGES_READ, FEES_MANAGE, STAFF_READ, STAFF_MANAGE, LEAVE_REQUEST, LEAVE_APPROVE,
             STAFF_ATTENDANCE_MANAGE, NOTICES_READ, NOTICES_APPROVE, CALENDAR_MANAGE, TIMETABLE_READ, TIMETABLE_MANAGE,
-            HOMEWORK_MANAGE, BILLING_READ, PRIVACY_MANAGE);
+            HOMEWORK_MANAGE, BILLING_READ, PRIVACY_MANAGE,
+            LIBRARY_READ, LIBRARY_MANAGE);
 
     private Permissions() {
     }

@@ -14,6 +14,7 @@ public final class RoleCatalog {
     public static final String TEACHER = "TEACHER";
     public static final String PARENT = "PARENT";
     public static final String STUDENT = "STUDENT";
+    public static final String LIBRARIAN = "LIBRARIAN";
 
     public static final List<RoleTemplate> DEFAULTS = List.of(
             new RoleTemplate(SCHOOL_ADMIN, "School Admin", ALL_SCHOOL),
@@ -21,15 +22,20 @@ public final class RoleCatalog {
                     STUDENTS_READ, ATTENDANCE_READ, FEES_READ, EXAMS_MANAGE, NOTICES_SEND, ACADEMICS_READ,
                     ADMISSIONS_READ, ADMISSIONS_MANAGE, ATTENDANCE_MANAGE, MESSAGES_READ, STAFF_READ, LEAVE_REQUEST,
                     LEAVE_APPROVE, NOTICES_READ, NOTICES_APPROVE, CALENDAR_MANAGE, TIMETABLE_READ, TIMETABLE_MANAGE,
-                    HOMEWORK_MANAGE, PRIVACY_MANAGE)),
+                    HOMEWORK_MANAGE, PRIVACY_MANAGE, LIBRARY_READ)),
             new RoleTemplate("TEACHER", "Teacher", List.of(DASHBOARD_VIEW, STUDENTS_READ, ATTENDANCE_MARK,
                     ATTENDANCE_READ, EXAMS_MANAGE, NOTICES_SEND, ACADEMICS_READ, LEAVE_REQUEST, NOTICES_READ,
-                    TIMETABLE_READ, HOMEWORK_MANAGE)),
+                    TIMETABLE_READ, HOMEWORK_MANAGE, LIBRARY_READ)),
             new RoleTemplate("ACCOUNTANT", "Accountant", List.of(DASHBOARD_VIEW, STUDENTS_READ, FEES_READ,
-                    FEES_COLLECT, ACADEMICS_READ, FEES_MANAGE, LEAVE_REQUEST, NOTICES_READ, TIMETABLE_READ)),
+                    FEES_COLLECT, ACADEMICS_READ, FEES_MANAGE, LEAVE_REQUEST, NOTICES_READ, TIMETABLE_READ,
+                    LIBRARY_READ)),
             // Front office handles admissions paperwork, so it may add and edit student records.
             new RoleTemplate("FRONT_OFFICE", "Front office", List.of(DASHBOARD_VIEW, STUDENTS_READ, STUDENTS_MANAGE,
-                    ACADEMICS_READ, ADMISSIONS_READ, ADMISSIONS_MANAGE, LEAVE_REQUEST, NOTICES_READ, TIMETABLE_READ)),
+                    ACADEMICS_READ, ADMISSIONS_READ, ADMISSIONS_MANAGE, LEAVE_REQUEST, NOTICES_READ, TIMETABLE_READ,
+                    LIBRARY_READ)),
+            // The school librarian runs the library; like all staff they can apply for leave and read notices.
+            new RoleTemplate(LIBRARIAN, "Librarian", List.of(DASHBOARD_VIEW, ACADEMICS_READ, LEAVE_REQUEST,
+                    NOTICES_READ, TIMETABLE_READ, LIBRARY_READ, LIBRARY_MANAGE)),
             new RoleTemplate("PARENT", "Parent", List.of(DASHBOARD_VIEW, CHILD_VIEW, NOTICES_READ)),
             new RoleTemplate("STUDENT", "Student", List.of(DASHBOARD_VIEW, NOTICES_READ)));
 

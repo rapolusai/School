@@ -72,7 +72,9 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
             "homework.homework_section", "homework.submission", "homework.settings", "billing.invoice",
             "billing.invoice_payment", "privacy.grievance_officer", "privacy.privacy_notice",
             "privacy.consent_record", "privacy.data_request", "privacy.request_event", "privacy.data_export",
-            "attendance.leave_request");
+            "attendance.leave_request",
+            "library.settings", "library.receipt_counter", "library.borrowing_rule", "library.title", "library.copy",
+            "library.loan", "library.fine", "library.reservation", "library.stock_check", "library.stock_check_item");
 
     @Autowired
     HomeworkService homework;
@@ -196,6 +198,7 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         Session lata = parentSignIn(school, admin, student);
         privacyRecords(admin, lata, student);
         childLeave(school, lata, student, day.isAfter(LAST_DAY) ? LAST_DAY : day);
+        libraryRecords(admin, student, tara);
         School other = api.signup();
 
         try (Connection app = appConnection(); Connection owner = ownerConnection()) {
@@ -339,6 +342,42 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
                 {"type":"ACCESS","subject":"CHILD","studentId":"%s"}""".formatted(student))
                 .andExpect(status().isCreated()), "$.id");
         api.post("/api/privacy/requests/" + request + "/export", admin.accessToken(), null).andExpect(status().isOk());
+    }
+
+    /**
+     * One row in every library table: settings and a borrowing rule, a title with its copy, a loan returned late (a
+     * fine, paid, so a receipt number), the copy lent again with a member of staff waiting for it, and a stock check
+     * that saw the copy.
+     */
+    private void libraryRecords(Session admin, String student, String staffUserId) throws Exception {
+        api.put("/api/library/settings", admin.accessToken(), """
+                {"accessionPrefix":"RLS","holdDays":3,"remindersEnabled":false}""").andExpect(status().isOk());
+        api.put("/api/library/rules/STUDENT", admin.accessToken(), """
+                {"maxBooks":2,"loanDays":7,"maxRenewals":1,"finePerDayPaise":100,"maxFinePaise":5000}""")
+                .andExpect(status().isOk());
+        String title = TestApi.read(api.post("/api/library/titles", admin.accessToken(), """
+                {"title":"The Jungle Book","authors":"Rudyard Kipling","copies":1}""")
+                .andExpect(status().isCreated()), "$.id");
+        String accession = TestApi.read(api.get("/api/library/titles/" + title, admin.accessToken()),
+                "$.copies[0].accessionNo");
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Kolkata"));
+        api.post("/api/library/loans", admin.accessToken(), """
+                {"accessionNo":"%s","memberType":"STUDENT","memberId":"%s","issuedOn":"%s"}"""
+                .formatted(accession, student, today.minusDays(30))).andExpect(status().isCreated());
+        String fine = TestApi.read(api.post("/api/library/returns", admin.accessToken(), """
+                {"accessionNo":"%s"}""".formatted(accession)).andExpect(status().isOk()), "$.fines[0].id");
+        api.post("/api/library/fines/collect", admin.accessToken(), """
+                {"fineIds":["%s"],"mode":"CASH"}""".formatted(fine)).andExpect(status().isOk());
+        api.post("/api/library/loans", admin.accessToken(), """
+                {"accessionNo":"%s","memberType":"STUDENT","memberId":"%s"}""".formatted(accession, student))
+                .andExpect(status().isCreated());
+        api.post("/api/library/reservations", admin.accessToken(), """
+                {"titleId":"%s","memberType":"STAFF","memberId":"%s"}""".formatted(title, staffUserId))
+                .andExpect(status().isCreated());
+        String check = TestApi.read(api.post("/api/library/stock-checks", admin.accessToken(), "{}")
+                .andExpect(status().isCreated()), "$.id");
+        api.post("/api/library/stock-checks/" + check + "/scans", admin.accessToken(), """
+                {"accessionNo":"%s"}""".formatted(accession)).andExpect(status().isOk());
     }
 
     private static boolean canUpdateTenantId(Connection connection, String table) throws SQLException {

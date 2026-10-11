@@ -3705,3 +3705,242 @@
     background: transparent !important;
   }
 }
+
+/* ------------------------------------------------------------------ phase 2: library */
+@layer components {
+  .desk-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
+  }
+  @media (min-width: 1024px) {
+    .desk-grid {
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    }
+  }
+  /* The accession number field: big enough to see across the counter, with the button beside it. */
+  .scan-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+  }
+  .scan-input {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+  }
+  .scan-input svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--ink-3);
+    pointer-events: none;
+  }
+  .scan-input .input {
+    width: 100%;
+    padding-left: 40px;
+    font-size: 18px;
+    letter-spacing: 0.04em;
+    min-height: 48px;
+  }
+  .scan-video {
+    width: 100%;
+    max-height: 60vh;
+    border-radius: 10px;
+    background: #000;
+    object-fit: cover;
+  }
+  .return-result {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface-2);
+  }
+  .library-summary {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  @media (max-width: 900px) {
+    .library-summary {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 520px) {
+    .library-summary {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  .library-summary .amount {
+    text-decoration: none;
+    color: inherit;
+    height: 100%;
+  }
+  .library-summary .amount:hover {
+    outline: 1px solid var(--accent);
+  }
+  .label-choices {
+    display: flex;
+    flex-direction: column;
+    max-height: 280px;
+    overflow-y: auto;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+  }
+  .label-choices li {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .label-choices li:last-child {
+    border-bottom: 0;
+  }
+  .label-choices .check {
+    width: 100%;
+  }
+
+  /* Label sheets: paper (white, black ink) in both themes, at real A4 size, previewed smaller. */
+  .label-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-x: auto;
+  }
+  .label-sheet {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .label-page {
+    display: grid;
+    width: 210mm;
+    height: 297mm;
+    flex: none;
+    background: #fff;
+    color: #000;
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+    zoom: 0.62;
+  }
+  @media (max-width: 640px) {
+    .label-page {
+      zoom: 0.4;
+    }
+  }
+  .label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.2mm;
+    min-width: 0;
+    padding: 2.5mm 4mm;
+    overflow: hidden;
+    border: 0.2mm dashed #c8c8c8;
+    font-family: var(--f-body);
+    color: #000;
+  }
+  .label-blank {
+    border-color: #eee;
+  }
+  .label-barcode {
+    display: block;
+    width: 58mm;
+    height: 15mm;
+  }
+  .label-barcode-error {
+    font-size: 9pt;
+  }
+  .label-accession {
+    font-family: var(--f-mono);
+    font-size: 10.5pt;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+  }
+  .label-title {
+    max-width: 100%;
+    font-size: 8.5pt;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .label-spine {
+    gap: 0.5mm;
+    padding: 1.5mm;
+  }
+  .label-call {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: var(--f-mono);
+    font-size: 11pt;
+    line-height: 1.15;
+  }
+  .label-spine .label-accession {
+    font-size: 7pt;
+    font-weight: 600;
+  }
+}
+
+/* Printing labels: only the sheets, edge to edge on A4 (print at 100%, no margins). A named page keeps these page
+   rules to the labels. */
+@media print {
+  @page labels {
+    size: A4;
+    margin: 0;
+  }
+  body:has(.label-sheet) {
+    background: #fff !important;
+  }
+  body:has(.label-sheet) .side,
+  body:has(.label-sheet) .top,
+  body:has(.label-sheet) .bottombar,
+  body:has(.label-sheet) .subnav,
+  body:has(.label-sheet) .page-head,
+  body:has(.label-sheet) .no-print,
+  body:has(.label-sheet) .skip-link,
+  body:has(.label-sheet) .toast {
+    display: none !important;
+  }
+  body:has(.label-sheet) .shell,
+  body:has(.label-sheet) .main,
+  body:has(.label-sheet) .content {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+  .label-preview {
+    overflow: visible;
+  }
+  .label-sheet {
+    gap: 0;
+  }
+  .label-page {
+    page: labels;
+    zoom: 1;
+    border: 0;
+    box-shadow: none;
+    break-after: page;
+  }
+  .label-page:last-child {
+    break-after: auto;
+  }
+  .label,
+  .label-blank {
+    border-color: transparent;
+  }
+  .label-barcode rect {
+    print-color-adjust: exact;
+  }
+}

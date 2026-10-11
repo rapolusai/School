@@ -95,6 +95,12 @@ akshara:
       # that switched homework reminders on). Runs hourly from 17:00 to 20:00 India time; each homework is done once.
       enabled: ${HOMEWORK_REMINDERS_ENABLED:true}
       cron: ${HOMEWORK_REMINDERS_CRON:0 0 17-20 * * *}
+  library:
+    reminders:
+      # Parents of students with an overdue library book get a reminder each week it stays overdue (only in schools
+      # that switched library reminders on). Runs at 10:00 India time, Monday to Saturday.
+      enabled: ${LIBRARY_REMINDERS_ENABLED:true}
+      cron: ${LIBRARY_REMINDERS_CRON:0 0 10 * * MON-SAT}
   billing:
     # Akshara as the seller on the schools' GST invoices. The defaults are obvious placeholders (never a real GSTIN);
     # every environment sets the real values from SSM Parameter Store.
@@ -148,6 +154,9 @@ akshara:
     scheduler:
       enabled: false
   homework:
+    reminders:
+      enabled: false
+  library:
     reminders:
       enabled: false
   privacy:
