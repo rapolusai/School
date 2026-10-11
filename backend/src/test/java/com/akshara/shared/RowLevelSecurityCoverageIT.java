@@ -86,7 +86,12 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
             "exams.grading_scheme", "exams.grade_band", "exams.settings", "exams.class_scheme", "exams.term",
             "exams.exam", "exams.exam_class", "exams.paper", "exams.mark_sheet", "exams.mark", "exams.term_record",
             "exams.hpc_entry",
-            "chat.settings", "chat.staff_away", "chat.conversation", "chat.message", "chat.report", "chat.ptm_event", "chat.ptm_section", "chat.ptm_teacher", "chat.ptm_slot", "chat.ptm_booking");
+            "chat.settings", "chat.staff_away", "chat.conversation", "chat.message", "chat.report", "chat.ptm_event",
+            "chat.ptm_section", "chat.ptm_teacher", "chat.ptm_slot", "chat.ptm_booking",
+            "lessons.settings", "lessons.syllabus", "lessons.syllabus_unit", "lessons.syllabus_topic",
+            "lessons.lesson_plan", "lessons.material", "lessons.question", "lessons.question_option",
+            "lessons.online_test", "lessons.test_section", "lessons.test_question", "lessons.test_attempt",
+            "lessons.test_answer");
 
     @Autowired
     HomeworkService homework;
@@ -214,6 +219,7 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         payrollRecords(admin, tara);
         examRecords(admin, yearId, classId, section, subject, student);
         chatRecords(school, admin, lata, student, section);
+        lessonRecords(school, admin, classId, section, subject);
         School other = api.signup();
 
         try (Connection app = appConnection(); Connection owner = ownerConnection()) {
@@ -551,6 +557,40 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         api.put("/api/exams/terms/" + term + "/sections/" + section + "/records", admin.accessToken(), """
                 {"entries":[{"studentId":"%s","workEducation":"A","remark":"Reads well.","language":"PROFICIENT"}]}"""
                 .formatted(student)).andExpect(status().isOk());
+    }
+
+    /**
+     * Lessons: the settings, a syllabus with a unit and topic, a lesson plan, study material, a bank question with
+     * its options, and a published online test for the section (its question) that the student has started.
+     */
+    private void lessonRecords(School school, Session admin, String classId, String section, String subject)
+            throws Exception {
+        api.put("/api/lessons/settings", admin.accessToken(), """
+                {"testNotificationsEnabled":true}""").andExpect(status().isOk());
+        String topic = TestApi.read(api.post("/api/lessons/syllabi", admin.accessToken(), """
+                {"classId":"%s","subjectId":"%s","units":[{"title":"Letters","topics":[{"title":"Vowels",
+                 "plannedPeriods":2,"targetMonth":"2026-07"}]}]}""".formatted(classId, subject))
+                .andExpect(status().isCreated()), "$.units[0].topics[0].id");
+        api.post("/api/lessons/plans", admin.accessToken(), """
+                {"sectionId":"%s","subjectId":"%s","topicId":"%s","weekStart":"2026-07-06","periods":2}"""
+                .formatted(section, subject, topic)).andExpect(status().isCreated());
+        api.post("/api/lessons/material", admin.accessToken(), """
+                {"classId":"%s","subjectId":"%s","title":"Vowel chart","publishOn":"2026-07-01"}"""
+                .formatted(classId, subject)).andExpect(status().isCreated());
+        String question = TestApi.read(api.post("/api/lessons/questions", admin.accessToken(), """
+                {"classId":"%s","subjectId":"%s","type":"MCQ_SINGLE","difficulty":"EASY","text":"Which is a vowel?",
+                 "marks":1,"options":[{"text":"A","correct":true},{"text":"B","correct":false}]}"""
+                .formatted(classId, subject)).andExpect(status().isCreated()), "$.id");
+        Instant now = Instant.now();
+        String test = TestApi.read(api.post("/api/lessons/tests", admin.accessToken(), """
+                {"classId":"%s","subjectId":"%s","sectionIds":["%s"],"title":"Vowels quiz","opensAt":"%s",
+                 "closesAt":"%s","durationMinutes":10}""".formatted(classId, subject, section,
+                now.minus(Duration.ofHours(1)), now.plus(Duration.ofDays(1)))).andExpect(status().isCreated()), "$.id");
+        api.put("/api/lessons/tests/" + test + "/questions", admin.accessToken(), """
+                {"questions":[{"questionId":"%s"}]}""".formatted(question)).andExpect(status().isOk());
+        api.post("/api/lessons/tests/" + test + "/publish", admin.accessToken(), null).andExpect(status().isOk());
+        Session asha = api.login(school.code(), "asha@" + school.code() + ".akshara.test", TestApi.PASSWORD);
+        api.post("/api/me/tests/" + test + "/attempts", asha.accessToken(), null).andExpect(status().isOk());
     }
 
     /** The student's mother asks for a day of leave for her child. */

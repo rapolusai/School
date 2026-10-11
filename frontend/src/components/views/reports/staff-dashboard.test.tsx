@@ -291,6 +291,38 @@ describe("tilesFor", () => {
     expect(tilesFor(SUMMARY, "leadership", t, all(true)).map((tile) => tile.key)).not.toContain("marksToEnter");
   });
 
+  it("adds plans to submit, answers to mark and plans to approve when the summary has lessons", () => {
+    const lessons = { plansToSubmit: 2, answersToMark: 5, plansToApprove: 3 };
+    const teacher = tilesFor({ ...TEACHER_SUMMARY, lessons }, "teacher", t, (p) => p !== "lessons.approve" && p !== "leave.approve");
+    expect(teacher.map((tile) => tile.key)).toEqual([
+      "sectionsToMark",
+      "attendanceToday",
+      "homework",
+      "plansToSubmit",
+      "answersToMark",
+      "substitutions",
+    ]);
+    expect(teacher.find((tile) => tile.key === "plansToSubmit")).toMatchObject({
+      label: "Plans to submit",
+      value: "2",
+      href: "/app/lessons",
+      attention: true,
+    });
+    expect(teacher.find((tile) => tile.key === "answersToMark")).toMatchObject({
+      label: "Answers to mark",
+      value: "5",
+      href: "/app/lessons/tests",
+    });
+    const leaders = tilesFor({ ...SUMMARY, lessons }, "leadership", t, (p) => p !== "lessons.manage");
+    expect(leaders.map((tile) => tile.key).slice(-1)).toEqual(["plansToApprove"]);
+    expect(leaders.find((tile) => tile.key === "plansToApprove")).toMatchObject({
+      label: "Plans waiting for approval",
+      value: "3",
+      href: "/app/lessons/approvals",
+    });
+    expect(tilesFor(SUMMARY, "leadership", t, all(true)).map((tile) => tile.key)).not.toContain("plansToApprove");
+  });
+
   it("links a tile only to a screen the person may open", () => {
     const tiles = tilesFor(SUMMARY, "leadership", t, (p) => p !== "staff.read" && p !== "notices.send");
     const byKey = Object.fromEntries(tiles.map((tile) => [tile.key, tile]));

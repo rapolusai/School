@@ -3,6 +3,7 @@ import {
   Award,
   BarChart3,
   BookOpenCheck,
+  BookOpenText,
   Building2,
   CalendarDays,
   CalendarOff,
@@ -15,6 +16,7 @@ import {
   Landmark,
   LayoutDashboard,
   LibraryBig,
+  Lightbulb,
   Megaphone,
   LockKeyhole,
   MessageSquareText,
@@ -38,7 +40,7 @@ import type { Me } from "./types";
 
 /** Permission codes from docs/api/phase-0.md, phase-1.md, phase-1-attendance.md, phase-1-staff.md,
  * phase-1-communication.md, phase-1-timetable-homework.md, phase-1-billing.md, phase-2-library.md,
- * phase-2-payroll.md, phase-2-exams.md and phase-2-chat.md. */
+ * phase-2-payroll.md, phase-2-exams.md, phase-2-chat.md and phase-2-lessons.md. */
 export const PERMISSIONS = {
   dashboardView: "dashboard.view",
   usersRead: "users.read",
@@ -86,6 +88,9 @@ export const PERMISSIONS = {
   chatUse: "chat.use",
   chatOversee: "chat.oversee",
   ptmManage: "ptm.manage",
+  lessonsRead: "lessons.read",
+  lessonsManage: "lessons.manage",
+  lessonsApprove: "lessons.approve",
 } as const;
 
 export type NavGroup = "overview" | "academics" | "finance" | "staff" | "communication" | "administration" | "platform";
@@ -117,6 +122,7 @@ export const REPORT_PERMISSIONS: readonly string[] = [
   PERMISSIONS.payrollRead,
   PERMISSIONS.examsRead,
   PERMISSIONS.ptmManage,
+  PERMISSIONS.lessonsRead,
 ];
 
 /** Every navigation item, in display order. */
@@ -166,6 +172,17 @@ export const NAV_ITEMS: readonly NavItem[] = [
     permission: PERMISSIONS.examsManage,
     // Teachers enter marks with exams.manage; readers, setup and publishing roles open it too.
     anyOf: [PERMISSIONS.examsRead, PERMISSIONS.examsSetup, PERMISSIONS.examsPublish],
+    group: "academics",
+  },
+  {
+    key: "lessons",
+    href: "/app/lessons",
+    labelKey: "nav.lessons",
+    shortLabelKey: "nav.lessons.short",
+    icon: BookOpenText,
+    permission: PERMISSIONS.lessonsManage,
+    // Teachers plan lessons with lessons.manage; readers and approvers open it too (docs/api/phase-2-lessons.md).
+    anyOf: [PERMISSIONS.lessonsRead, PERMISSIONS.lessonsApprove],
     group: "academics",
   },
   {
@@ -496,6 +513,16 @@ export const FAMILY_NAV_ITEMS: readonly NavItem[] = [
     labelKey: "nav.results",
     shortLabelKey: "nav.results.short",
     icon: Award,
+    permission: PERMISSIONS.dashboardView,
+    group: "academics",
+  },
+  {
+    // Study material and online tests (docs/api/phase-2-lessons.md); after the first four, so the phone bar keeps them.
+    key: "family-study",
+    href: "/app/family/study",
+    labelKey: "nav.study",
+    shortLabelKey: "nav.study.short",
+    icon: Lightbulb,
     permission: PERMISSIONS.dashboardView,
     group: "academics",
   },

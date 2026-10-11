@@ -145,6 +145,7 @@ describe("navFor", () => {
       "family-leave",
       "family-library",
       "family-results",
+      "family-study",
       "myPrivacy",
       "family-chat",
       "family-ptm",
@@ -164,6 +165,7 @@ describe("navFor", () => {
       "family-leave",
       "family-library",
       "family-results",
+      "family-study",
       "myPrivacy",
       "family-chat",
       "family-ptm",
@@ -177,6 +179,7 @@ describe("navFor", () => {
       "family-leave",
       "family-library",
       "family-results",
+      "family-study",
     ]);
     expect(navFor(parent)[0]).toMatchObject({ href: "/app/dashboard", labelKey: "portal.nav.home" });
     // The phone bottom bar shows the first four: Home, Attendance, Homework and Fees (Notices for a student).
@@ -351,6 +354,24 @@ describe("navFor", () => {
     expect(keys(student)).not.toContain("family-ptm");
     expect(navItemForPath("/app/family/chat")?.key).toBe("family-chat");
     expect(navItemForPath("/app/family/ptm")?.key).toBe("family-ptm");
+  });
+
+  it("opens lessons with any lessons permission, adds coverage to the reports hub and study to the family menu", () => {
+    // Seeded in docs/api/phase-2-lessons.md: teachers hold lessons.read and lessons.manage, principals lessons.read
+    // and lessons.approve.
+    const teacher = user(["TEACHER"], [...TEACHER.permissions, "lessons.read", "lessons.manage"]);
+    expect(keys(teacher)).toEqual(["dashboard", "attendance", "exams", "lessons", "students", "setup", "notices", "reports"]);
+    const principal = user(["PRINCIPAL"], [...PRINCIPAL.permissions, "lessons.read", "lessons.approve"]);
+    expect(keys(principal).slice(0, 5)).toEqual(["dashboard", "attendance", "exams", "lessons", "students"]);
+    expect(keys(user(["CUSTOM"], ["dashboard.view", "lessons.approve"]))).toEqual(["dashboard", "lessons"]);
+    expect(keys(user(["CUSTOM"], ["dashboard.view", "lessons.read"]))).toEqual(["dashboard", "lessons", "reports"]);
+    expect(navFor(teacher).find((item) => item.key === "lessons")).toMatchObject({ href: "/app/lessons", group: "academics" });
+    expect(navItemForPath("/app/lessons/tests/t1/results")?.key).toBe("lessons");
+    expect(navItemForPath("/app/family/study/tests/t1")?.key).toBe("family-study");
+    expect(navFor(PARENT).find((item) => item.key === "family-study")).toMatchObject({
+      href: "/app/family/study",
+      labelKey: "nav.study",
+    });
   });
 
   it("gives a platform admin only the platform items: Schools, Billing and Platform health", () => {

@@ -61,6 +61,15 @@ describe("reportGroupsFor", () => {
     ]);
     expect(keys(["dashboard.view", "exams.manage"])).toEqual([]);
   });
+
+  it("adds syllabus coverage to academics for lessons.read", () => {
+    expect(keys([...PRINCIPAL, "exams.read", "lessons.read"]).find(([group]) => group === "academics")).toEqual([
+      "academics",
+      ["homework", "examAnalysis", "syllabusCoverage", "clashes"],
+    ]);
+    expect(keys(["dashboard.view", "lessons.read"])).toEqual([["academics", ["syllabusCoverage"]]]);
+    expect(keys(["dashboard.view", "lessons.manage"])).toEqual([]);
+  });
 });
 
 describe("ReportsHubView", () => {

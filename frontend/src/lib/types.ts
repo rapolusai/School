@@ -122,3 +122,4 @@ export * from "./types/library";
 export * from "./types/payroll";
 export * from "./types/exams";
 export * from "./types/chat";
+export * from "./types/lessons";

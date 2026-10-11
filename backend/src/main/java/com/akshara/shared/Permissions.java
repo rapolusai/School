@@ -91,6 +91,15 @@ public final class Permissions {
     public static final String CHAT_OVERSEE = "chat.oversee";
     /** Set up parent-teacher meetings, book for families and see every teacher's schedule and the attendance summary. */
     public static final String PTM_MANAGE = "ptm.manage";
+    /** Viewing lesson plans, the syllabus and its coverage, and study material (staff). */
+    public static final String LESSONS_READ = "lessons.read";
+    /**
+     * A teacher's own lesson plans, study material, question bank and online tests, for the sections and subjects
+     * they teach (timetable).
+     */
+    public static final String LESSONS_MANAGE = "lessons.manage";
+    /** Approving or returning lesson plans, and every section and subject (School Admin, Principal, coordinators). */
+    public static final String LESSONS_APPROVE = "lessons.approve";
 
     public static final String PLATFORM_ADMIN = "platform.admin";
 
@@ -103,7 +112,7 @@ public final class Permissions {
             HOMEWORK_MANAGE, BILLING_READ, PRIVACY_MANAGE,
             LIBRARY_READ, LIBRARY_MANAGE, PAYROLL_READ, PAYROLL_MANAGE, PAYROLL_APPROVE, EXAMS_READ, EXAMS_SETUP,
             EXAMS_PUBLISH,
-            CHAT_USE, CHAT_OVERSEE, PTM_MANAGE);
+            CHAT_USE, CHAT_OVERSEE, PTM_MANAGE, LESSONS_READ, LESSONS_MANAGE, LESSONS_APPROVE);
 
     private Permissions() {
     }

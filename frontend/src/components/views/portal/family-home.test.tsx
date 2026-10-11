@@ -16,6 +16,7 @@ import type {
 } from "@/lib/types";
 import { familyResults } from "@/test/exams-fixtures";
 import { ARJUN_FEES } from "@/test/fees-fixtures";
+import { study } from "@/test/lessons-fixtures";
 import { renderAs } from "@/test/render";
 import { DashboardView } from "../dashboard-view";
 import { FamilyHome } from "./family-home";
@@ -38,6 +39,8 @@ const m = vi.hoisted(() => ({
   markRead: vi.fn(),
   childResults: vi.fn(),
   myResults: vi.fn(),
+  childStudy: vi.fn(),
+  myStudy: vi.fn(),
 }));
 
 vi.mock("@/lib/api", async (importOriginal) => {
@@ -77,6 +80,10 @@ vi.mock("@/lib/communication-api", async (importOriginal) => {
 vi.mock("@/lib/exams-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/exams-api")>();
   return { ...actual, examsApi: { ...actual.examsApi, childResults: m.childResults, myResults: m.myResults } };
+});
+vi.mock("@/lib/lessons-api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/lessons-api")>();
+  return { ...actual, lessonsApi: { ...actual.lessonsApi, childStudy: m.childStudy, myStudy: m.myStudy } };
 });
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
@@ -279,6 +286,10 @@ beforeEach(() => {
     Promise.resolve(id === "st1" ? familyResults("st1") : familyResults("st2", { results: [], upcoming: [] })),
   );
   m.myResults.mockResolvedValue(familyResults("st1"));
+  m.childStudy.mockImplementation((id: string) =>
+    Promise.resolve(id === "st1" ? study("st1") : study("st2", { material: [], tests: [] })),
+  );
+  m.myStudy.mockResolvedValue(study("st1"));
 });
 
 afterEach(() => {
@@ -331,6 +342,15 @@ describe("FamilyHome for a parent", () => {
       "href",
       "/app/family/results?child=st1",
     );
+    const studyCard = screen.getByTestId("family-study-card");
+    expect(await within(studyCard).findByText("1 online test open")).toBeInTheDocument();
+    expect(studyCard).toHaveTextContent("Place value test: Score 3.5 / 4 · 87.5%");
+    expect(studyCard).toHaveTextContent("New: Fractions notes (Mathematics)");
+    expect(within(studyCard).getByRole("link", { name: /Study material and tests/ })).toHaveAttribute(
+      "href",
+      "/app/family/study?child=st1",
+    );
+    expect(m.childStudy).toHaveBeenCalledWith("st1");
   });
 
   it("switches child and remembers the choice on this device", async () => {
@@ -396,6 +416,12 @@ describe("FamilyHome for a student", () => {
     expect(await within(results).findByText("Periodic Test 1")).toBeInTheDocument();
     expect(within(results).getByRole("link", { name: /Results and report card/ })).toHaveAttribute("href", "/app/family/results");
     expect(m.childResults).not.toHaveBeenCalled();
+    expect(within(screen.getByTestId("family-study-card")).getByRole("link", { name: /Study material and tests/ })).toHaveAttribute(
+      "href",
+      "/app/family/study",
+    );
+    expect(m.myStudy).toHaveBeenCalled();
+    expect(m.childStudy).not.toHaveBeenCalled();
     expect(m.childFees).not.toHaveBeenCalled();
     expect(m.myChildren).not.toHaveBeenCalled();
   });
