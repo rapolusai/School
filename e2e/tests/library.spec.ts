@@ -119,8 +119,9 @@ test("the librarian adds a title with two copies, lends one by its accession num
   await expect(page).toHaveURL(/\/app\/dashboard$/);
   await mainNav(page).getByRole("link", { name: "Library", exact: true }).click();
   await expect(page).toHaveURL(/\/app\/library$/);
-  await expect(page.getByTestId("catalogue-empty")).toBeVisible();
-  await page.getByRole("button", { name: "Add title" }).click();
+  const empty = page.getByTestId("catalogue-empty");
+  await expect(empty).toBeVisible();
+  await empty.getByRole("button", { name: "Add title" }).click();
   const add = page.getByRole("dialog", { name: "Add title" });
   await add.getByLabel("Title", { exact: true }).fill("The Panchatantra");
   await add.getByLabel("Authors", { exact: true }).fill("Vishnu Sharma");
