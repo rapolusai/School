@@ -121,3 +121,4 @@ export * from "./types/reports";
 export * from "./types/library";
 export * from "./types/payroll";
 export * from "./types/exams";
+export * from "./types/transport";

@@ -145,6 +145,7 @@ describe("navFor", () => {
       "family-leave",
       "family-library",
       "family-results",
+      "family-bus",
       "myPrivacy",
     ]);
   });
@@ -162,6 +163,7 @@ describe("navFor", () => {
       "family-leave",
       "family-library",
       "family-results",
+      "family-bus",
       "myPrivacy",
     ]);
     expect(keys(student)).toEqual([
@@ -173,6 +175,7 @@ describe("navFor", () => {
       "family-leave",
       "family-library",
       "family-results",
+      "family-bus",
     ]);
     expect(navFor(parent)[0]).toMatchObject({ href: "/app/dashboard", labelKey: "portal.nav.home" });
     // The phone bottom bar shows the first four: Home, Attendance, Homework and Fees (Notices for a student).
@@ -291,6 +294,65 @@ describe("navFor", () => {
     expect(navFor(reader).find((item) => item.key === "exams")).toMatchObject({ href: "/app/exams", group: "academics" });
     expect(navItemForPath("/app/exams/marks/p1/s1")?.key).toBe("exams");
     expect(navItemForPath("/app/family/results")?.key).toBe("family-results");
+  });
+
+  it("gives transport under the School group, bus trips to crew and the Bus page to families", () => {
+    // Seeded in docs/api/phase-2-transport.md: Transport manager holds read, manage and trip; Bus attendant only trip.
+    const manager = user(["TRANSPORT_MANAGER"], [
+      "dashboard.view",
+      "academics.read",
+      "leave.request",
+      "notices.read",
+      "timetable.read",
+      "transport.read",
+      "transport.manage",
+      "transport.trip",
+    ]);
+    expect(keys(manager)).toEqual([
+      "dashboard",
+      "timetable",
+      "transport",
+      "setup",
+      "busTrips",
+      "leave",
+      "myPayslips",
+      "board",
+      "calendar",
+      "reports",
+    ]);
+    expect(navFor(manager).find((item) => item.key === "transport")).toMatchObject({
+      href: "/app/transport",
+      group: "academics",
+      labelKey: "nav.transport",
+    });
+    // An attendant's phone keeps Bus trips in the bottom bar (the first four items).
+    const attendant = user(["BUS_ATTENDANT"], ["dashboard.view", "leave.request", "notices.read", "transport.trip"]);
+    expect(keys(attendant)).toEqual(["dashboard", "busTrips", "leave", "myPayslips", "board", "calendar"]);
+    expect(navFor(attendant).slice(0, 4).map((item) => item.href)).toContain("/app/transport/trip");
+    // The principal reads transport, which also opens the reports hub.
+    expect(keys(user(["PRINCIPAL"], [...PRINCIPAL.permissions, "transport.read"]))).toEqual([
+      "dashboard",
+      "attendance",
+      "exams",
+      "students",
+      "transport",
+      "setup",
+      "fees",
+      "users",
+      "roles",
+      "audit",
+      "messages",
+      "notices",
+      "reports",
+    ]);
+    expect(keys(user(["CUSTOM"], ["dashboard.view", "transport.read"]))).toEqual(["dashboard", "transport", "reports"]);
+    expect(navItemForPath("/app/transport/routes/r1")?.key).toBe("transport");
+    expect(navItemForPath("/app/transport/trip")?.key).toBe("busTrips");
+    expect(navItemForPath("/app/family/bus")?.key).toBe("family-bus");
+    expect(navFor(PARENT).find((item) => item.key === "family-bus")).toMatchObject({
+      href: "/app/family/bus",
+      labelKey: "nav.bus",
+    });
   });
 
   it("gives a platform admin only the platform items: Schools, Billing and Platform health", () => {

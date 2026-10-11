@@ -4,6 +4,7 @@ import {
   BarChart3,
   BookOpenCheck,
   Building2,
+  Bus,
   CalendarDays,
   CalendarOff,
   ClipboardList,
@@ -17,6 +18,7 @@ import {
   Megaphone,
   LockKeyhole,
   MessageSquareText,
+  Navigation,
   Newspaper,
   NotebookPen,
   ReceiptIndianRupee,
@@ -36,7 +38,7 @@ import type { Me } from "./types";
 
 /** Permission codes from docs/api/phase-0.md, phase-1.md, phase-1-attendance.md, phase-1-staff.md,
  * phase-1-communication.md, phase-1-timetable-homework.md, phase-1-billing.md, phase-2-library.md,
- * phase-2-payroll.md and phase-2-exams.md. */
+ * phase-2-payroll.md, phase-2-exams.md and phase-2-transport.md. */
 export const PERMISSIONS = {
   dashboardView: "dashboard.view",
   usersRead: "users.read",
@@ -81,6 +83,9 @@ export const PERMISSIONS = {
   examsManage: "exams.manage",
   examsSetup: "exams.setup",
   examsPublish: "exams.publish",
+  transportRead: "transport.read",
+  transportManage: "transport.manage",
+  transportTrip: "transport.trip",
 } as const;
 
 export type NavGroup = "overview" | "academics" | "finance" | "staff" | "communication" | "administration" | "platform";
@@ -111,6 +116,7 @@ export const REPORT_PERMISSIONS: readonly string[] = [
   PERMISSIONS.libraryManage,
   PERMISSIONS.payrollRead,
   PERMISSIONS.examsRead,
+  PERMISSIONS.transportRead,
 ];
 
 /** Every navigation item, in display order. */
@@ -190,6 +196,15 @@ export const NAV_ITEMS: readonly NavItem[] = [
     group: "academics",
   },
   {
+    key: "transport",
+    href: "/app/transport",
+    labelKey: "nav.transport",
+    shortLabelKey: "nav.transport.short",
+    icon: Bus,
+    permission: PERMISSIONS.transportRead,
+    group: "academics",
+  },
+  {
     key: "setup",
     href: "/app/setup",
     labelKey: "nav.setup",
@@ -241,6 +256,17 @@ export const NAV_ITEMS: readonly NavItem[] = [
     shortLabelKey: "nav.staffAttendance.short",
     icon: UserCheck,
     permission: PERMISSIONS.staffRead,
+    group: "staff",
+  },
+  {
+    // Drivers and attendants (BUS_ATTENDANT) run today's trips of their routes from a phone, so it comes before
+    // Leave and stays in their bottom bar (docs/api/phase-2-transport.md).
+    key: "busTrips",
+    href: "/app/transport/trip",
+    labelKey: "nav.busTrips",
+    shortLabelKey: "nav.busTrips.short",
+    icon: Navigation,
+    permission: PERMISSIONS.transportTrip,
     group: "staff",
   },
   {
@@ -468,6 +494,15 @@ export const FAMILY_NAV_ITEMS: readonly NavItem[] = [
     labelKey: "nav.results",
     shortLabelKey: "nav.results.short",
     icon: Award,
+    permission: PERMISSIONS.dashboardView,
+    group: "academics",
+  },
+  {
+    key: "family-bus",
+    href: "/app/family/bus",
+    labelKey: "nav.bus",
+    shortLabelKey: "nav.bus.short",
+    icon: Bus,
     permission: PERMISSIONS.dashboardView,
     group: "academics",
   },
