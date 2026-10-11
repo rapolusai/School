@@ -46,9 +46,10 @@ Login failures return `401` with a generic message (no hint whether the school, 
 Repeated failures return `429`.
 
 Refresh rotates the cookie. A refresh with a cookie that was already replaced in the last 30 seconds (two
-tabs refreshing together) returns `401` and leaves the newer cookie alone; an older replaced cookie is
-treated as stolen: every session in that chain ends and the event is audited. Refresh and logout reject
-requests whose `Origin` header is not the web app.
+tabs refreshing together, or a response lost because the page was left or reloaded mid-refresh) succeeds
+with another new cookie in the same chain and leaves the earlier new cookie valid too, unless the chain has
+been signed out; an older replaced cookie is treated as stolen: every session in that chain ends and the
+event is audited. Refresh and logout reject requests whose `Origin` header is not the web app.
 
 Audit actions written in Phase 0: `school.created`, `user.created`, `auth.login`, `auth.login_failed`,
 `auth.logout`, `auth.refresh_reused`.

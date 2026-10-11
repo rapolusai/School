@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 
 import jakarta.servlet.http.Cookie;
 
@@ -95,17 +96,42 @@ class AuthFlowIT extends IntegrationTest {
     }
 
     @Test
-    void aSecondRefreshWithTheSameCookieMomentsLaterIsRefusedWithoutEndingTheSession() throws Exception {
+    void aSecondRefreshWithTheSameCookieMomentsLaterGetsItsOwnCookieWithoutEndingTheSession() throws Exception {
         School school = api.signup();
         Session first = api.login(school);
         Session second = TestApi.session(api.refresh(first.refreshToken())
                 .andExpect(status().isOk()).andReturn().getResponse());
 
-        // Two tabs refreshing at once: the loser gets 401 but must not wipe the winner's new cookie.
-        api.refresh(first.refreshToken())
-                .andExpect(status().isUnauthorized())
-                .andExpect(header().doesNotExist("Set-Cookie"));
+        // Two tabs refreshing at once: the loser is signed in too and must not invalidate the winner's new cookie.
+        Session loser = TestApi.session(api.refresh(first.refreshToken())
+                .andExpect(status().isOk()).andReturn().getResponse());
+        assertThat(loser.refreshToken()).isNotBlank().isNotEqualTo(second.refreshToken());
         api.refresh(second.refreshToken()).andExpect(status().isOk());
+    }
+
+    @Test
+    void aRefreshWhoseResponseWasLostCanBeRepeatedAndBothNewCookiesKeepWorking() throws Exception {
+        School school = api.signup();
+        Session first = api.login(school);
+        // The page was left mid-refresh: the cookie was rotated, but the response carrying the new one was lost.
+        Session lost = refreshed(first.refreshToken());
+
+        MockHttpServletResponse response = api.refresh(first.refreshToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.user.email").value(school.adminEmail()))
+                .andReturn().getResponse();
+        Session retried = TestApi.session(response);
+        assertThat(response.getCookie("refresh_token").getMaxAge()).isPositive();
+        assertThat(retried.refreshToken()).isNotBlank()
+                .isNotEqualTo(first.refreshToken())
+                .isNotEqualTo(lost.refreshToken());
+        assertThat(familyOf(retried.refreshToken())).isEqualTo(familyOf(lost.refreshToken()))
+                .isEqualTo(familyOf(first.refreshToken()));
+        api.get("/api/me", retried.accessToken()).andExpect(status().isOk());
+
+        // Responses can arrive out of order, so the browser may end up with either cookie: both keep working.
+        api.refresh(lost.refreshToken()).andExpect(status().isOk());
+        api.refresh(retried.refreshToken()).andExpect(status().isOk());
     }
 
     @Test
@@ -132,6 +158,92 @@ class AuthFlowIT extends IntegrationTest {
         api.get("/api/audit-events", admin.accessToken())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[*].action", hasItem("auth.refresh_reused")));
+    }
+
+    @Test
+    void reusingAnOldRefreshTokenAfterTheGracePeriodAlsoEndsTheCookiesIssuedOnARetry() throws Exception {
+        School school = api.signup();
+        Session first = api.login(school);
+        Session lost = refreshed(first.refreshToken());
+        Session retried = refreshed(first.refreshToken());
+
+        // Pretend the first token was rotated long ago, then replay it as a thief would.
+        try (Connection owner = ownerConnection();
+                PreparedStatement update = owner.prepareStatement("""
+                        update identity.refresh_token set revoked_at = now() - interval '1 hour'
+                        where tenant_id = ? and replaced_by is not null""")) {
+            update.setObject(1, school.tenantId());
+            assertThat(update.executeUpdate()).isEqualTo(1);
+        }
+        api.refresh(first.refreshToken())
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("Max-Age=0")));
+        api.refresh(lost.refreshToken()).andExpect(status().isUnauthorized());
+        api.refresh(retried.refreshToken()).andExpect(status().isUnauthorized());
+
+        Session admin = api.login(school);
+        api.get("/api/audit-events", admin.accessToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].action", hasItem("auth.refresh_reused")));
+    }
+
+    @Test
+    void signingOutEndsEveryCookieInTheChainIncludingOnesIssuedOnARetry() throws Exception {
+        School school = api.signup();
+        Session first = api.login(school);
+        Session lost = refreshed(first.refreshToken());
+        Session retried = refreshed(first.refreshToken());
+
+        api.logout(retried.refreshToken()).andExpect(status().isNoContent());
+        // The first cookie is still inside its grace period, but it cannot bring a signed-out chain back.
+        api.refresh(first.refreshToken())
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().doesNotExist("Set-Cookie"));
+        api.refresh(lost.refreshToken()).andExpect(status().isUnauthorized());
+        api.refresh(retried.refreshToken()).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void aRepeatedRefreshWithinTheGracePeriodStillChecksTheUserTheSchoolAndTheExpiry() throws Exception {
+        School disabled = api.signup();
+        School suspended = api.signup();
+        School expired = api.signup();
+        Session disabledFirst = api.login(disabled);
+        Session disabledNext = refreshed(disabledFirst.refreshToken());
+        Session suspendedFirst = api.login(suspended);
+        Session suspendedNext = refreshed(suspendedFirst.refreshToken());
+        Session expiredFirst = api.login(expired);
+        Session expiredNext = refreshed(expiredFirst.refreshToken());
+        try (Connection owner = ownerConnection()) {
+            try (PreparedStatement s = owner.prepareStatement(
+                    "update identity.user_account set status = 'DISABLED' where tenant_id = ?")) {
+                s.setObject(1, disabled.tenantId());
+                s.executeUpdate();
+            }
+            try (PreparedStatement s = owner.prepareStatement("update platform.tenant set status = 'SUSPENDED' where id = ?")) {
+                s.setObject(1, suspended.tenantId());
+                s.executeUpdate();
+            }
+            try (PreparedStatement s = owner.prepareStatement(
+                    "update identity.refresh_token set expires_at = now() - interval '1 second' where token_hash = ?")) {
+                s.setString(1, AuthService.sha256(expiredFirst.refreshToken()));
+                assertThat(s.executeUpdate()).isEqualTo(1);
+            }
+        }
+
+        api.refresh(disabledFirst.refreshToken())
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("Max-Age=0")));
+        api.refresh(disabledNext.refreshToken()).andExpect(status().isUnauthorized());
+        api.refresh(suspendedFirst.refreshToken())
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("Max-Age=0")));
+        api.refresh(suspendedNext.refreshToken()).andExpect(status().isUnauthorized());
+        api.refresh(expiredFirst.refreshToken())
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("Max-Age=0")));
+        // Only the expired cookie is refused; the newer one in its chain is still good.
+        api.refresh(expiredNext.refreshToken()).andExpect(status().isOk());
     }
 
     @Test
@@ -222,6 +334,22 @@ class AuthFlowIT extends IntegrationTest {
                 .andExpect(jsonPath("$[*].code", hasItem("TEACHER")))
                 .andExpect(jsonPath("$[*].code", hasItem("LIBRARIAN")))
                 .andExpect(jsonPath("$[*].code", not(hasItem("SUPER_ADMIN"))));
+    }
+
+    private Session refreshed(String refreshToken) throws Exception {
+        return TestApi.session(api.refresh(refreshToken).andExpect(status().isOk()).andReturn().getResponse());
+    }
+
+    private static Object familyOf(String refreshToken) throws Exception {
+        try (Connection owner = ownerConnection();
+                PreparedStatement select = owner.prepareStatement(
+                        "select family_id from identity.refresh_token where token_hash = ?")) {
+            select.setString(1, AuthService.sha256(refreshToken));
+            try (ResultSet rows = select.executeQuery()) {
+                assertThat(rows.next()).isTrue();
+                return rows.getObject(1);
+            }
+        }
     }
 
     private static String body(String code, String email, String password) {

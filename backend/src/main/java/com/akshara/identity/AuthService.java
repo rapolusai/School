@@ -169,16 +169,23 @@ public class AuthService {
             if (token == null) {
                 return new RefreshRejected(true);
             }
-            if (token.isRevoked()) {
-                if (token.wasJustRotated(now, ROTATION_GRACE)) {
+            boolean retry = token.isRevoked();
+            if (retry) {
+                if (!token.wasJustRotated(now, ROTATION_GRACE)) {
+                    // An old token came back: someone may have copied it. End every session in this chain.
+                    UUID userId = token.getUserId();
+                    tokens.revokeFamily(token.getFamilyId(), now);
+                    users.findById(userId).ifPresent(u -> audit.record(new Actor(u.getId(), u.getName()),
+                            "auth.refresh_reused", "user", u.getId(), Map.of()));
+                    return new RefreshRejected(true);
+                }
+                // Replaced moments ago: another tab won the race, or the response carrying the newer cookie never
+                // reached the browser (the page was left or reloaded mid-refresh). Issue another token in the same
+                // chain and keep the newer one valid too, since the browser may end up holding either cookie. Not
+                // once the chain has ended (sign-out or reuse), which revokes every live token in it.
+                if (!tokens.existsByFamilyIdAndRevokedAtIsNull(token.getFamilyId())) {
                     return new RefreshRejected(false);
                 }
-                // An old token came back: someone may have copied it. End every session in this chain.
-                UUID userId = token.getUserId();
-                tokens.revokeFamily(token.getFamilyId(), now);
-                users.findById(userId).ifPresent(u -> audit.record(new Actor(u.getId(), u.getName()),
-                        "auth.refresh_reused", "user", u.getId(), Map.of()));
-                return new RefreshRejected(true);
             }
             if (token.isExpired(now)) {
                 return new RefreshRejected(true);
@@ -189,7 +196,10 @@ public class AuthService {
                 return new RefreshRejected(true);
             }
             IssuedToken next = issueRefreshToken(user.getId(), token.getFamilyId(), tenant.id());
-            token.rotateTo(next.entity());
+            if (!retry) {
+                // A retried token keeps its first rotation time, so its grace period never extends.
+                token.rotateTo(next.entity());
+            }
             return session(user, tenant, next.raw());
         }));
         if (outcome instanceof RefreshRejected rejected) {

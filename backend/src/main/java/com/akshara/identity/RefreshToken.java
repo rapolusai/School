@@ -68,7 +68,10 @@ public class RefreshToken extends AssignedIdEntity {
         return revokedAt != null;
     }
 
-    /** True when this token was swapped for a newer one moments ago, as happens when two tabs refresh at once. */
+    /**
+     * True when this token was swapped for a newer one moments ago, as happens when two tabs refresh at once or when
+     * the response carrying the newer one is lost.
+     */
     boolean wasJustRotated(Instant now, Duration grace) {
         return replacedBy != null && revokedAt != null && revokedAt.plus(grace).isAfter(now);
     }
