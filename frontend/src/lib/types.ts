@@ -119,3 +119,4 @@ export * from "./types/privacy";
 export * from "./types/portal";
 export * from "./types/reports";
 export * from "./types/library";
+export * from "./types/payroll";

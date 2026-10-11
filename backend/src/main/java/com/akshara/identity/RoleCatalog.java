@@ -28,7 +28,7 @@ public final class RoleCatalog {
                     TIMETABLE_READ, HOMEWORK_MANAGE, LIBRARY_READ)),
             new RoleTemplate("ACCOUNTANT", "Accountant", List.of(DASHBOARD_VIEW, STUDENTS_READ, FEES_READ,
                     FEES_COLLECT, ACADEMICS_READ, FEES_MANAGE, LEAVE_REQUEST, NOTICES_READ, TIMETABLE_READ,
-                    LIBRARY_READ)),
+                    LIBRARY_READ, PAYROLL_READ, PAYROLL_MANAGE)),
             // Front office handles admissions paperwork, so it may add and edit student records.
             new RoleTemplate("FRONT_OFFICE", "Front office", List.of(DASHBOARD_VIEW, STUDENTS_READ, STUDENTS_MANAGE,
                     ACADEMICS_READ, ADMISSIONS_READ, ADMISSIONS_MANAGE, LEAVE_REQUEST, NOTICES_READ, TIMETABLE_READ,

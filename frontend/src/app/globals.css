@@ -3944,3 +3944,186 @@
     print-color-adjust: exact;
   }
 }
+
+/* ------------------------------------------------- phase 2: payroll */
+@layer components {
+  .payroll-amounts {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  @media (max-width: 1100px) {
+    .payroll-amounts {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 640px) {
+    .payroll-amounts {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  .payroll-structure-totals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .payroll-statutory {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 28px;
+    margin: 0;
+    font-size: 13.5px;
+  }
+  .payroll-statutory dt {
+    font-size: 12.5px;
+    color: var(--ink-3);
+  }
+  .payroll-statutory dd {
+    margin: 0;
+    font-weight: 600;
+  }
+  .payroll-table td,
+  .payroll-table th {
+    white-space: nowrap;
+  }
+  .payroll-table td:first-child {
+    white-space: normal;
+    min-width: 160px;
+  }
+  .pt-slab-row {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
+    gap: 8px;
+    align-items: start;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  @media (max-width: 760px) {
+    .pt-slab-row {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  /* A payslip: the receipt layout with earnings and deductions side by side. */
+  .payslip .receipt-meta {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  @media (max-width: 820px) {
+    .payslip .receipt-meta {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  /* On a phone the title wraps under the school's name: keep it on the left with the rest. */
+  @media (max-width: 640px) {
+    .payslip .receipt-title {
+      align-items: flex-start;
+    }
+  }
+  .payslip-cols {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    align-items: start;
+  }
+  @media (max-width: 640px) {
+    .payslip-cols {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  .payslip-lines th,
+  .payslip-lines td {
+    padding: 7px 8px;
+  }
+  .payslip-lines tfoot th,
+  .payslip-lines tfoot td {
+    border-top: 2px solid var(--ink);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+    text-transform: none;
+    letter-spacing: 0;
+    text-align: left;
+  }
+  .payslip-lines tfoot td.r {
+    text-align: right;
+  }
+  .payslip-net {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .payslip-net b {
+    font-family: var(--f-display);
+    font-size: 24px;
+    font-weight: 800;
+  }
+  .payslip-employer {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 420px;
+  }
+  .payslip-batch {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .bank-advice-sign {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    margin-top: 36px;
+    font-size: 13.5px;
+  }
+  .bank-advice-sign span:first-child {
+    padding-top: 6px;
+    min-width: 200px;
+    text-align: center;
+    border-top: 1px solid var(--ink);
+  }
+}
+
+/* Printing payslips: A4, one payslip per page when they are printed together. */
+@media print {
+  @page a4payslip {
+    size: A4;
+    margin: 12mm;
+  }
+  .payslip,
+  .bank-advice {
+    page: a4payslip;
+    max-width: none;
+    gap: 10px;
+    font-size: 10pt;
+  }
+  .payslip .receipt-meta {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .payslip-cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .payslip-net {
+    border: 1.5px solid #000;
+  }
+  .payslip-batch {
+    display: block;
+  }
+  .payslip-batch > .card {
+    break-after: page;
+  }
+  .payslip-batch > .card:last-child {
+    break-after: auto;
+  }
+  .payslip tr,
+  .bank-advice tr {
+    break-inside: avoid;
+  }
+  .bank-advice .table-wrap {
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
