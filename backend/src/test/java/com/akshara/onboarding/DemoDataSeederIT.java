@@ -8,6 +8,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -87,11 +88,14 @@ class DemoDataSeederIT extends IntegrationTest {
     @Autowired
     DemoPortalData portalData;
 
+    @Autowired
+    DemoLibraryData libraryData;
+
     @Test
     void seedsADemoSchoolWithClassesAndStudentsOnce() throws Exception {
         DemoDataSeeder seeder = new DemoDataSeeder(provisioning, tenants, users, passwordEncoder, DEMO_PASSWORD,
                 academics, students, transactionManager, admissions, attendanceData, demoFees, staffData,
-                communicationData, timetableHomeworkData, demoBilling, demoPrivacy, portalData);
+                communicationData, timetableHomeworkData, demoBilling, demoPrivacy, portalData, libraryData);
         seeder.run(null);
         // A second start leaves the existing demo school alone.
         seeder.run(null);
@@ -234,10 +238,10 @@ class DemoDataSeederIT extends IntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         assertThat(JsonPath.<Integer>read(overview, "$.overdueStudents")).isBetween(5, 15);
 
-        // Staff records: every demo staff member has a profile, plus the extra teachers and the timetable's subject
-        // teachers.
+        // Staff records: every demo staff member has a profile, plus the extra teachers, the timetable's subject
+        // teachers and the librarian.
         int staffCount = DemoDataSeeder.PEOPLE.size() - 2 + 1 + DemoStaffData.EXTRA_TEACHERS
-                + DemoTimetableHomeworkData.TEACHERS.size();
+                + DemoTimetableHomeworkData.TEACHERS.size() + 1;
         api.get("/api/staff?size=100", admin.accessToken())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(staffCount))
@@ -356,5 +360,34 @@ class DemoDataSeederIT extends IntegrationTest {
                     .andExpect(jsonPath("$.pending.length()").value(1))
                     .andExpect(jsonPath("$.recent[0].status").value("APPROVED"));
         }
+        // Library: sixty titles, Arjun's overdue book (Sneha Iyengar waits for it), two classmates' and the demo
+        // teacher's books on loan, and Kunal Mehta's late return with its fine paid.
+        Session librarian = api.login(code, DemoLibraryData.LIBRARIAN_EMAIL, DEMO_PASSWORD);
+        api.get("/api/library/titles?size=100", librarian.accessToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(DemoLibraryData.TITLE_COUNT))
+                .andExpect(jsonPath("$.stats.titles").value(DemoLibraryData.TITLE_COUNT))
+                .andExpect(jsonPath("$.stats.issued").value(4))
+                .andExpect(jsonPath("$.stats.overdue").value(1));
+        api.get("/api/library/reports/overdue", librarian.accessToken())
+                .andExpect(jsonPath("$.rows.length()").value(1))
+                .andExpect(jsonPath("$.rows[0].member.name").value("Arjun Sharma"))
+                .andExpect(jsonPath("$.rows[0].member.detail").value("Class 5 A"))
+                .andExpect(jsonPath("$.rows[0].title").value(DemoLibraryData.OVERDUE_TITLE));
+        api.get("/api/library/reservations", librarian.accessToken())
+                .andExpect(jsonPath("$[*].member.name", contains("Sneha Iyengar")))
+                .andExpect(jsonPath("$[0].status").value("WAITING"));
+        api.get("/api/library/fines?status=PAID", librarian.accessToken())
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.items[0].member.name").value("Kunal Mehta"))
+                .andExpect(jsonPath("$.items[0].receiptNo", startsWith("LIBF/")));
+        api.get("/api/me/library", parent.accessToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.members[*].name", contains("Arjun Sharma", "Diya Sharma")))
+                .andExpect(jsonPath("$.members[0].loans[0].title").value(DemoLibraryData.OVERDUE_TITLE))
+                .andExpect(jsonPath("$.members[0].loans[0].overdue").value(true))
+                .andExpect(jsonPath("$.members[1].loans.length()").value(0));
+        api.get("/api/library/titles", principal.accessToken()).andExpect(status().isOk());
+        api.get("/api/library/loans", principal.accessToken()).andExpect(status().isForbidden());
     }
 }
