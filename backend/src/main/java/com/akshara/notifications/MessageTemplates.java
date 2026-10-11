@@ -44,6 +44,9 @@ public final class MessageTemplates {
     /** Sent the evening before homework is due, to the contacts of students who have not submitted it. */
     public static final String HOMEWORK_DUE = "homework.due";
 
+    /** Sent to a student's primary contact when the school publishes an exam's results for the student's class. */
+    public static final String RESULTS_PUBLISHED = "exams.results_published";
+
     private static final Map<String, Map<String, String>> TEMPLATES = Map.of(
             ABSENCE_ALERT, Map.of(
                     ENGLISH, "Dear {guardian}, {student} ({class}) was marked absent at {school} on {date}. "
@@ -80,7 +83,12 @@ public final class MessageTemplates {
                     ENGLISH, "Dear {guardian}, {student} ({class}) has not yet submitted the {subject} homework "
                             + "\"{title}\" due on {date} at {school}.",
                     HINDI, "प्रिय {guardian}, {student} ({class}) ने {school} का {subject} गृहकार्य \"{title}\" अभी "
-                            + "तक जमा नहीं किया है। अंतिम तिथि {date} है।"));
+                            + "तक जमा नहीं किया है। अंतिम तिथि {date} है।"),
+            RESULTS_PUBLISHED, Map.of(
+                    ENGLISH, "Dear {guardian}, the {exam} results of {student} ({class}) at {school} are now "
+                            + "available. Open the school app to see the report card.",
+                    HINDI, "प्रिय {guardian}, {school} में {student} ({class}) के {exam} के परिणाम अब उपलब्ध हैं। "
+                            + "रिपोर्ट कार्ड देखने के लिए विद्यालय ऐप खोलें।"));
 
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{(\\w+)}");
     private static final DateTimeFormatter ENGLISH_DATE = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH);

@@ -28,6 +28,7 @@ import com.akshara.communication.CircularService;
 import com.akshara.communication.CircularService.CircularList;
 import com.akshara.communication.CommunicationTypes.Status;
 import com.akshara.communication.NoticeCaller;
+import com.akshara.exams.ExamInsights;
 import com.akshara.fees.FeeInsights;
 import com.akshara.fees.FeeInsights.DayTotal;
 import com.akshara.fees.FeeReportService;
@@ -96,9 +97,13 @@ public class DashboardService {
             List<SubstitutionItem> substitutions) {
     }
 
+    /** Mark sheets the person still has to fill in, and (exams.publish) exam classes ready for publishing. */
+    public record ExamsCard(int marksToEnter, int resultsToPublish) {
+    }
+
     public record Summary(LocalDate date, String academicYearName, StudentsCard students, Overview attendance,
             FeesCard fees, AdmissionsCard admissions, TodaySummary staff, LeaveCard leave, CircularsCard circulars,
-            HomeworkCard homework, TimetableCard timetable, MyDayCard myDay) {
+            HomeworkCard homework, TimetableCard timetable, MyDayCard myDay, ExamsCard exams) {
     }
 
     private final AcademicsDirectory academics;
@@ -114,12 +119,13 @@ public class DashboardService {
     private final HomeworkInsights homework;
     private final TimetableService timetable;
     private final SubstitutionService substitutions;
+    private final ExamInsights exams;
 
     DashboardService(AcademicsDirectory academics, StudentInsights students, AttendanceInsights attendance,
             FeeReportService feeReports, FeeInsights fees, AdmissionsService admissionsService,
             AdmissionsInsights admissions, StaffAttendanceService staffAttendance, LeaveInsights leave,
             CircularService circulars, HomeworkInsights homework, TimetableService timetable,
-            SubstitutionService substitutions) {
+            SubstitutionService substitutions, ExamInsights exams) {
         this.academics = academics;
         this.students = students;
         this.attendance = attendance;
@@ -133,6 +139,7 @@ public class DashboardService {
         this.homework = homework;
         this.timetable = timetable;
         this.substitutions = substitutions;
+        this.exams = exams;
     }
 
     public Summary summary() {
@@ -152,7 +159,8 @@ public class DashboardService {
                 can.contains(Permissions.NOTICES_APPROVE) ? circulars() : null,
                 can.contains(Permissions.HOMEWORK_MANAGE) ? new HomeworkCard(homework.waitingForReview()) : null,
                 can.contains(Permissions.TIMETABLE_MANAGE) ? timetable(today) : null,
-                can.contains(Permissions.TIMETABLE_READ) ? myDay(today) : null);
+                can.contains(Permissions.TIMETABLE_READ) ? myDay(today) : null,
+                can.contains(Permissions.EXAMS_MANAGE) || can.contains(Permissions.EXAMS_PUBLISH) ? exams() : null);
     }
 
     private StudentsCard students(Optional<YearInfo> year, LocalDate today) {
@@ -186,6 +194,11 @@ public class DashboardService {
         List<CircularItem> items = list.items().stream().limit(CIRCULAR_ITEMS)
                 .map(c -> new CircularItem(c.id(), c.title(), c.createdByName(), c.submittedAt())).toList();
         return new CircularsCard(list.counts().getOrDefault(Status.PENDING_APPROVAL, 0L), items);
+    }
+
+    private ExamsCard exams() {
+        ExamInsights.Due due = exams.due();
+        return new ExamsCard(due.marksToEnter(), due.resultsToPublish());
     }
 
     private TimetableCard timetable(LocalDate today) {

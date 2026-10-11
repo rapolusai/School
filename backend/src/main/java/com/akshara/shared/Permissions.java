@@ -57,6 +57,15 @@ public final class Permissions {
     public static final String BILLING_READ = "billing.read";
     /** The privacy notice, the grievance officer, paper consent, and parents' data requests (exports, erasure). */
     public static final String PRIVACY_MANAGE = "privacy.manage";
+    /** Exam structure, date sheets, results, report cards and result analysis (read only). */
+    public static final String EXAMS_READ = "exams.read";
+    /** Grading schemes, terms and exams with their papers and weightage, and publishing date sheets. */
+    public static final String EXAMS_SETUP = "exams.setup";
+    /**
+     * Publishing results to families, unlocking submitted marks, and entering marks for every section. Without it,
+     * exams.manage covers the subjects a teacher teaches (timetable) and the sections they are class teacher of.
+     */
+    public static final String EXAMS_PUBLISH = "exams.publish";
 
     public static final String PLATFORM_ADMIN = "platform.admin";
 
@@ -66,7 +75,7 @@ public final class Permissions {
             EXAMS_MANAGE, NOTICES_SEND, CHILD_VIEW, ACADEMICS_READ, ADMISSIONS_READ, ADMISSIONS_MANAGE,
             ATTENDANCE_MANAGE, MESSAGES_READ, FEES_MANAGE, STAFF_READ, STAFF_MANAGE, LEAVE_REQUEST, LEAVE_APPROVE,
             STAFF_ATTENDANCE_MANAGE, NOTICES_READ, NOTICES_APPROVE, CALENDAR_MANAGE, TIMETABLE_READ, TIMETABLE_MANAGE,
-            HOMEWORK_MANAGE, BILLING_READ, PRIVACY_MANAGE);
+            HOMEWORK_MANAGE, BILLING_READ, PRIVACY_MANAGE, EXAMS_READ, EXAMS_SETUP, EXAMS_PUBLISH);
 
     private Permissions() {
     }
