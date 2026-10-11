@@ -132,7 +132,8 @@ describe("CollectView", () => {
     expect(within(doc).getByText("Sunrise Public School")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Print" }));
     expect(print).toHaveBeenCalledTimes(1);
-  });
+    // The whole desk flow takes about 4 s on its own, close to the 5 s default; a busy machine pushed it over.
+  }, 15_000);
 
   it("shows the API's field error when the amount is refused", async () => {
     const user = userEvent.setup();
