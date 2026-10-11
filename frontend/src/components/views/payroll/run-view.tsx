@@ -358,8 +358,10 @@ function RunWarnings({ run }: { run: RunDetail }) {
   return (
     <section className="card" aria-labelledby="run-warnings-title" data-testid="run-warnings">
       <div className="card-head">
-        <h2 id="run-warnings-title">{t("payroll.warnings.title")}</h2>
-        <Pill tone="warn">{plural(t, "payroll.warnings.count", run.warnings.length)}</Pill>
+        <h2 id="run-warnings-title">
+          {t(run.status === "DRAFT" ? "payroll.warnings.title" : "payroll.warnings.titleLocked")}
+        </h2>
+        <Pill tone="warn">{plural(t, "payroll.warnings.count", groups.length)}</Pill>
       </div>
       <ul className="flex flex-col gap-2">
         {groups.map((group) => (

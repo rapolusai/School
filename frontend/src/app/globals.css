@@ -3770,6 +3770,12 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
+  /* On a phone the title wraps under the school's name: keep it on the left with the rest. */
+  @media (max-width: 640px) {
+    .payslip .receipt-title {
+      align-items: flex-start;
+    }
+  }
   .payslip-cols {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

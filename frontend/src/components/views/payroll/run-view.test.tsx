@@ -57,6 +57,8 @@ describe("PayrollRunView: reviewing a draft", () => {
         warnings: [
           { code: "NO_BANK", userId: "u-sita", name: "Sita Devi", detail: null },
           { code: "TAX_RULES_EARLIER_YEAR", userId: null, name: null, detail: "2025-26" },
+          { code: "NO_UAN", userId: "u-ravi", name: "Ravi Kumar", detail: null },
+          { code: "NO_UAN", userId: "u-sita", name: "Sita Devi", detail: null },
         ],
       }),
     );
@@ -83,6 +85,10 @@ describe("PayrollRunView: reviewing a draft", () => {
     expect(within(warnings).getByTestId("warning-TAX_RULES_EARLIER_YEAR")).toHaveTextContent(
       "TDS uses the 2025-26 tax rules",
     );
+    expect(within(warnings).getByTestId("warning-NO_UAN")).toHaveTextContent("Ravi Kumar, Sita Devi");
+    // One note per kind of warning, as listed.
+    expect(within(warnings).getByRole("heading", { name: "Worth a look before approving" })).toBeInTheDocument();
+    expect(within(warnings).getByText("3 notes")).toBeInTheDocument();
     // Files only once the month is approved.
     expect(screen.queryByTestId("run-files")).not.toBeInTheDocument();
   });
@@ -207,10 +213,19 @@ describe("PayrollRunView: reviewing a draft", () => {
 describe("PayrollRunView: an approved month", () => {
   it("gives the manager the bank file and the other files, and the bank advice letter", async () => {
     const user = userEvent.setup();
-    api.run.mockResolvedValue(run({ status: "APPROVED", approvedByName: "Lakshmi Iyer", approvedAt: "2026-10-01T05:00:00Z" }));
+    api.run.mockResolvedValue(
+      run({
+        status: "APPROVED",
+        approvedByName: "Lakshmi Iyer",
+        approvedAt: "2026-10-01T05:00:00Z",
+        warnings: [{ code: "NO_BANK", userId: "u-sita", name: "Sita Devi", detail: null }],
+      }),
+    );
     api.download.mockResolvedValue("bank-transfer-2026-09.csv");
     renderAs(PAYROLL_ACCOUNTANT, <PayrollRunView id="run-9" />);
     const files = await screen.findByTestId("run-files");
+    // Once approved, the notes are no longer about approving.
+    expect(within(screen.getByTestId("run-warnings")).getByRole("heading", { name: "Notes on this month" })).toBeInTheDocument();
     await user.click(within(files).getByTestId("download-bank"));
     expect(api.download).toHaveBeenCalledWith("/api/payroll/runs/run-9/bank-file.csv", "bank-transfer-2026-09.csv");
     expect(await screen.findByText("Downloaded bank-transfer-2026-09.csv.")).toBeInTheDocument();

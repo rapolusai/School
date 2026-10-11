@@ -3401,6 +3401,7 @@ export const hi: Record<MessageKey, string> = {
   "payroll.staffCount.one": "1 कर्मचारी",
   "payroll.staffCount.other": "{count} कर्मचारी",
   "payroll.warnings.title": "स्वीकृत करने से पहले देख लें",
+  "payroll.warnings.titleLocked": "इस महीने के बारे में टिप्पणियाँ",
   "payroll.warnings.count.one": "1 सूचना",
   "payroll.warnings.count.other": "{count} सूचनाएँ",
   "payroll.warning.NO_TAX_RULES": "{detail} के लिए आयकर नियम नहीं हैं, इसलिए TDS की गणना नहीं हुई।",

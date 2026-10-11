@@ -3402,6 +3402,7 @@ export const en = {
   "payroll.staffCount.one": "1 staff member",
   "payroll.staffCount.other": "{count} staff",
   "payroll.warnings.title": "Worth a look before approving",
+  "payroll.warnings.titleLocked": "Notes on this month",
   "payroll.warnings.count.one": "1 note",
   "payroll.warnings.count.other": "{count} notes",
   "payroll.warning.NO_TAX_RULES": "No income tax rules are stored for {detail}, so no TDS was worked out.",

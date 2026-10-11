@@ -81,7 +81,7 @@ export function PayrollRegisterReport() {
               type="month"
               className="input"
               name="month"
-              value={month}
+              value={month || data?.month || ""}
               max={todayInIndia().slice(0, 7)}
               onChange={(e) => setMonth(e.target.value)}
             />
