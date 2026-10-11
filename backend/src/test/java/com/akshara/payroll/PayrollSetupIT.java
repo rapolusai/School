@@ -209,6 +209,10 @@ class PayrollSetupIT extends PayrollIntegrationTest {
                 .andExpect(status().isConflict()).andExpect(jsonPath("$.errors.name").exists());
         api.post("/api/payroll/components", token, transport.formatted("1X", "Odd"))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.errors.code").exists());
+        // Payroll's own line codes (PF, ESI, PT, TDS, the employer's lines, adjustments) are kept for it.
+        api.post("/api/payroll/components", token, transport.formatted("pf", "Provident"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.code").value("Payroll uses this code for its own lines. Pick another."));
         api.post("/api/payroll/components", s.principal.accessToken(), transport.formatted("X", "X"))
                 .andExpect(status().isForbidden());
 

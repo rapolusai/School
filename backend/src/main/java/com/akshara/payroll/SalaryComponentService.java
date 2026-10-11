@@ -42,6 +42,12 @@ public class SalaryComponentService {
             new Standard("LOAN", "Loan recovery", ComponentKind.DEDUCTION, false, false, false, false, 10),
             new Standard("OTHER_DED", "Other deduction", ComponentKind.DEDUCTION, false, false, false, false, 20));
 
+    /** The codes of payroll's own payslip lines: statutory deductions, employer contributions and adjustments. */
+    static final Set<String> RESERVED_CODES = Set.of(PayslipCalculator.PF, PayslipCalculator.ESI,
+            PayslipCalculator.PT, PayslipCalculator.TDS, PayslipCalculator.ARREARS, PayslipCalculator.BONUS,
+            PayslipCalculator.DEDUCTION, PayslipCalculator.EPF_ER, PayslipCalculator.EPS, PayslipCalculator.EDLI,
+            PayslipCalculator.PF_ADMIN, PayslipCalculator.ESI_ER);
+
     private final SalaryComponentRepository components;
     private final SalaryStructureLineRepository lines;
     private final AuditService audit;
@@ -84,6 +90,9 @@ public class SalaryComponentService {
     public ComponentView create(NewComponent form, Actor actor) {
         TenantContext.require();
         String code = form.code().strip().toUpperCase(Locale.ROOT);
+        if (RESERVED_CODES.contains(code)) {
+            throw ApiException.badRequest("Payroll uses this code for its own lines. Pick another.", "code");
+        }
         if (components.codeTaken(code)) {
             throw ApiException.conflict("Another component already has this code.", "code");
         }

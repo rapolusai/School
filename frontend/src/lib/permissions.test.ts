@@ -182,6 +182,57 @@ describe("navFor", () => {
     expect(keys(staffParent)).toContain("myPrivacy");
   });
 
+  it("gives payroll under Finance to payroll readers and My payslips under Staff to every staff member", () => {
+    // Seeded in docs/api/phase-2-payroll.md: School Admin holds all three payroll permissions, Accountant read and
+    // manage; every staff role holds leave.request.
+    const admin = user(["SCHOOL_ADMIN"], [
+      ...ALL_SCHOOL_PERMISSIONS,
+      "leave.request",
+      "payroll.read",
+      "payroll.manage",
+      "payroll.approve",
+    ]);
+    expect(keys(admin)).toEqual([
+      "dashboard",
+      "attendance",
+      "students",
+      "setup",
+      "fees",
+      "payroll",
+      "leave",
+      "myPayslips",
+      "users",
+      "roles",
+      "audit",
+      "messages",
+      "notices",
+      "reports",
+    ]);
+    const accountant = user(["ACCOUNTANT"], [
+      "dashboard.view",
+      "students.read",
+      "fees.read",
+      "academics.read",
+      "leave.request",
+      "payroll.read",
+      "payroll.manage",
+    ]);
+    expect(keys(accountant)).toEqual(["dashboard", "students", "setup", "fees", "payroll", "leave", "myPayslips", "reports"]);
+    expect(keys(user(["TEACHER"], [...TEACHER.permissions, "leave.request"]))).toEqual([
+      "dashboard",
+      "attendance",
+      "students",
+      "setup",
+      "leave",
+      "myPayslips",
+      "notices",
+      "reports",
+    ]);
+    expect(keys(PARENT)).not.toContain("myPayslips");
+    expect(navItemForPath("/app/payroll/runs/r1")?.key).toBe("payroll");
+    expect(navItemForPath("/app/my-payslips/p1")?.key).toBe("myPayslips");
+  });
+
   it("gives a platform admin only the platform items: Schools, Billing and Platform health", () => {
     expect(keys(PLATFORM_ADMIN)).toEqual(["schools", "platformBilling", "platformHealth"]);
   });

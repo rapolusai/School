@@ -367,7 +367,12 @@ function RunWarnings({ run }: { run: RunDetail }) {
             <TriangleAlert size={18} aria-hidden="true" className="mt-0.5 flex-none" />
             <span>
               {t(warningKey(group.code), { detail: group.detail ?? "" })}
-              {group.names.length > 0 ? <span className="block font-normal">{group.names.join(", ")}</span> : null}
+              {group.names.length > 0 ? (
+                <>
+                  {" "}
+                  <span className="block font-normal">{group.names.join(", ")}</span>
+                </>
+              ) : null}
             </span>
           </li>
         ))}

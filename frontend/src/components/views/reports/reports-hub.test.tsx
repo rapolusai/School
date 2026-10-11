@@ -76,6 +76,17 @@ describe("ReportsHubView", () => {
     expect(screen.getByTestId("report-link-homework")).toHaveTextContent("Excel");
   });
 
+  it("adds the payroll reports to the Staff group for payroll readers", () => {
+    expect(keys([...ACCOUNTANT, "payroll.read"])).toEqual([
+      ["fees", ["collection", "outstanding", "overdue", "receipts"]],
+      ["staff", ["payrollRegister", "payrollYtd", "payrollStatutory"]],
+    ]);
+    renderAs([...ACCOUNTANT, "payroll.read"], <ReportsHubView />, ["ACCOUNTANT"]);
+    expect(screen.getByTestId("report-link-payrollRegister")).toHaveAttribute("href", "/app/reports/payroll-register");
+    expect(screen.getByTestId("report-link-payrollYtd")).toHaveAttribute("href", "/app/reports/payroll-ytd");
+    expect(screen.getByTestId("report-link-payrollStatutory")).toHaveTextContent("Excel");
+  });
+
   it("shows an accountant only the fee reports", () => {
     renderAs(ACCOUNTANT, <ReportsHubView />, ["ACCOUNTANT"]);
     expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(["Fees"]);
