@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Pill } from "@/components/ui/pill";
 import { ErrorState, LoadingRows, PageHead } from "@/components/ui/states";
 import { CountsBar, formatPercent } from "@/components/views/attendance/attendance-shared";
+import { FamilyCertificatesCard } from "@/components/views/certificates/family-certificates";
 import { FamilyMessagesCard } from "@/components/views/chat/chat-views";
 import { UpcomingCard } from "@/components/views/communication/dashboard-cards";
 import { FamilyResultsCard } from "@/components/views/exams/family-results";
@@ -18,6 +19,7 @@ import { DayPeriods } from "@/components/views/timetable/timetable-shared";
 import { api } from "@/lib/api";
 import { attendanceApi } from "@/lib/attendance-api";
 import { useAuth } from "@/lib/auth";
+import { certificatesApi } from "@/lib/certificates-api";
 import { boardApi } from "@/lib/communication-api";
 import { examsApi } from "@/lib/exams-api";
 import { isParent } from "@/lib/family";
@@ -177,6 +179,8 @@ function ChildPanel({ child, self }: { child: Child; self: boolean }) {
   const study = useApiData(self ? "lessons:study:me" : `lessons:study:${id}`, () =>
     self ? lessonsApi.myStudy() : lessonsApi.childStudy(id),
   );
+  // Certificates and the ID card are a parent's view (docs/api/phase-2-certificates.md); one call covers every child.
+  const certificates = useApiData(self ? null : "me:certificates", certificatesApi.mine);
   const query = self ? "" : `?child=${encodeURIComponent(id)}`;
   return (
     <>
@@ -193,6 +197,7 @@ function ChildPanel({ child, self }: { child: Child; self: boolean }) {
         <LeaveCard data={leave} self={self} href={`/app/family/leave${query}`} />
         <FamilyResultsCard data={results} href={`/app/family/results${query}`} />
         <FamilyStudyCard data={study} href={`/app/family/study${query}`} />
+        {self ? null : <FamilyCertificatesCard data={certificates} studentId={id} href="/app/family/certificates" />}
       </div>
     </>
   );

@@ -2,6 +2,7 @@
 
 import {
   ArrowRight,
+  BadgeCheck,
   Banknote,
   BookMarked,
   CalendarCheck2,
@@ -9,10 +10,12 @@ import {
   ChartColumnBig,
   ClipboardCheck,
   ClipboardList,
+  FileClock,
   FileSpreadsheet,
   Filter,
   Handshake,
   History,
+  IdCard,
   Landmark,
   LibraryBig,
   ListChecks,
@@ -34,7 +37,7 @@ import { hasAnyPermission, hasPermission, PERMISSIONS, REPORT_PERMISSIONS } from
 
 type PermissionSubject = Parameters<typeof hasPermission>[0];
 
-export const REPORT_GROUPS = ["attendance", "fees", "admissions", "staff", "academics", "library"] as const;
+export const REPORT_GROUPS = ["attendance", "fees", "admissions", "staff", "academics", "library", "administration"] as const;
 export type ReportGroup = (typeof REPORT_GROUPS)[number];
 
 export type ReportLink = {
@@ -56,6 +59,7 @@ const GROUP_LABELS: Record<ReportGroup, MessageKey> = {
   staff: "reports.group.staff",
   academics: "reports.group.academics",
   library: "reports.group.library",
+  administration: "reports.group.administration",
 };
 
 /** Every report, new and existing, with the permission that opens it. */
@@ -290,6 +294,36 @@ export const REPORT_LINKS: readonly ReportLink[] = [
     description: "ptm.report.description",
     permission: PERMISSIONS.ptmManage,
     icon: Handshake,
+  },
+  {
+    key: "certificatesIssued",
+    group: "administration",
+    href: "/app/reports/certificates-issued",
+    title: "certificates.report.issued.title",
+    description: "certificates.report.issued.description",
+    permission: PERMISSIONS.certificatesRead,
+    icon: BadgeCheck,
+    excel: true,
+  },
+  {
+    key: "certificatesPending",
+    group: "administration",
+    href: "/app/reports/certificates-pending",
+    title: "certificates.report.pending.title",
+    description: "certificates.report.pending.description",
+    permission: PERMISSIONS.certificatesRead,
+    icon: FileClock,
+    excel: true,
+  },
+  {
+    key: "idCardsPending",
+    group: "administration",
+    href: "/app/reports/id-cards-pending",
+    title: "certificates.report.cards.title",
+    description: "certificates.report.cards.description",
+    permission: PERMISSIONS.certificatesRead,
+    icon: IdCard,
+    excel: true,
   },
 ];
 

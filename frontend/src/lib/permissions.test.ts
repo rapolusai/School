@@ -146,6 +146,7 @@ describe("navFor", () => {
       "family-library",
       "family-results",
       "family-study",
+      "family-certificates",
       "myPrivacy",
       "family-chat",
       "family-ptm",
@@ -166,6 +167,7 @@ describe("navFor", () => {
       "family-library",
       "family-results",
       "family-study",
+      "family-certificates",
       "myPrivacy",
       "family-chat",
       "family-ptm",
@@ -372,6 +374,23 @@ describe("navFor", () => {
       href: "/app/family/study",
       labelKey: "nav.study",
     });
+  });
+
+  it("gives certificates and ID cards to certificates.read, under Administration, and a child's to parents", () => {
+    // Seeded in docs/api/phase-2-certificates.md: the office and admins read and issue, the principal signs.
+    const office = user(["FRONT_OFFICE"], ["dashboard.view", "students.read", "certificates.read", "certificates.issue"]);
+    expect(keys(office)).toEqual(["dashboard", "students", "certificates", "reports"]);
+    expect(navFor(office).find((item) => item.key === "certificates")).toMatchObject({
+      href: "/app/certificates",
+      labelKey: "nav.certificates",
+      group: "administration",
+    });
+    expect(keys(TEACHER)).not.toContain("certificates");
+    expect(keys(user(["STUDENT"], ["dashboard.view"]))).not.toContain("family-certificates");
+    expect(navFor(PARENT).find((item) => item.key === "family-certificates")?.href).toBe("/app/family/certificates");
+    expect(navItemForPath("/app/certificates/id-cards")?.key).toBe("certificates");
+    expect(navItemForPath("/app/certificates/c1")?.key).toBe("certificates");
+    expect(navItemForPath("/app/family/certificates/c1")?.key).toBe("family-certificates");
   });
 
   it("gives a platform admin only the platform items: Schools, Billing and Platform health", () => {

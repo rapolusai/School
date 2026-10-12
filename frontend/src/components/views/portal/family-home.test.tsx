@@ -41,7 +41,13 @@ const m = vi.hoisted(() => ({
   myResults: vi.fn(),
   childStudy: vi.fn(),
   myStudy: vi.fn(),
+  certificatesMine: vi.fn(),
 }));
+
+vi.mock("@/lib/certificates-api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/certificates-api")>();
+  return { ...actual, certificatesApi: { ...actual.certificatesApi, mine: m.certificatesMine } };
+});
 
 vi.mock("@/lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api")>();
@@ -290,6 +296,13 @@ beforeEach(() => {
     Promise.resolve(id === "st1" ? study("st1") : study("st2", { material: [], tests: [] })),
   );
   m.myStudy.mockResolvedValue(study("st1"));
+  m.certificatesMine.mockResolvedValue({
+    children: [
+      { studentId: "st1", name: "Arjun Sharma", className: "Class 5 A", certificates: [{ id: "c1", status: "ISSUED", type: "BONAFIDE" }], idCard: null },
+      { studentId: "st2", name: "Sneha", className: null, certificates: [], idCard: null },
+    ],
+    requestableTypes: ["BONAFIDE", "FEE"],
+  });
 });
 
 afterEach(() => {

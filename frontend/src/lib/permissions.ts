@@ -1,6 +1,7 @@
 import {
   Activity,
   Award,
+  BadgeCheck,
   BarChart3,
   BookOpenCheck,
   BookOpenText,
@@ -91,6 +92,9 @@ export const PERMISSIONS = {
   lessonsRead: "lessons.read",
   lessonsManage: "lessons.manage",
   lessonsApprove: "lessons.approve",
+  certificatesRead: "certificates.read",
+  certificatesIssue: "certificates.issue",
+  certificatesSign: "certificates.sign",
 } as const;
 
 export type NavGroup = "overview" | "academics" | "finance" | "staff" | "communication" | "administration" | "platform";
@@ -123,6 +127,7 @@ export const REPORT_PERMISSIONS: readonly string[] = [
   PERMISSIONS.examsRead,
   PERMISSIONS.ptmManage,
   PERMISSIONS.lessonsRead,
+  PERMISSIONS.certificatesRead,
 ];
 
 /** Every navigation item, in display order. */
@@ -372,6 +377,16 @@ export const NAV_ITEMS: readonly NavItem[] = [
     group: "communication",
   },
   {
+    // Certificates and ID cards (docs/api/phase-2-certificates.md): the office, the principal and admins.
+    key: "certificates",
+    href: "/app/certificates",
+    labelKey: "nav.certificates",
+    shortLabelKey: "nav.certificates.short",
+    icon: BadgeCheck,
+    permission: PERMISSIONS.certificatesRead,
+    group: "administration",
+  },
+  {
     key: "privacy",
     href: "/app/privacy",
     labelKey: "nav.privacy",
@@ -524,6 +539,16 @@ export const FAMILY_NAV_ITEMS: readonly NavItem[] = [
     shortLabelKey: "nav.study.short",
     icon: Lightbulb,
     permission: PERMISSIONS.dashboardView,
+    group: "academics",
+  },
+  {
+    // A child's certificates and ID card are for parents (child.view), not students.
+    key: "family-certificates",
+    href: "/app/family/certificates",
+    labelKey: "nav.certificates",
+    shortLabelKey: "nav.certificates.short",
+    icon: BadgeCheck,
+    permission: PERMISSIONS.childView,
     group: "academics",
   },
   {

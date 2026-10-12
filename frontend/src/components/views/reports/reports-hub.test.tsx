@@ -124,6 +124,20 @@ describe("ReportsHubView", () => {
     expect(screen.getByTestId("report-link-libraryPopular")).toHaveTextContent("Excel");
   });
 
+  it("shows the certificate reports under Administration to certificates.read", () => {
+    const office = [...FRONT_OFFICE, "certificates.read", "certificates.issue"];
+    expect(keys(office)).toEqual([
+      ["admissions", ["funnel", "applications"]],
+      ["administration", ["certificatesIssued", "certificatesPending", "idCardsPending"]],
+    ]);
+    expect(keys(PRINCIPAL).some(([group]) => group === "administration")).toBe(false);
+    renderAs(office, <ReportsHubView />, ["FRONT_OFFICE"]);
+    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(["Admissions", "Administration"]);
+    expect(screen.getByTestId("report-link-certificatesIssued")).toHaveAttribute("href", "/app/reports/certificates-issued");
+    expect(screen.getByTestId("report-link-certificatesPending")).toHaveAttribute("href", "/app/reports/certificates-pending");
+    expect(screen.getByTestId("report-link-idCardsPending")).toHaveAttribute("href", "/app/reports/id-cards-pending");
+  });
+
   it("turns away someone without any report permission", () => {
     renderAs(["dashboard.view", "child.view"], <ReportsHubView />, ["PARENT"]);
     expect(screen.getByTestId("access-denied")).toBeInTheDocument();

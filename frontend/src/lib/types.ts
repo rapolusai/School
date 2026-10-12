@@ -119,6 +119,7 @@ export * from "./types/privacy";
 export * from "./types/portal";
 export * from "./types/reports";
 export * from "./types/library";
+export * from "./types/certificates";
 export * from "./types/payroll";
 export * from "./types/exams";
 export * from "./types/chat";
