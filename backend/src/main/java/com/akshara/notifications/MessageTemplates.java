@@ -71,6 +71,9 @@ public final class MessageTemplates {
     /** Sent to a student's own sign-in email when a new online test is published (if the school opts in). */
     public static final String ONLINE_TEST_STUDENT = "lessons.online_test_student";
 
+    /** The one-time password of an approved early pickup pass, sent to the student's primary contact. */
+    public static final String GATE_PASS_OTP = "frontoffice.gate_pass_otp";
+
     private static final Map<String, Map<String, String>> TEMPLATES = Map.ofEntries(
             Map.entry(ABSENCE_ALERT, Map.of(
                     ENGLISH, "Dear {guardian}, {student} ({class}) was marked absent at {school} on {date}. "
@@ -128,6 +131,11 @@ public final class MessageTemplates {
                             + "app. Open the app to read and reply.",
                     HINDI, "प्रिय {teacher}, {student} के अभिभावक {parent} ने आपको {school} ऐप में संदेश भेजा है। "
                             + "पढ़ने और उत्तर देने के लिए ऐप खोलें।")),
+            Map.entry(GATE_PASS_OTP, Map.of(
+                    ENGLISH, "Dear {guardian}, the early pickup of {student} from {school} is approved; {collector} "
+                            + "may collect. OTP {otp}, valid till {time}. Share it only with the person collecting.",
+                    HINDI, "प्रिय {guardian}, {school} से {student} को जल्दी ले जाने की अनुमति दी गई है; {collector} "
+                            + "ले जा सकते हैं। OTP {otp}, {time} तक मान्य। इसे केवल ले जाने वाले व्यक्ति को बताएँ।")),
             Map.entry(CHAT_TO_PARENT, Map.of(
                     ENGLISH, "Dear {guardian}, {teacher} sent you a message about {student} in the {school} app. "
                             + "Open the app to read and reply.",

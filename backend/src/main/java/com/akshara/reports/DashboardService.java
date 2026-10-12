@@ -34,6 +34,7 @@ import com.akshara.fees.FeeInsights;
 import com.akshara.fees.FeeInsights.DayTotal;
 import com.akshara.fees.FeeReportService;
 import com.akshara.fees.FeeViews.CollectionTotal;
+import com.akshara.frontoffice.FrontOfficeInsights;
 import com.akshara.homework.HomeworkInsights;
 import com.akshara.shared.CurrentUser;
 import com.akshara.shared.Permissions;
@@ -111,7 +112,8 @@ public class DashboardService {
 
     public record Summary(LocalDate date, String academicYearName, StudentsCard students, Overview attendance,
             FeesCard fees, AdmissionsCard admissions, TodaySummary staff, LeaveCard leave, CircularsCard circulars,
-            HomeworkCard homework, TimetableCard timetable, MyDayCard myDay, ExamsCard exams, LessonsCard lessons) {
+            HomeworkCard homework, TimetableCard timetable, MyDayCard myDay, ExamsCard exams, LessonsCard lessons,
+            FrontOfficeInsights.Card frontOffice) {
     }
 
     private final AcademicsDirectory academics;
@@ -129,12 +131,14 @@ public class DashboardService {
     private final SubstitutionService substitutions;
     private final ExamInsights exams;
     private final LessonsInsights lessons;
+    private final FrontOfficeInsights frontOffice;
 
     DashboardService(AcademicsDirectory academics, StudentInsights students, AttendanceInsights attendance,
             FeeReportService feeReports, FeeInsights fees, AdmissionsService admissionsService,
             AdmissionsInsights admissions, StaffAttendanceService staffAttendance, LeaveInsights leave,
             CircularService circulars, HomeworkInsights homework, TimetableService timetable,
-            SubstitutionService substitutions, ExamInsights exams, LessonsInsights lessons) {
+            SubstitutionService substitutions, ExamInsights exams, LessonsInsights lessons,
+            FrontOfficeInsights frontOffice) {
         this.academics = academics;
         this.students = students;
         this.attendance = attendance;
@@ -150,6 +154,7 @@ public class DashboardService {
         this.substitutions = substitutions;
         this.exams = exams;
         this.lessons = lessons;
+        this.frontOffice = frontOffice;
     }
 
     public Summary summary() {
@@ -172,7 +177,9 @@ public class DashboardService {
                 can.contains(Permissions.TIMETABLE_READ) ? myDay(today) : null,
                 can.contains(Permissions.EXAMS_MANAGE) || can.contains(Permissions.EXAMS_PUBLISH) ? exams() : null,
                 can.contains(Permissions.LESSONS_MANAGE) || can.contains(Permissions.LESSONS_APPROVE)
-                        ? lessons(today) : null);
+                        ? lessons(today) : null,
+                // The front office card decides itself what the person may see (also class teachers' pickups).
+                CurrentUser.id().map(id -> frontOffice.card(id, can, today)).orElse(null));
     }
 
     private StudentsCard students(Optional<YearInfo> year, LocalDate today) {

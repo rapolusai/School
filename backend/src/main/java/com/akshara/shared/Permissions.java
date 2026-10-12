@@ -100,6 +100,12 @@ public final class Permissions {
     public static final String LESSONS_MANAGE = "lessons.manage";
     /** Approving or returning lesson plans, and every section and subject (School Admin, Principal, coordinators). */
     public static final String LESSONS_APPROVE = "lessons.approve";
+    /** The visitor log, gate passes, enquiries, calls, the courier register and the front office reports. */
+    public static final String FRONTOFFICE_READ = "frontoffice.read";
+    /** Recording visitors, raising and approving gate passes, logging calls, enquiries and post. */
+    public static final String FRONTOFFICE_MANAGE = "frontoffice.manage";
+    /** The gate screen: visitors in and out, and releasing a child against the parent's OTP (Security). */
+    public static final String GATE_PASS = "gate.pass";
 
     public static final String PLATFORM_ADMIN = "platform.admin";
 
@@ -112,7 +118,8 @@ public final class Permissions {
             HOMEWORK_MANAGE, BILLING_READ, PRIVACY_MANAGE,
             LIBRARY_READ, LIBRARY_MANAGE, PAYROLL_READ, PAYROLL_MANAGE, PAYROLL_APPROVE, EXAMS_READ, EXAMS_SETUP,
             EXAMS_PUBLISH,
-            CHAT_USE, CHAT_OVERSEE, PTM_MANAGE, LESSONS_READ, LESSONS_MANAGE, LESSONS_APPROVE);
+            CHAT_USE, CHAT_OVERSEE, PTM_MANAGE, LESSONS_READ, LESSONS_MANAGE, LESSONS_APPROVE,
+            FRONTOFFICE_READ, FRONTOFFICE_MANAGE, GATE_PASS);
 
     private Permissions() {
     }

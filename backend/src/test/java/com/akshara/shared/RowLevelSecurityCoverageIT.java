@@ -91,7 +91,9 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
             "lessons.settings", "lessons.syllabus", "lessons.syllabus_unit", "lessons.syllabus_topic",
             "lessons.lesson_plan", "lessons.material", "lessons.question", "lessons.question_option",
             "lessons.online_test", "lessons.test_section", "lessons.test_question", "lessons.test_attempt",
-            "lessons.test_answer");
+            "lessons.test_answer",
+            "frontoffice.visitor", "frontoffice.blocked_visitor", "frontoffice.gate_pass", "frontoffice.pickup_person",
+            "frontoffice.call_log", "frontoffice.enquiry", "frontoffice.courier_item");
 
     @Autowired
     HomeworkService homework;
@@ -220,6 +222,7 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         examRecords(admin, yearId, classId, section, subject, student);
         chatRecords(school, admin, lata, student, section);
         lessonRecords(school, admin, classId, section, subject);
+        frontOfficeRecords(admin, lata, student);
         School other = api.signup();
 
         try (Connection app = appConnection(); Connection owner = ownerConnection()) {
@@ -591,6 +594,31 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         api.post("/api/lessons/tests/" + test + "/publish", admin.accessToken(), null).andExpect(status().isOk());
         Session asha = api.login(school.code(), "asha@" + school.code() + ".akshara.test", TestApi.PASSWORD);
         api.post("/api/me/tests/" + test + "/attempts", asha.accessToken(), null).andExpect(status().isOk());
+    }
+
+    /** One row in each front office table: a visitor, a blocklist entry, a gate pass, a pickup person, a call, an
+     * enquiry and a courier item. */
+    private void frontOfficeRecords(Session admin, Session lata, String student) throws Exception {
+        api.post("/api/frontoffice/visitors", admin.accessToken(), """
+                {"name":"Prakash Nair","phone":"9876511001","purpose":"MEETING","peopleCount":1,"idType":"NONE"}""")
+                .andExpect(status().isCreated());
+        api.post("/api/frontoffice/blocklist", admin.accessToken(), """
+                {"name":"Unknown Salesman","reason":"Kept selling insurance."}""").andExpect(status().isCreated());
+        api.post("/api/me/children/" + student + "/gate-passes", lata.accessToken(), """
+                {"pickupAt":"%s","reason":"Dentist","collectorKind":"SELF"}"""
+                .formatted(Instant.now().plus(Duration.ofMinutes(5)))).andExpect(status().isCreated());
+        api.post("/api/me/children/" + student + "/pickup-persons", lata.accessToken(), """
+                {"name":"Ravi Rao","relation":"Father","phone":"9876501009"}""").andExpect(status().isCreated());
+        api.post("/api/frontoffice/calls", admin.accessToken(), """
+                {"direction":"INCOMING","callerName":"Vikram Singh","about":"Bonafide certificate."}""")
+                .andExpect(status().isCreated());
+        api.post("/api/frontoffice/enquiries", admin.accessToken(), """
+                {"source":"WALK_IN","topic":"ADMISSION","name":"Kavita Menon","details":"Admission next year."}""")
+                .andExpect(status().isCreated());
+        api.post("/api/frontoffice/courier", admin.accessToken(), """
+                {"direction":"INWARD","item":"CBSE circulars","sender":"CBSE","receiver":"Principal",
+                 "itemDate":"%s"}""".formatted(LocalDate.now(ZoneId.of("Asia/Kolkata"))))
+                .andExpect(status().isCreated());
     }
 
     /** The student's mother asks for a day of leave for her child. */
