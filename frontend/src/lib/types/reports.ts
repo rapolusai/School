@@ -1,5 +1,6 @@
 /** Types mirroring docs/api/phase-1-reports.md (staff dashboard and reports). Keep in sync with the contract. */
 
+import type { FinanceCard } from "./accounts";
 import type { ApplicationSource, ApplicationStage } from "./admissions";
 import type { AttendanceCounts, AttendanceStatus } from "./attendance";
 import type { CollectionTotal } from "./fees";
@@ -136,6 +137,8 @@ export type DashboardSummary = {
   exams?: { marksToEnter: number; resultsToPublish: number } | null;
   /** Lesson plans to submit, short answers to mark (lessons.manage) and plans waiting for approval (lessons.approve). */
   lessons?: { plansToSubmit: number; answersToMark: number; plansToApprove: number } | null;
+  /** This month's income, expenses, cash and bank (accounts.read). */
+  accounts?: FinanceCard | null;
 };
 
 /* ------------------------------------------------------------------ reports */
