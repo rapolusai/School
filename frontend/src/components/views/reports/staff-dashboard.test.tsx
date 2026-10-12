@@ -291,6 +291,32 @@ describe("tilesFor", () => {
     expect(tilesFor(SUMMARY, "leadership", t, all(true)).map((tile) => tile.key)).not.toContain("marksToEnter");
   });
 
+  it("adds the front office tiles when the summary has that card, leaving out counts that came back null", () => {
+    const frontOffice = { passesToApprove: 2, followUpsDue: 3, followUpsOverdue: 1, passesAtGate: 1, visitorsInside: 4, visitorsToday: 9, classPickups: [] };
+    const bare: DashboardSummary = {
+      date: "2026-10-09",
+      academicYearName: "2026-27",
+      students: null,
+      attendance: null,
+      fees: null,
+      admissions: null,
+      staff: null,
+      leave: null,
+      circulars: null,
+      homework: null,
+      timetable: null,
+      myDay: null,
+    };
+    const office = tilesFor({ ...bare, frontOffice }, "frontOffice", t, all(false));
+    expect(office.map((tile) => tile.key)).toEqual(["passesToApprove", "foFollowUps", "visitorsInside", "passesAtGate"]);
+    expect(office[0]).toMatchObject({ label: "Pickups to approve", value: "2", href: "/app/frontoffice/passes", attention: true });
+    expect(office[1]).toMatchObject({ label: "Follow-ups due", value: "3", sub: "1 overdue", href: "/app/frontoffice/enquiries", attention: true });
+    expect(office[2]).toMatchObject({ value: "4", sub: "9 today", href: "/app/frontoffice", attention: false });
+    const guard = tilesFor({ ...bare, frontOffice: { ...frontOffice, passesToApprove: null, followUpsDue: null, followUpsOverdue: null } }, "staff", t, all(false));
+    expect(guard.map((tile) => tile.key)).toEqual(["passesAtGate", "visitorsInside"]);
+    expect(tilesFor(SUMMARY, "leadership", t, all(true)).map((tile) => tile.key)).not.toContain("passesToApprove");
+  });
+
   it("adds plans to submit, answers to mark and plans to approve when the summary has lessons", () => {
     const lessons = { plansToSubmit: 2, answersToMark: 5, plansToApprove: 3 };
     const teacher = tilesFor({ ...TEACHER_SUMMARY, lessons }, "teacher", t, (p) => p !== "lessons.approve" && p !== "leave.approve");

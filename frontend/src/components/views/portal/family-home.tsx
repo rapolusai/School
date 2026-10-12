@@ -22,6 +22,7 @@ import { boardApi } from "@/lib/communication-api";
 import { examsApi } from "@/lib/exams-api";
 import { isParent } from "@/lib/family";
 import { feesApi } from "@/lib/fees-api";
+import { frontOfficeApi } from "@/lib/frontoffice-api";
 import { classLabel, firstName, formatLongDate, formatPaise, formatPlainDate, hourInIndia, initials } from "@/lib/format";
 import { homeworkApi } from "@/lib/homework-api";
 import { lessonsApi } from "@/lib/lessons-api";
@@ -32,6 +33,7 @@ import { timetableApi } from "@/lib/timetable-api";
 import type { BoardItem, Child, ChildAttendance, FamilyLeave, FamilyTimetable, StudentFees, StudentHomework } from "@/lib/types";
 import { useApiData, type ApiData } from "@/lib/use-api-data";
 import { ChildSwitcher, leaveDates, LeaveStatusPill, TodayPill, useFamilyChildren } from "./family-shared";
+import { FamilyPickupCard } from "./family-pickup";
 import { InstallHint } from "./install-hint";
 
 export { isFamilyMember } from "@/lib/family";
@@ -177,6 +179,7 @@ function ChildPanel({ child, self }: { child: Child; self: boolean }) {
   const study = useApiData(self ? "lessons:study:me" : `lessons:study:${id}`, () =>
     self ? lessonsApi.myStudy() : lessonsApi.childStudy(id),
   );
+  const pickup = useApiData(self ? null : `frontoffice:family-pickup:${id}`, () => frontOfficeApi.childPickup(id));
   const query = self ? "" : `?child=${encodeURIComponent(id)}`;
   return (
     <>
@@ -193,6 +196,7 @@ function ChildPanel({ child, self }: { child: Child; self: boolean }) {
         <LeaveCard data={leave} self={self} href={`/app/family/leave${query}`} />
         <FamilyResultsCard data={results} href={`/app/family/results${query}`} />
         <FamilyStudyCard data={study} href={`/app/family/study${query}`} />
+        {self ? null : <FamilyPickupCard data={pickup} href={`/app/family/pickup${query}`} />}
       </div>
     </>
   );

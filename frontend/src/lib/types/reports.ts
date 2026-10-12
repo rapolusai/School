@@ -1,3 +1,5 @@
+import type { FrontOfficeCard } from "./frontoffice";
+
 /** Types mirroring docs/api/phase-1-reports.md (staff dashboard and reports). Keep in sync with the contract. */
 
 import type { ApplicationSource, ApplicationStage } from "./admissions";
@@ -136,6 +138,8 @@ export type DashboardSummary = {
   exams?: { marksToEnter: number; resultsToPublish: number } | null;
   /** Lesson plans to submit, short answers to mark (lessons.manage) and plans waiting for approval (lessons.approve). */
   lessons?: { plansToSubmit: number; answersToMark: number; plansToApprove: number } | null;
+  /** Visitors, passes and follow-ups (frontoffice.*, gate.pass) and a class teacher's early pickups today. */
+  frontOffice?: FrontOfficeCard | null;
 };
 
 /* ------------------------------------------------------------------ reports */

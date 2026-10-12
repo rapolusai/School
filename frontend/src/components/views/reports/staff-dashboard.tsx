@@ -9,7 +9,7 @@ import { formatDateTime, formatPaise, formatPlainDate } from "@/lib/format";
 import { localeFor, plural, translateOr, useI18n, type Translate } from "@/lib/i18n";
 import { hasAnyPermission, hasPermission, PERMISSIONS, REPORT_PERMISSIONS } from "@/lib/permissions";
 import { reportsApi } from "@/lib/reports-api";
-import type { DashboardSummary, Me } from "@/lib/types";
+import type { ClassPickup, DashboardSummary, Me } from "@/lib/types";
 import { useApiData } from "@/lib/use-api-data";
 import { formatPercent } from "../attendance/attendance-shared";
 import { BarChart, compactRupees, FunnelBars, funnelRows, LineChart } from "./charts";
@@ -57,7 +57,11 @@ export type TileKey =
   | "resultsToPublish"
   | "plansToSubmit"
   | "answersToMark"
-  | "plansToApprove";
+  | "plansToApprove"
+  | "passesToApprove"
+  | "passesAtGate"
+  | "foFollowUps"
+  | "visitorsInside";
 
 const EVERY_TILE: TileKey[] = [
   "sectionsToMark",
@@ -82,6 +86,10 @@ const EVERY_TILE: TileKey[] = [
   "plansToSubmit",
   "answersToMark",
   "plansToApprove",
+  "passesToApprove",
+  "passesAtGate",
+  "foFollowUps",
+  "visitorsInside",
 ];
 
 /** The tiles of each layout, in order. A tile shows only when its card came back (the person holds its permission). */
@@ -101,6 +109,8 @@ export const LAYOUT_TILES: Record<DashboardLayout, TileKey[]> = {
     "resultsToPublish",
     "marksToEnter",
     "plansToApprove",
+    "passesToApprove",
+    "visitorsInside",
   ],
   teacher: [
     "sectionsToMark",
@@ -114,7 +124,7 @@ export const LAYOUT_TILES: Record<DashboardLayout, TileKey[]> = {
     "plansToApprove",
   ],
   accountant: ["feesToday", "feesMonth", "outstanding", "overdue", "students"],
-  frontOffice: ["enquiries", "followUps", "offers", "students"],
+  frontOffice: ["passesToApprove", "foFollowUps", "visitorsInside", "passesAtGate", "enquiries", "followUps", "offers", "students"],
   staff: EVERY_TILE,
 };
 
@@ -354,6 +364,7 @@ export function tilesFor(
     },
     ...examTiles(summary, t, can),
     ...lessonTiles(summary, t, can),
+    ...frontOfficeTiles(summary, t),
   };
 
   return LAYOUT_TILES[layout].map((key) => build[key]()).filter((tile): tile is Tile => tile !== null);
@@ -439,6 +450,63 @@ function lessonTiles(
   };
 }
 
+/**
+ * The front office tiles (docs/api/phase-2-frontoffice.md): each count is null when the person lacks the permission,
+ * so the API already decides who sees what.
+ */
+function frontOfficeTiles(
+  summary: DashboardSummary,
+  t: Translate,
+): Record<"passesToApprove" | "passesAtGate" | "foFollowUps" | "visitorsInside", () => Tile | null> {
+  const fo = summary.frontOffice;
+  return {
+    passesToApprove: () =>
+      fo && fo.passesToApprove !== null
+        ? {
+            key: "passesToApprove",
+            label: t("frontoffice.tile.passesToApprove"),
+            value: String(fo.passesToApprove),
+            sub: t("frontoffice.tile.passesToApproveSub"),
+            href: "/app/frontoffice/passes",
+            attention: fo.passesToApprove > 0,
+          }
+        : null,
+    passesAtGate: () =>
+      fo && fo.passesAtGate !== null
+        ? {
+            key: "passesAtGate",
+            label: t("frontoffice.tile.passesAtGate"),
+            value: String(fo.passesAtGate),
+            sub: t("frontoffice.tile.passesAtGateSub"),
+            href: "/app/frontoffice/gate",
+            attention: fo.passesAtGate > 0,
+          }
+        : null,
+    foFollowUps: () =>
+      fo && fo.followUpsDue !== null
+        ? {
+            key: "foFollowUps",
+            label: t("frontoffice.tile.followUps"),
+            value: String(fo.followUpsDue),
+            sub: plural(t, "frontoffice.followUps.overdue", fo.followUpsOverdue ?? 0),
+            href: "/app/frontoffice/enquiries",
+            attention: (fo.followUpsOverdue ?? 0) > 0,
+          }
+        : null,
+    visitorsInside: () =>
+      fo && fo.visitorsInside !== null
+        ? {
+            key: "visitorsInside",
+            label: t("frontoffice.tile.visitorsInside"),
+            value: String(fo.visitorsInside),
+            sub: t("frontoffice.tile.visitorsToday", { count: fo.visitorsToday ?? 0 }),
+            href: "/app/frontoffice",
+            attention: false,
+          }
+        : null,
+  };
+}
+
 /** Which chart cards to show: the layout's, in order, when their data came back. Pure; exported for tests. */
 export function chartsFor(summary: DashboardSummary, layout: DashboardLayout): ChartKey[] {
   const a = summary.attendance;
@@ -487,7 +555,8 @@ function StaffDashboardBody({ me, summary }: { me: Me; summary: DashboardSummary
   const can = (permission: string) => hasPermission(me, permission);
   const tiles = tilesFor(summary, layout, t, can);
   const charts = chartsFor(summary, layout);
-  if (tiles.length === 0 && charts.length === 0) return null;
+  const classPickups = summary.frontOffice?.classPickups ?? [];
+  if (tiles.length === 0 && charts.length === 0 && classPickups.length === 0) return null;
 
   return (
     <section className="flex flex-col gap-3.5" aria-labelledby="staff-dashboard-title" data-testid="staff-dashboard" data-layout={layout}>
@@ -524,6 +593,8 @@ function StaffDashboardBody({ me, summary }: { me: Me; summary: DashboardSummary
         </ul>
       ) : null}
 
+      {classPickups.length > 0 ? <ClassPickupsCard pickups={classPickups} locale={locale} /> : null}
+
       {charts.length > 0 ? (
         <div className="grid grid-cols-1 gap-3.5 xl:grid-cols-2">
           {charts.map((key) => (
@@ -531,6 +602,36 @@ function StaffDashboardBody({ me, summary }: { me: Me; summary: DashboardSummary
           ))}
         </div>
       ) : null}
+    </section>
+  );
+}
+
+/** The class teacher's notice: children of their class leaving early today, with who collects and where the pass stands. */
+function ClassPickupsCard({ pickups, locale }: { pickups: ClassPickup[]; locale: string }) {
+  const { t } = useI18n();
+  return (
+    <section className="card" data-testid="class-pickups">
+      <div className="card-head">
+        <h3>{t("frontoffice.classPickups.title")}</h3>
+        <Pill tone="info">{plural(t, "frontoffice.passes.count", pickups.length)}</Pill>
+      </div>
+      <p className="mb-2 text-[13px] text-ink-3">{t("frontoffice.classPickups.intro")}</p>
+      <ul className="list">
+        {pickups.map((p) => (
+          <li key={p.passId} className="li items-center gap-3" data-testid="class-pickup">
+            <span className="min-w-0 flex-1">
+              <b className="block">{p.studentName}</b>
+              <span className="block text-[12.5px] text-ink-3">
+                {p.className ? `${p.className} · ` : ""}
+                {t("frontoffice.classPickups.line", { time: formatDateTime(p.pickupAt, locale), who: p.collector })}
+              </span>
+            </span>
+            <Pill tone={p.status === "RELEASED" ? "neutral" : p.status === "APPROVED" ? "good" : "warn"}>
+              {translateOr(t, `frontoffice.passStatus.${p.status}`, p.status)}
+            </Pill>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

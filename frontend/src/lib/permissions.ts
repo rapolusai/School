@@ -7,12 +7,15 @@ import {
   Building2,
   CalendarDays,
   CalendarOff,
+  CarFront,
   ClipboardList,
   ClipboardCheck,
+  DoorOpen,
   GraduationCap,
   Handshake,
   House,
   IdCard,
+  KeyRound,
   Landmark,
   LayoutDashboard,
   LibraryBig,
@@ -40,7 +43,7 @@ import type { Me } from "./types";
 
 /** Permission codes from docs/api/phase-0.md, phase-1.md, phase-1-attendance.md, phase-1-staff.md,
  * phase-1-communication.md, phase-1-timetable-homework.md, phase-1-billing.md, phase-2-library.md,
- * phase-2-payroll.md, phase-2-exams.md, phase-2-chat.md and phase-2-lessons.md. */
+ * phase-2-payroll.md, phase-2-exams.md, phase-2-chat.md, phase-2-lessons.md and phase-2-frontoffice.md. */
 export const PERMISSIONS = {
   dashboardView: "dashboard.view",
   usersRead: "users.read",
@@ -91,6 +94,9 @@ export const PERMISSIONS = {
   lessonsRead: "lessons.read",
   lessonsManage: "lessons.manage",
   lessonsApprove: "lessons.approve",
+  frontofficeRead: "frontoffice.read",
+  frontofficeManage: "frontoffice.manage",
+  gatePass: "gate.pass",
 } as const;
 
 export type NavGroup = "overview" | "academics" | "finance" | "staff" | "communication" | "administration" | "platform";
@@ -123,6 +129,7 @@ export const REPORT_PERMISSIONS: readonly string[] = [
   PERMISSIONS.examsRead,
   PERMISSIONS.ptmManage,
   PERMISSIONS.lessonsRead,
+  PERMISSIONS.frontofficeRead,
 ];
 
 /** Every navigation item, in display order. */
@@ -285,6 +292,27 @@ export const NAV_ITEMS: readonly NavItem[] = [
     icon: ReceiptText,
     permission: PERMISSIONS.leaveRequest,
     group: "staff",
+  },
+  {
+    // Visitors, early pickup passes, enquiries and the courier register (docs/api/phase-2-frontoffice.md).
+    key: "frontoffice",
+    href: "/app/frontoffice",
+    labelKey: "nav.frontoffice",
+    shortLabelKey: "nav.frontoffice.short",
+    icon: DoorOpen,
+    permission: PERMISSIONS.frontofficeRead,
+    anyOf: [PERMISSIONS.frontofficeManage],
+    group: "administration",
+  },
+  {
+    // The gate screen for security on a phone: visitors in and out, and children released against the parent's OTP.
+    key: "gate",
+    href: "/app/frontoffice/gate",
+    labelKey: "nav.gate",
+    shortLabelKey: "nav.gate.short",
+    icon: KeyRound,
+    permission: PERMISSIONS.gatePass,
+    group: "administration",
   },
   {
     key: "users",
@@ -470,6 +498,17 @@ export const FAMILY_NAV_ITEMS: readonly NavItem[] = [
     icon: Wallet,
     permission: PERMISSIONS.childView,
     group: "finance",
+  },
+  {
+    // Early pickup passes and the routine pickup persons (docs/api/phase-2-frontoffice.md), for parents; after the
+    // first four, so the phone bar keeps them.
+    key: "family-pickup",
+    href: "/app/family/pickup",
+    labelKey: "nav.pickup",
+    shortLabelKey: "nav.pickup.short",
+    icon: CarFront,
+    permission: PERMISSIONS.childView,
+    group: "academics",
   },
   {
     key: "board",

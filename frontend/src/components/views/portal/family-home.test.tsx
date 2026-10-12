@@ -41,6 +41,7 @@ const m = vi.hoisted(() => ({
   myResults: vi.fn(),
   childStudy: vi.fn(),
   myStudy: vi.fn(),
+  childPickup: vi.fn(),
 }));
 
 vi.mock("@/lib/api", async (importOriginal) => {
@@ -84,6 +85,10 @@ vi.mock("@/lib/exams-api", async (importOriginal) => {
 vi.mock("@/lib/lessons-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/lessons-api")>();
   return { ...actual, lessonsApi: { ...actual.lessonsApi, childStudy: m.childStudy, myStudy: m.myStudy } };
+});
+vi.mock("@/lib/frontoffice-api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/frontoffice-api")>();
+  return { ...actual, frontOfficeApi: { ...actual.frontOfficeApi, childPickup: m.childPickup } };
 });
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
@@ -290,6 +295,9 @@ beforeEach(() => {
     Promise.resolve(id === "st1" ? study("st1") : study("st2", { material: [], tests: [] })),
   );
   m.myStudy.mockResolvedValue(study("st1"));
+  m.childPickup.mockImplementation((id: string) =>
+    Promise.resolve({ studentId: id, studentName: id === "st1" ? "Arjun Sharma" : "Riya Sharma", className: "Class 5 A", canRequest: true, passes: [], persons: [] }),
+  );
 });
 
 afterEach(() => {
