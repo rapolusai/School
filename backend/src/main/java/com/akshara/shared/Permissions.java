@@ -101,6 +101,13 @@ public final class Permissions {
     /** Approving or returning lesson plans, and every section and subject (School Admin, Principal, coordinators). */
     public static final String LESSONS_APPROVE = "lessons.approve";
 
+    /** The certificate register, templates and the ID card register (names and certificate details). */
+    public static final String CERTIFICATES_READ = "certificates.read";
+    /** Preparing certificates and ID cards, templates and the header, corrections and cancellations. */
+    public static final String CERTIFICATES_ISSUE = "certificates.issue";
+    /** Signing a prepared certificate, which issues it (the Principal or School Admin). */
+    public static final String CERTIFICATES_SIGN = "certificates.sign";
+
     public static final String PLATFORM_ADMIN = "platform.admin";
 
     public static final List<String> ALL_SCHOOL = List.of(
@@ -112,7 +119,8 @@ public final class Permissions {
             HOMEWORK_MANAGE, BILLING_READ, PRIVACY_MANAGE,
             LIBRARY_READ, LIBRARY_MANAGE, PAYROLL_READ, PAYROLL_MANAGE, PAYROLL_APPROVE, EXAMS_READ, EXAMS_SETUP,
             EXAMS_PUBLISH,
-            CHAT_USE, CHAT_OVERSEE, PTM_MANAGE, LESSONS_READ, LESSONS_MANAGE, LESSONS_APPROVE);
+            CHAT_USE, CHAT_OVERSEE, PTM_MANAGE, LESSONS_READ, LESSONS_MANAGE, LESSONS_APPROVE,
+            CERTIFICATES_READ, CERTIFICATES_ISSUE, CERTIFICATES_SIGN);
 
     private Permissions() {
     }

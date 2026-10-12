@@ -91,7 +91,9 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
             "lessons.settings", "lessons.syllabus", "lessons.syllabus_unit", "lessons.syllabus_topic",
             "lessons.lesson_plan", "lessons.material", "lessons.question", "lessons.question_option",
             "lessons.online_test", "lessons.test_section", "lessons.test_question", "lessons.test_attempt",
-            "lessons.test_answer");
+            "lessons.test_answer",
+            "certificates.settings", "certificates.template", "certificates.serial_counter", "certificates.certificate",
+            "certificates.id_card");
 
     @Autowired
     HomeworkService homework;
@@ -220,6 +222,7 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         examRecords(admin, yearId, classId, section, subject, student);
         chatRecords(school, admin, lata, student, section);
         lessonRecords(school, admin, classId, section, subject);
+        certificateRecords(admin, student, section);
         School other = api.signup();
 
         try (Connection app = appConnection(); Connection owner = ownerConnection()) {
@@ -372,6 +375,26 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
      * fine, paid, so a receipt number), the copy lent again with a member of staff waiting for it, and a stock check
      * that saw the copy.
      */
+    /**
+     * One row in every certificates table: the settings, a template, a bonafide certificate prepared and signed (so
+     * a serial counter), and an ID card for the student.
+     */
+    private void certificateRecords(Session admin, String student, String section) throws Exception {
+        api.put("/api/certificates/settings", admin.accessToken(), """
+                {"headerName":"RLS School","signatoryName":"Head","signatoryDesignation":"Principal",
+                 "tcDuesCheck":true,"cardValidMonths":12,"lostCardFeePaise":0}""").andExpect(status().isOk());
+        api.put("/api/certificates/templates/BONAFIDE", admin.accessToken(), """
+                {"title":"Bonafide Certificate","body":"{student} of {class} is a student here.","serialPrefix":"BC"}""")
+                .andExpect(status().isOk());
+        String certificate = TestApi.read(api.post("/api/certificates", admin.accessToken(), """
+                {"type":"BONAFIDE","studentId":"%s","purpose":"Bank account"}""".formatted(student))
+                .andExpect(status().isCreated()), "$.id");
+        api.post("/api/certificates/" + certificate + "/sign", admin.accessToken(), "").andExpect(status().isOk());
+        api.post("/api/certificates/id-cards", admin.accessToken(), """
+                {"subjectType":"STUDENT","studentId":"%s","bloodGroup":"O+"}""".formatted(student))
+                .andExpect(status().isCreated());
+    }
+
     private void libraryRecords(Session admin, String student, String staffUserId) throws Exception {
         api.put("/api/library/settings", admin.accessToken(), """
                 {"accessionPrefix":"RLS","holdDays":3,"remindersEnabled":false}""").andExpect(status().isOk());
