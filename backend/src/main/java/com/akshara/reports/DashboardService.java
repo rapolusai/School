@@ -15,6 +15,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.akshara.academics.AcademicsDirectory;
+import com.akshara.accounts.AccountsInsights;
+import com.akshara.accounts.AccountsViews.FinanceCard;
 import com.akshara.academics.AcademicsDirectory.YearInfo;
 import com.akshara.admissions.AdmissionsInsights;
 import com.akshara.admissions.AdmissionsInsights.FollowUps;
@@ -111,7 +113,8 @@ public class DashboardService {
 
     public record Summary(LocalDate date, String academicYearName, StudentsCard students, Overview attendance,
             FeesCard fees, AdmissionsCard admissions, TodaySummary staff, LeaveCard leave, CircularsCard circulars,
-            HomeworkCard homework, TimetableCard timetable, MyDayCard myDay, ExamsCard exams, LessonsCard lessons) {
+            HomeworkCard homework, TimetableCard timetable, MyDayCard myDay, ExamsCard exams, LessonsCard lessons,
+            FinanceCard accounts) {
     }
 
     private final AcademicsDirectory academics;
@@ -129,12 +132,14 @@ public class DashboardService {
     private final SubstitutionService substitutions;
     private final ExamInsights exams;
     private final LessonsInsights lessons;
+    private final AccountsInsights accounts;
 
     DashboardService(AcademicsDirectory academics, StudentInsights students, AttendanceInsights attendance,
             FeeReportService feeReports, FeeInsights fees, AdmissionsService admissionsService,
             AdmissionsInsights admissions, StaffAttendanceService staffAttendance, LeaveInsights leave,
             CircularService circulars, HomeworkInsights homework, TimetableService timetable,
-            SubstitutionService substitutions, ExamInsights exams, LessonsInsights lessons) {
+            SubstitutionService substitutions, ExamInsights exams, LessonsInsights lessons,
+            AccountsInsights accounts) {
         this.academics = academics;
         this.students = students;
         this.attendance = attendance;
@@ -150,6 +155,7 @@ public class DashboardService {
         this.substitutions = substitutions;
         this.exams = exams;
         this.lessons = lessons;
+        this.accounts = accounts;
     }
 
     public Summary summary() {
@@ -172,7 +178,8 @@ public class DashboardService {
                 can.contains(Permissions.TIMETABLE_READ) ? myDay(today) : null,
                 can.contains(Permissions.EXAMS_MANAGE) || can.contains(Permissions.EXAMS_PUBLISH) ? exams() : null,
                 can.contains(Permissions.LESSONS_MANAGE) || can.contains(Permissions.LESSONS_APPROVE)
-                        ? lessons(today) : null);
+                        ? lessons(today) : null,
+                can.contains(Permissions.ACCOUNTS_READ) ? accounts.financeCard() : null);
     }
 
     private StudentsCard students(Optional<YearInfo> year, LocalDate today) {

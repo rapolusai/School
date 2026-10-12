@@ -100,6 +100,15 @@ public final class Permissions {
     public static final String LESSONS_MANAGE = "lessons.manage";
     /** Approving or returning lesson plans, and every section and subject (School Admin, Principal, coordinators). */
     public static final String LESSONS_APPROVE = "lessons.approve";
+    /** The school's management accounts: expenses, other income, budgets, bank and cash books, vendors, reports. */
+    public static final String ACCOUNTS_READ = "accounts.read";
+    /**
+     * Recording and submitting expenses, paying approved ones, income receipts, petty cash, vendors, heads, budgets,
+     * bank accounts and reconciliation, and the accounts settings.
+     */
+    public static final String ACCOUNTS_MANAGE = "accounts.manage";
+    /** Approving or rejecting submitted expenses, within the approver's limit. */
+    public static final String ACCOUNTS_APPROVE = "accounts.approve";
 
     public static final String PLATFORM_ADMIN = "platform.admin";
 
@@ -112,7 +121,8 @@ public final class Permissions {
             HOMEWORK_MANAGE, BILLING_READ, PRIVACY_MANAGE,
             LIBRARY_READ, LIBRARY_MANAGE, PAYROLL_READ, PAYROLL_MANAGE, PAYROLL_APPROVE, EXAMS_READ, EXAMS_SETUP,
             EXAMS_PUBLISH,
-            CHAT_USE, CHAT_OVERSEE, PTM_MANAGE, LESSONS_READ, LESSONS_MANAGE, LESSONS_APPROVE);
+            CHAT_USE, CHAT_OVERSEE, PTM_MANAGE, LESSONS_READ, LESSONS_MANAGE, LESSONS_APPROVE,
+            ACCOUNTS_READ, ACCOUNTS_MANAGE, ACCOUNTS_APPROVE);
 
     private Permissions() {
     }
