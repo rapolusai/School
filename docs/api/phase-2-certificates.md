@@ -159,3 +159,14 @@ function that finds the school of a token for the public page. No rows are ever 
 `DemoCertificatesData`: the header and signatory, the bonafide wording saved, bonafide certificates issued for
 Arjun Sharma and Sneha Iyengar, a transfer certificate for Laila Ahmed (who is thereby marked as transferred), and
 ID cards for everyone in Class 5 A.
+
+## Web
+
+Staff: `/app/certificates` (register and "Prepare a certificate"), `/app/certificates/<id>` (wording editor until
+signed, sign, correct, cancel, A4 print with the QR code), `/app/certificates/templates` (header, signatory, lost card
+fee, dues check; one template per type with its placeholders) and `/app/certificates/id-cards` (register, issue one or a
+section's cards, reissue, photo, 2 × 5 CR80 sheet or single card printed from the browser). Reports: `/app/reports/
+certificates-issued`, `/app/reports/certificates-pending`, `/app/reports/id-cards-pending` under "Administration" in the
+hub, CSV downloads. Family app: `/app/family/certificates` (request a bonafide or fee certificate, print an issued one,
+see the child's ID card) plus a card on the family home. Public: `/verify/<token>` with no sign-in and no app shell.
+The QR code is drawn by `frontend/src/lib/qr.ts` (byte and alphanumeric modes, versions 1–10, EC level M).
