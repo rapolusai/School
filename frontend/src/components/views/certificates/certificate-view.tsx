@@ -29,8 +29,8 @@ import {
 
 /* /app/certificates/[id]: the certificate's values (editable until signed), the actions and the printed page. */
 
-/** Placeholders filled on signing: the editor never shows them. */
-const FROZEN = new Set(["school", "date", "serialNo"]);
+/** Placeholders filled on signing, and the purpose (edited in its own field): the editor never shows them. */
+const FROZEN = new Set(["school", "date", "serialNo", "purpose"]);
 
 type EditorValues = { title: string; purpose: string; fields: Record<string, string> };
 
@@ -93,6 +93,8 @@ export function CertificateView({ id }: { id: string }) {
     if (!form.check(validateEditor(form.values), t, event.currentTarget)) return;
     const fields: Record<string, string> = {};
     for (const [key, value] of Object.entries(form.values.fields)) fields[key] = value.trim();
+    // The purpose is edited once, above; the {purpose} placeholder follows it.
+    if (certificate.placeholders.includes("purpose") || "purpose" in certificate.fields) fields.purpose = form.values.purpose.trim();
     const ok = await form.submit(t, async () => {
       apply(await certificatesApi.edit(certificate.id, { title: form.values.title.trim(), purpose: form.values.purpose.trim() || undefined, fields }));
     });
