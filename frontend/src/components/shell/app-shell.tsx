@@ -6,6 +6,7 @@ import { BrandMark } from "@/components/brand";
 import { LanguageSelect, ThemeToggle } from "@/components/preferences";
 import { BillingBanner } from "@/components/views/billing/billing-banner";
 import { useAuth } from "@/lib/auth";
+import { useFamilyHostelNav } from "@/lib/family-hostel-nav";
 import { roleLabel, useI18n } from "@/lib/i18n";
 import { navFor } from "@/lib/permissions";
 import { BottomBar } from "./bottom-bar";
@@ -34,6 +35,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { t } = useI18n();
   const signingOut = useRef(false);
+  const hiddenNav = useFamilyHostelNav(auth.status === "authenticated" ? auth.me : null);
 
   useEffect(() => {
     if (auth.status !== "anonymous") return;
@@ -47,7 +49,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (auth.status !== "authenticated") return <Splash />;
 
   const me = auth.me;
-  const items = navFor(me);
+  const items = navFor(me).filter((item) => !hiddenNav.has(item.key));
   const signOut = () => {
     signingOut.current = true;
     void auth.logout();

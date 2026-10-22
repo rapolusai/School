@@ -9,6 +9,7 @@ import { ErrorState, LoadingRows } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { hostelApi } from "@/lib/hostel-api";
 import { classLabel, formatPhone, formatPlainDate, initials } from "@/lib/format";
 import { localeFor, translateOr, useI18n } from "@/lib/i18n";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
@@ -34,6 +35,7 @@ export function StudentDetailView({ id }: { id: string }) {
   const locale = localeFor(lang);
   const canManage = hasPermission(me, PERMISSIONS.studentsManage);
   const student = useApiData(`student:${id}`, () => api.getStudent(id));
+  const boarding = useApiData(`hostel:boarding:${id}`, () => hostelApi.boarding(id));
   const [open, setOpen] = useState<Open>(null);
 
   const s = student.data;
@@ -165,6 +167,14 @@ export function StudentDetailView({ id }: { id: string }) {
             <dd>{s.previousSchool ?? "—"}</dd>
             <dt>{t("student.signIn.label")}</dt>
             <dd>{s.hasSignIn ? (s.signInEmail ?? t("student.signIn.yes")) : t("student.signIn.none")}</dd>
+            <dt>{t("hostel.student.label")}</dt>
+            <dd data-testid="student-boarder">
+              {boarding.data?.boarder && boarding.data.current
+                ? t("hostel.student.boarder", { hostel: boarding.data.current.hostelName ?? "", room: boarding.data.current.roomNumber ?? "", bed: boarding.data.current.bedLabel ?? "" })
+                : boarding.data
+                  ? t("hostel.student.dayScholar")
+                  : "—"}
+            </dd>
           </dl>
         </section>
 

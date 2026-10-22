@@ -126,4 +126,5 @@ export * from "./types/chat";
 export * from "./types/lessons";
 export * from "./types/transport";
 export * from "./types/frontoffice";
+export * from "./types/hostel";
 export * from "./types/accounts";

@@ -27,6 +27,7 @@ import { feesApi } from "@/lib/fees-api";
 import { frontOfficeApi } from "@/lib/frontoffice-api";
 import { classLabel, firstName, formatLongDate, formatPaise, formatPlainDate, hourInIndia, initials } from "@/lib/format";
 import { homeworkApi } from "@/lib/homework-api";
+import { hostelApi } from "@/lib/hostel-api";
 import { lessonsApi } from "@/lib/lessons-api";
 import { localeFor, plural, translateOr, useI18n, type MessageKey } from "@/lib/i18n";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
@@ -35,6 +36,7 @@ import { timetableApi } from "@/lib/timetable-api";
 import type { BoardItem, Child, ChildAttendance, FamilyLeave, FamilyTimetable, StudentFees, StudentHomework } from "@/lib/types";
 import { useApiData, type ApiData } from "@/lib/use-api-data";
 import { ChildSwitcher, leaveDates, LeaveStatusPill, TodayPill, useFamilyChildren } from "./family-shared";
+import { FamilyHostelCard } from "./family-hostel";
 import { FamilyPickupCard } from "./family-pickup";
 import { InstallHint } from "./install-hint";
 
@@ -184,6 +186,7 @@ function ChildPanel({ child, self }: { child: Child; self: boolean }) {
   // Certificates and the ID card are a parent's view (docs/api/phase-2-certificates.md); one call covers every child.
   const certificates = useApiData(self ? null : "me:certificates", certificatesApi.mine);
   const pickup = useApiData(self ? null : `frontoffice:family-pickup:${id}`, () => frontOfficeApi.childPickup(id));
+  const hostel = useApiData(self ? null : `hostel:family:${id}`, () => hostelApi.childHostel(id));
   const query = self ? "" : `?child=${encodeURIComponent(id)}`;
   return (
     <>
@@ -202,6 +205,7 @@ function ChildPanel({ child, self }: { child: Child; self: boolean }) {
         <FamilyStudyCard data={study} href={`/app/family/study${query}`} />
         {self ? null : <FamilyCertificatesCard data={certificates} studentId={id} href="/app/family/certificates" />}
         {self ? null : <FamilyPickupCard data={pickup} href={`/app/family/pickup${query}`} />}
+        {self ? null : <FamilyHostelCard data={hostel} href={`/app/family/hostel${query}`} />}
       </div>
     </>
   );
