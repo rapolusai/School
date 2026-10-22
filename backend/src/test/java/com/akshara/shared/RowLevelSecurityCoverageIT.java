@@ -37,6 +37,7 @@ import com.akshara.homework.HomeworkService.HomeworkInput;
 import com.akshara.homework.HomeworkViews.HomeworkDetail;
 import com.akshara.homework.StudentHomeworkService;
 import com.akshara.support.AccountsFixtures;
+import com.akshara.support.InventoryFixtures;
 import com.akshara.support.BillingFixtures;
 import com.akshara.support.FeeFixtures;
 import com.akshara.support.FeeFixtures.Heads;
@@ -105,7 +106,13 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
             "accounts.bank_account", "accounts.opening_balance", "accounts.number_counter",
             "accounts.recurring_expense", "accounts.expense", "accounts.expense_approval",
             "accounts.petty_cash_entry", "accounts.income_receipt", "accounts.fee_income_day",
-            "accounts.payroll_cost", "accounts.budget", "accounts.budget_month", "accounts.bank_statement_line");
+            "accounts.payroll_cost", "accounts.budget", "accounts.budget_month", "accounts.bank_statement_line",
+            "inventory.purchase_approver", "inventory.category", "inventory.location", "inventory.item",
+            "inventory.number_counter", "inventory.requisition", "inventory.requisition_line",
+            "inventory.purchase_approval", "inventory.rfq", "inventory.quote", "inventory.purchase_order",
+            "inventory.purchase_order_line", "inventory.goods_receipt", "inventory.goods_receipt_line",
+            "inventory.stock_take", "inventory.stock_take_line", "inventory.stock_movement", "inventory.asset",
+            "inventory.asset_transfer", "inventory.verification_round", "inventory.verification_item");
 
     @Autowired
     HomeworkService homework;
@@ -241,6 +248,7 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         certificateRecords(admin, student, section);
         frontOfficeRecords(admin, lata, student);
         accountsRecords(school, admin);
+        inventoryRecords(admin, tara);
         School other = api.signup();
 
         try (Connection app = appConnection(); Connection owner = ownerConnection()) {
@@ -703,6 +711,12 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         new AccountsFixtures(api).everything(admin, adminId);
         AccountsFixtures.payrollApproved(events, school.tenantId(), YearMonth.now(ZoneId.of("Asia/Kolkata")),
                 6_000_000, 720_000, UUID.fromString(adminId));
+    }
+
+    /** Inventory records: one row in every inventory table through the API, with the accounts vendor above. */
+    private void inventoryRecords(Session admin, String tara) throws Exception {
+        String adminId = TestApi.read(api.get("/api/me", admin.accessToken()), "$.id");
+        new InventoryFixtures(api).everything(admin, adminId, tara);
     }
 
     /** The student's mother asks for a day of leave for her child. */

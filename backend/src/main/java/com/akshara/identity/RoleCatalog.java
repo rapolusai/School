@@ -18,6 +18,7 @@ public final class RoleCatalog {
     public static final String TRANSPORT_MANAGER = "TRANSPORT_MANAGER";
     public static final String BUS_ATTENDANT = "BUS_ATTENDANT";
     public static final String SECURITY = "SECURITY";
+    public static final String STOREKEEPER = "STOREKEEPER";
 
     public static final List<RoleTemplate> DEFAULTS = List.of(
             new RoleTemplate(SCHOOL_ADMIN, "School Admin", ALL_SCHOOL),
@@ -28,14 +29,14 @@ public final class RoleCatalog {
                     HOMEWORK_MANAGE, PRIVACY_MANAGE, LIBRARY_READ, EXAMS_READ, EXAMS_SETUP, EXAMS_PUBLISH, CHAT_USE,
                     CHAT_OVERSEE, PTM_MANAGE, LESSONS_READ, LESSONS_APPROVE, TRANSPORT_READ, CERTIFICATES_READ,
                     CERTIFICATES_ISSUE, CERTIFICATES_SIGN, FRONTOFFICE_READ, ACCOUNTS_READ,
-                    ACCOUNTS_APPROVE)),
+                    ACCOUNTS_APPROVE, INVENTORY_READ, PURCHASE_APPROVE)),
             new RoleTemplate("TEACHER", "Teacher", List.of(DASHBOARD_VIEW, STUDENTS_READ, ATTENDANCE_MARK,
                     ATTENDANCE_READ, EXAMS_MANAGE, NOTICES_SEND, ACADEMICS_READ, LEAVE_REQUEST, NOTICES_READ,
                     TIMETABLE_READ, HOMEWORK_MANAGE, LIBRARY_READ, EXAMS_READ, CHAT_USE, LESSONS_READ,
-                    LESSONS_MANAGE)),
+                    LESSONS_MANAGE, INVENTORY_READ)),
             new RoleTemplate("ACCOUNTANT", "Accountant", List.of(DASHBOARD_VIEW, STUDENTS_READ, FEES_READ,
                     FEES_COLLECT, ACADEMICS_READ, FEES_MANAGE, LEAVE_REQUEST, NOTICES_READ, TIMETABLE_READ,
-                    LIBRARY_READ, PAYROLL_READ, PAYROLL_MANAGE, ACCOUNTS_READ, ACCOUNTS_MANAGE)),
+                    LIBRARY_READ, PAYROLL_READ, PAYROLL_MANAGE, ACCOUNTS_READ, ACCOUNTS_MANAGE, INVENTORY_READ)),
             // Front office handles admissions paperwork, so it may add and edit student records.
             new RoleTemplate("FRONT_OFFICE", "Front office", List.of(DASHBOARD_VIEW, STUDENTS_READ, STUDENTS_MANAGE,
                     ACADEMICS_READ, ADMISSIONS_READ, ADMISSIONS_MANAGE, LEAVE_REQUEST, NOTICES_READ, TIMETABLE_READ,
@@ -43,7 +44,7 @@ public final class RoleCatalog {
                     GATE_PASS)),
             // The school librarian runs the library; like all staff they can apply for leave and read notices.
             new RoleTemplate(LIBRARIAN, "Librarian", List.of(DASHBOARD_VIEW, ACADEMICS_READ, LEAVE_REQUEST,
-                    NOTICES_READ, TIMETABLE_READ, LIBRARY_READ, LIBRARY_MANAGE)),
+                    NOTICES_READ, TIMETABLE_READ, LIBRARY_READ, LIBRARY_MANAGE, INVENTORY_READ)),
             // The transport manager runs the school buses: vehicles, crew, routes, allocations and alerts.
             new RoleTemplate(TRANSPORT_MANAGER, "Transport manager", List.of(DASHBOARD_VIEW, ACADEMICS_READ,
                     LEAVE_REQUEST, NOTICES_READ, TIMETABLE_READ, TRANSPORT_READ, TRANSPORT_MANAGE, TRANSPORT_TRIP)),
@@ -52,6 +53,9 @@ public final class RoleCatalog {
                     TRANSPORT_TRIP)),
             // Gate security checks visitors in and out and releases children against a parent's OTP, on a phone.
             new RoleTemplate(SECURITY, "Security", List.of(DASHBOARD_VIEW, LEAVE_REQUEST, NOTICES_READ, GATE_PASS)),
+            // The storekeeper runs the stores: items, stock, the asset register and purchase orders.
+            new RoleTemplate(STOREKEEPER, "Storekeeper", List.of(DASHBOARD_VIEW, LEAVE_REQUEST, NOTICES_READ,
+                    TIMETABLE_READ, INVENTORY_READ, INVENTORY_MANAGE)),
             new RoleTemplate("PARENT", "Parent", List.of(DASHBOARD_VIEW, CHILD_VIEW, NOTICES_READ)),
             new RoleTemplate("STUDENT", "Student", List.of(DASHBOARD_VIEW, NOTICES_READ)));
 
