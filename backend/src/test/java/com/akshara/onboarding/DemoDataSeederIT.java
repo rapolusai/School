@@ -118,13 +118,16 @@ class DemoDataSeederIT extends IntegrationTest {
     @Autowired
     DemoAccountsData accountsData;
 
+    @Autowired
+    DemoHealthData healthData;
+
     @Test
     void seedsADemoSchoolWithClassesAndStudentsOnce() throws Exception {
         DemoDataSeeder seeder = new DemoDataSeeder(provisioning, tenants, users, passwordEncoder, DEMO_PASSWORD,
                 academics, students, transactionManager, admissions, attendanceData, demoFees, staffData,
                 communicationData, timetableHomeworkData, demoBilling, demoPrivacy, portalData, libraryData,
                 payrollData, examsData, chatData, lessonsData, transportData, certificatesData, frontOfficeData,
-                accountsData);
+                accountsData, healthData);
         seeder.run(null);
         // A second start leaves the existing demo school alone.
         seeder.run(null);
@@ -268,9 +271,9 @@ class DemoDataSeederIT extends IntegrationTest {
         assertThat(JsonPath.<Integer>read(overview, "$.overdueStudents")).isBetween(5, 15);
 
         // Staff records: every demo staff member has a profile, plus the extra teachers, the timetable's subject
-        // teachers, the librarian and the bus drivers and attendants, and the security guard.
+        // teachers, the librarian and the bus drivers and attendants, the security guard and the nurse.
         int staffCount = DemoDataSeeder.PEOPLE.size() - 2 + 1 + DemoStaffData.EXTRA_TEACHERS
-                + DemoTimetableHomeworkData.TEACHERS.size() + 1 + DemoTransportData.CREW.size() + 1;
+                + DemoTimetableHomeworkData.TEACHERS.size() + 1 + DemoTransportData.CREW.size() + 1 + 1;
         api.get("/api/staff?size=100", admin.accessToken())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(staffCount))
@@ -608,5 +611,28 @@ class DemoDataSeederIT extends IntegrationTest {
                 .andExpect(jsonPath("$.banks.length()").value(2));
         api.get("/api/dashboard", principal.accessToken())
                 .andExpect(jsonPath("$.accounts.awaitingApproval").value(greaterThan(2)));
+
+        // Health and safety: the nurse signs in, yesterday's visits are on the log, Diya's severe allergy is on
+        // her record, the committee has three members and two verifications are still pending.
+        Session nurse = api.login(code, "nurse" + DemoDataSeeder.DEMO_DOMAIN, DEMO_PASSWORD);
+        api.get("/api/health/infirmary/visits?date=" + today.minusDays(1), nurse.accessToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.visits.length()").value(3))
+                .andExpect(jsonPath("$.visits[?(@.outcome == 'SENT_HOME')]").exists());
+        api.get("/api/health/infirmary/medicines", nurse.accessToken())
+                .andExpect(jsonPath("$[?(@.low == true)]").exists());
+        api.get("/api/health/reports/allergies", nurse.accessToken())
+                .andExpect(jsonPath("$.severe").value(greaterThan(0)));
+        api.get("/api/health/pocso/committee", principal.accessToken())
+                .andExpect(jsonPath("$.members.length()").value(3))
+                .andExpect(jsonPath("$.canReadComplaints").value(true));
+        api.get("/api/health/staff/checks", admin.accessToken())
+                .andExpect(jsonPath("$.rows.length()").value(staffCount))
+                .andExpect(jsonPath("$.rows[?(@.status == 'REQUESTED')].userId", hasSize(2)))
+                .andExpect(jsonPath("$.verificationsMissing").value(0));
+        api.get("/api/health/safety", admin.accessToken())
+                .andExpect(jsonPath("$.drills.length()").value(2))
+                .andExpect(jsonPath("$.drills[?(@.due == 'DUE_SOON')]").exists());
+        api.get("/api/health/staff/checks", nurse.accessToken()).andExpect(status().isForbidden());
     }
 }
