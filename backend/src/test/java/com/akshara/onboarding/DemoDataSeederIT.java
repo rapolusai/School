@@ -118,13 +118,16 @@ class DemoDataSeederIT extends IntegrationTest {
     @Autowired
     DemoAccountsData accountsData;
 
+    @Autowired
+    DemoHostelData hostelData;
+
     @Test
     void seedsADemoSchoolWithClassesAndStudentsOnce() throws Exception {
         DemoDataSeeder seeder = new DemoDataSeeder(provisioning, tenants, users, passwordEncoder, DEMO_PASSWORD,
                 academics, students, transactionManager, admissions, attendanceData, demoFees, staffData,
                 communicationData, timetableHomeworkData, demoBilling, demoPrivacy, portalData, libraryData,
                 payrollData, examsData, chatData, lessonsData, transportData, certificatesData, frontOfficeData,
-                accountsData);
+                accountsData, hostelData);
         seeder.run(null);
         // A second start leaves the existing demo school alone.
         seeder.run(null);
@@ -268,9 +271,9 @@ class DemoDataSeederIT extends IntegrationTest {
         assertThat(JsonPath.<Integer>read(overview, "$.overdueStudents")).isBetween(5, 15);
 
         // Staff records: every demo staff member has a profile, plus the extra teachers, the timetable's subject
-        // teachers, the librarian and the bus drivers and attendants, and the security guard.
+        // teachers, the librarian and the bus drivers and attendants, the security guard and the hostel warden.
         int staffCount = DemoDataSeeder.PEOPLE.size() - 2 + 1 + DemoStaffData.EXTRA_TEACHERS
-                + DemoTimetableHomeworkData.TEACHERS.size() + 1 + DemoTransportData.CREW.size() + 1;
+                + DemoTimetableHomeworkData.TEACHERS.size() + 1 + DemoTransportData.CREW.size() + 1 + 1;
         api.get("/api/staff?size=100", admin.accessToken())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(staffCount))
@@ -608,5 +611,34 @@ class DemoDataSeederIT extends IntegrationTest {
                 .andExpect(jsonPath("$.banks.length()").value(2));
         api.get("/api/dashboard", principal.accessToken())
                 .andExpect(jsonPath("$.accounts.awaitingApproval").value(greaterThan(2)));
+        // Hostel: the warden signs in and sees both hostels with boarders, last night's roll call with one
+        // absentee (an alert), Arjun's pending outing pass and the open complaint; Arjun's mother sees his bed.
+        Session warden = api.login(code, DemoHostelData.WARDEN_EMAIL, DEMO_PASSWORD);
+        api.get("/api/hostel/hostels", warden.accessToken())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].name").value("Boys Hostel"))
+                .andExpect(jsonPath("$[0].occupied").value(greaterThan(3)))
+                .andExpect(jsonPath("$[0].canWarden").value(true));
+        api.get("/api/hostel/boarders", warden.accessToken())
+                .andExpect(jsonPath("$.length()").value(greaterThan(8)));
+        api.get("/api/hostel/alerts", warden.accessToken())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].kind").value("ABSENT_AT_ROLL_CALL"));
+        api.get("/api/hostel/passes", warden.accessToken())
+                .andExpect(jsonPath("$[0].studentName").value("Arjun Sharma"))
+                .andExpect(jsonPath("$[0].status").value("REQUESTED"))
+                .andExpect(jsonPath("$[0].canDecide").value(true));
+        api.get("/api/hostel/complaints?status=OPEN", warden.accessToken())
+                .andExpect(jsonPath("$.length()").value(1));
+        api.get("/api/hostel/reports/occupancy", warden.accessToken()).andExpect(status().isForbidden());
+        api.get("/api/me/children/" + arjun + "/hostel", parent.accessToken())
+                .andExpect(jsonPath("$.boarder").value(true))
+                .andExpect(jsonPath("$.hostelName").value("Boys Hostel"))
+                .andExpect(jsonPath("$.wardenName").value(DemoHostelData.WARDEN_NAME))
+                .andExpect(jsonPath("$.nextPass.status").value("REQUESTED"))
+                .andExpect(jsonPath("$.lastRollCallStatus").exists());
+        api.get("/api/hostel/reports/occupancy", principal.accessToken())
+                .andExpect(jsonPath("$.hostels.length()").value(2))
+                .andExpect(jsonPath("$.occupied").value(greaterThan(8)));
     }
 }

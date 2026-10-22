@@ -133,6 +133,16 @@ public final class Permissions {
     /** Approving or rejecting submitted expenses, within the approver's limit. */
     public static final String ACCOUNTS_APPROVE = "accounts.approve";
 
+    /** Hostels, blocks, rooms and beds, the occupancy board, boarders, passes, roll calls, complaints and reports. */
+    public static final String HOSTEL_READ = "hostel.read";
+    /** Setting up hostels, assigning wardens, allotting, moving and vacating boarders. */
+    public static final String HOSTEL_MANAGE = "hostel.manage";
+    /**
+     * The warden's day-to-day of their own hostels on a phone: roll call, outing and leave passes, mess attendance,
+     * the menu, complaints. Without hostel.manage, only the hostels the user is warden of.
+     */
+    public static final String HOSTEL_WARDEN = "hostel.warden";
+
     public static final String PLATFORM_ADMIN = "platform.admin";
 
     public static final List<String> ALL_SCHOOL = List.of(
@@ -147,7 +157,7 @@ public final class Permissions {
             CHAT_USE, CHAT_OVERSEE, PTM_MANAGE, LESSONS_READ, LESSONS_MANAGE, LESSONS_APPROVE, TRANSPORT_READ,
             TRANSPORT_MANAGE, TRANSPORT_TRIP, CERTIFICATES_READ, CERTIFICATES_ISSUE, CERTIFICATES_SIGN, FRONTOFFICE_READ,
             FRONTOFFICE_MANAGE, GATE_PASS, ACCOUNTS_READ, ACCOUNTS_MANAGE,
-            ACCOUNTS_APPROVE);
+            ACCOUNTS_APPROVE, HOSTEL_READ, HOSTEL_MANAGE, HOSTEL_WARDEN);
 
     private Permissions() {
     }

@@ -84,6 +84,10 @@ public final class MessageTemplates {
     public static final String TRANSPORT_DELAYED = "transport.delayed";
     /** The one-time password of an approved early pickup pass, sent to the student's primary contact. */
     public static final String GATE_PASS_OTP = "frontoffice.gate_pass_otp";
+    /** A boarder's outing or home-leave pass was approved or refused by the warden. */
+    public static final String HOSTEL_PASS_DECIDED = "hostel.pass_decided";
+    /** A boarder was marked absent at the night roll call. */
+    public static final String HOSTEL_ROLL_CALL_ABSENT = "hostel.roll_call_absent";
 
     private static final Map<String, Map<String, String>> TEMPLATES = Map.ofEntries(
             Map.entry(ABSENCE_ALERT, Map.of(
@@ -188,7 +192,16 @@ public final class MessageTemplates {
                     ENGLISH, "Dear {guardian}, the {school} bus ({route}) for {student} is running about {minutes} "
                             + "minutes late: {reason}.",
                     HINDI, "प्रिय {guardian}, {student} की {school} बस ({route}) लगभग {minutes} मिनट देर से चल रही है: "
-                            + "{reason}।")));
+                            + "{reason}।")),
+            Map.entry(HOSTEL_PASS_DECIDED, Map.of(
+                    ENGLISH, "Dear {guardian}, the {kind} of {student} from {hostel} ({school}) for {dates} is "
+                            + "{decision}. {note}",
+                    HINDI, "प्रिय {guardian}, {hostel} ({school}) से {student} की {dates} की {kind} {decision}। {note}")),
+            Map.entry(HOSTEL_ROLL_CALL_ABSENT, Map.of(
+                    ENGLISH, "Dear {guardian}, {student} was not found at {hostel} ({school}) during the night roll "
+                            + "call on {date}. Please contact the warden at once.",
+                    HINDI, "प्रिय {guardian}, {date} की रात की हाज़िरी में {student} {hostel} ({school}) में नहीं मिले। "
+                            + "कृपया तुरंत वार्डन से संपर्क करें।")));
 
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{(\\w+)}");
     private static final DateTimeFormatter ENGLISH_DATE = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH);
