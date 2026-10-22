@@ -61,7 +61,9 @@ export type TileKey =
   | "passesToApprove"
   | "passesAtGate"
   | "foFollowUps"
-  | "visitorsInside";
+  | "visitorsInside"
+  | "inInfirmary"
+  | "staffChecks";
 
 const EVERY_TILE: TileKey[] = [
   "sectionsToMark",
@@ -90,6 +92,8 @@ const EVERY_TILE: TileKey[] = [
   "passesAtGate",
   "foFollowUps",
   "visitorsInside",
+  "inInfirmary",
+  "staffChecks",
 ];
 
 /** The tiles of each layout, in order. A tile shows only when its card came back (the person holds its permission). */
@@ -111,6 +115,8 @@ export const LAYOUT_TILES: Record<DashboardLayout, TileKey[]> = {
     "plansToApprove",
     "passesToApprove",
     "visitorsInside",
+    "inInfirmary",
+    "staffChecks",
   ],
   teacher: [
     "sectionsToMark",
@@ -365,6 +371,7 @@ export function tilesFor(
     ...examTiles(summary, t, can),
     ...lessonTiles(summary, t, can),
     ...frontOfficeTiles(summary, t),
+    ...healthTiles(summary, t),
   };
 
   return LAYOUT_TILES[layout].map((key) => build[key]()).filter((tile): tile is Tile => tile !== null);
@@ -502,6 +509,43 @@ function frontOfficeTiles(
             sub: t("frontoffice.tile.visitorsToday", { count: fo.visitorsToday ?? 0 }),
             href: "/app/frontoffice",
             attention: false,
+          }
+        : null,
+  };
+}
+
+/**
+ * The health and safety tiles (docs/api/phase-3-health.md): who is in the infirmary now (health.read) and the staff
+ * checks due (safety.manage). Each count is null when the person lacks the permission.
+ */
+function healthTiles(summary: DashboardSummary, t: Translate): Record<"inInfirmary" | "staffChecks", () => Tile | null> {
+  const h = summary.health;
+  return {
+    inInfirmary: () =>
+      h && h.inInfirmary !== null
+        ? {
+            key: "inInfirmary",
+            label: t("health.tile.inInfirmary"),
+            value: String(h.inInfirmary),
+            sub: t("health.tile.visitsToday", { count: h.visitsToday ?? 0 }),
+            href: "/app/health",
+            attention: h.inInfirmary > 0,
+          }
+        : null,
+    staffChecks: () =>
+      h && h.verificationsDue !== null
+        ? {
+            key: "staffChecks",
+            label: t("health.tile.staffChecks"),
+            value: String((h.verificationsDue ?? 0) + (h.verificationsMissing ?? 0)),
+            sub:
+              h.drillDue === "OVERDUE" || h.drillDue === "MISSING"
+                ? t("health.tile.drillOverdue")
+                : h.drillDue === "DUE_SOON"
+                  ? t("health.tile.drillDueSoon")
+                  : plural(t, "health.tile.trainingsDue", h.trainingsDue ?? 0),
+            href: "/app/health/staff",
+            attention: (h.verificationsDue ?? 0) + (h.verificationsMissing ?? 0) + (h.trainingsDue ?? 0) > 0 || h.drillDue === "OVERDUE" || h.drillDue === "MISSING",
           }
         : null,
   };
