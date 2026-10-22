@@ -23,6 +23,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
@@ -35,6 +36,7 @@ import com.akshara.homework.HomeworkService;
 import com.akshara.homework.HomeworkService.HomeworkInput;
 import com.akshara.homework.HomeworkViews.HomeworkDetail;
 import com.akshara.homework.StudentHomeworkService;
+import com.akshara.support.AccountsFixtures;
 import com.akshara.support.BillingFixtures;
 import com.akshara.support.FeeFixtures;
 import com.akshara.support.FeeFixtures.Heads;
@@ -98,7 +100,12 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
             "certificates.settings", "certificates.template", "certificates.serial_counter",
             "certificates.certificate", "certificates.id_card",
             "frontoffice.visitor", "frontoffice.blocked_visitor", "frontoffice.gate_pass", "frontoffice.pickup_person",
-            "frontoffice.call_log", "frontoffice.enquiry", "frontoffice.courier_item");
+            "frontoffice.call_log", "frontoffice.enquiry", "frontoffice.courier_item",
+            "accounts.settings", "accounts.approver", "accounts.head", "accounts.cost_centre", "accounts.vendor",
+            "accounts.bank_account", "accounts.opening_balance", "accounts.number_counter",
+            "accounts.recurring_expense", "accounts.expense", "accounts.expense_approval",
+            "accounts.petty_cash_entry", "accounts.income_receipt", "accounts.fee_income_day",
+            "accounts.payroll_cost", "accounts.budget", "accounts.budget_month", "accounts.bank_statement_line");
 
     @Autowired
     HomeworkService homework;
@@ -108,6 +115,9 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
 
     @Autowired
     ChildLeaveService childLeave;
+
+    @Autowired
+    ApplicationEventPublisher events;
 
     /** The last day of the fixtures' current year, 2026-27. */
     static final LocalDate LAST_DAY = LocalDate.of(2027, 3, 31);
@@ -230,6 +240,7 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         transportRecords(admin, student, tara);
         certificateRecords(admin, student, section);
         frontOfficeRecords(admin, lata, student);
+        accountsRecords(school, admin);
         School other = api.signup();
 
         try (Connection app = appConnection(); Connection owner = ownerConnection()) {
@@ -681,6 +692,17 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
                 {"direction":"INWARD","item":"CBSE circulars","sender":"CBSE","receiver":"Principal",
                  "itemDate":"%s"}""".formatted(LocalDate.now(ZoneId.of("Asia/Kolkata"))))
                 .andExpect(status().isCreated());
+    }
+
+    /**
+     * Accounts records: one row in every accounts table through the API, plus the payroll cost that the payroll
+     * module's approval event brings (the fee income row came with the fee payment above).
+     */
+    private void accountsRecords(School school, Session admin) throws Exception {
+        String adminId = TestApi.read(api.get("/api/me", admin.accessToken()), "$.id");
+        new AccountsFixtures(api).everything(admin, adminId);
+        AccountsFixtures.payrollApproved(events, school.tenantId(), YearMonth.now(ZoneId.of("Asia/Kolkata")),
+                6_000_000, 720_000, UUID.fromString(adminId));
     }
 
     /** The student's mother asks for a day of leave for her child. */

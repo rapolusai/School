@@ -115,12 +115,16 @@ class DemoDataSeederIT extends IntegrationTest {
     @Autowired
     DemoFrontOfficeData frontOfficeData;
 
+    @Autowired
+    DemoAccountsData accountsData;
+
     @Test
     void seedsADemoSchoolWithClassesAndStudentsOnce() throws Exception {
         DemoDataSeeder seeder = new DemoDataSeeder(provisioning, tenants, users, passwordEncoder, DEMO_PASSWORD,
                 academics, students, transactionManager, admissions, attendanceData, demoFees, staffData,
                 communicationData, timetableHomeworkData, demoBilling, demoPrivacy, portalData, libraryData,
-                payrollData, examsData, chatData, lessonsData, transportData, certificatesData, frontOfficeData);
+                payrollData, examsData, chatData, lessonsData, transportData, certificatesData, frontOfficeData,
+                accountsData);
         seeder.run(null);
         // A second start leaves the existing demo school alone.
         seeder.run(null);
@@ -575,5 +579,34 @@ class DemoDataSeederIT extends IntegrationTest {
         api.get("/api/frontoffice/visitors", principal.accessToken()).andExpect(status().isOk());
         api.post("/api/frontoffice/visitors", principal.accessToken(), """
                 {"name":"X","purpose":"MEETING"}""").andExpect(status().isForbidden());
+        // Accounts: the chart with the fee heads mapped, bills waiting for the principal, paid bills in the books,
+        // last month's payroll cost, donations with 80G numbers, a budget, and the fee income summary matching
+        // the fee receipts day by day.
+        api.get("/api/accounts/heads", accounts.accessToken())
+                .andExpect(jsonPath("$[?(@.systemCode == 'FEES')].name", contains("Fee income")))
+                .andExpect(jsonPath("$[?(@.feeHeadId)]", hasSize(greaterThan(2))));
+        api.get("/api/accounts/expenses/queue", principal.accessToken())
+                .andExpect(jsonPath("$.expenses.length()").value(greaterThan(2)))
+                .andExpect(jsonPath("$.limited").value(true));
+        api.get("/api/accounts/expenses?status=PAID", accounts.accessToken())
+                .andExpect(jsonPath("$.paidCount").value(greaterThan(20)))
+                .andExpect(jsonPath("$.rejectedCount").value(1))
+                .andExpect(jsonPath("$.draftCount").value(2));
+        api.get("/api/accounts/payroll-costs", principal.accessToken())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].staffCount").value(greaterThan(5)));
+        api.get("/api/accounts/income?from=" + today.minusDays(200) + "&to=" + today, accounts.accessToken())
+                .andExpect(jsonPath("$[?(@.eightyGNumber)]", hasSize(greaterThan(1))));
+        int fyStart = today.getMonthValue() >= 4 ? today.getYear() : today.getYear() - 1;
+        api.get("/api/accounts/budgets/" + fyStart + "-" + String.format("%02d", (fyStart + 1) % 100),
+                principal.accessToken()).andExpect(jsonPath("$.budgetPaise").value(greaterThan(1000000)));
+        api.get("/api/accounts/fee-reconciliation?from=" + today.minusDays(200) + "&to=" + today,
+                accounts.accessToken())
+                .andExpect(jsonPath("$.daysWithDifferences").value(0))
+                .andExpect(jsonPath("$.accountsPaise").value(greaterThan(100000)));
+        api.get("/api/accounts/cash-position", principal.accessToken())
+                .andExpect(jsonPath("$.banks.length()").value(2));
+        api.get("/api/dashboard", principal.accessToken())
+                .andExpect(jsonPath("$.accounts.awaitingApproval").value(greaterThan(2)));
     }
 }

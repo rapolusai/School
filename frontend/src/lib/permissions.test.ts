@@ -503,6 +503,28 @@ describe("navFor", () => {
   });
 });
 
+describe("navFor: accounts", () => {
+  it("gives Accounts under Finance to readers, approvers and managers (docs/api/phase-2-accounts.md)", () => {
+    // Seeded: School Admin and Accountant hold read and manage, Principal read and approve.
+    const accountant = user(["ACCOUNTANT"], [
+      "dashboard.view",
+      "fees.read",
+      "academics.read",
+      "leave.request",
+      "accounts.read",
+      "accounts.manage",
+    ]);
+    expect(keys(accountant)).toEqual(["dashboard", "setup", "fees", "accounts", "leave", "myPayslips", "reports"]);
+    const principal = user(["PRINCIPAL"], ["dashboard.view", "leave.request", "accounts.read", "accounts.approve"]);
+    expect(keys(principal)).toEqual(["dashboard", "accounts", "leave", "myPayslips", "reports"]);
+    // Someone given only the approve permission still reaches the queue.
+    expect(keys(user(["PRINCIPAL"], ["dashboard.view", "accounts.approve"]))).toEqual(["dashboard", "accounts"]);
+    expect(keys(user(["TEACHER"], [...TEACHER.permissions, "leave.request"]))).not.toContain("accounts");
+    expect(navItemForPath("/app/accounts/expenses/e1")?.key).toBe("accounts");
+    expect(navItemForPath("/app/reports/accounts-income-vs-expense")?.key).toBe("reports");
+  });
+});
+
 describe("hasPermission", () => {
   it("treats platformAdmin as platform.admin even without the permission string", () => {
     expect(hasPermission(user([], [], true), "platform.admin")).toBe(true);

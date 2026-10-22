@@ -128,14 +128,14 @@ export const LAYOUT_TILES: Record<DashboardLayout, TileKey[]> = {
   staff: EVERY_TILE,
 };
 
-export type ChartKey = "trend" | "collections" | "funnel" | "circulars" | "followUps";
+export type ChartKey = "trend" | "collections" | "finance" | "funnel" | "circulars" | "followUps";
 
 export const LAYOUT_CHARTS: Record<DashboardLayout, ChartKey[]> = {
-  leadership: ["trend", "collections", "funnel", "circulars", "followUps"],
+  leadership: ["trend", "collections", "finance", "funnel", "circulars", "followUps"],
   teacher: ["trend"],
-  accountant: ["collections"],
+  accountant: ["collections", "finance"],
   frontOffice: ["funnel", "followUps"],
-  staff: ["trend", "collections", "funnel", "circulars", "followUps"],
+  staff: ["trend", "collections", "finance", "funnel", "circulars", "followUps"],
 };
 
 export type Tile = {
@@ -513,6 +513,7 @@ export function chartsFor(summary: DashboardSummary, layout: DashboardLayout): C
   const present: Record<ChartKey, boolean> = {
     trend: Boolean(a && (a.wholeSchool || a.ownSections.length > 0)),
     collections: Boolean(summary.fees),
+    finance: Boolean(summary.accounts),
     funnel: Boolean(summary.admissions),
     circulars: Boolean(summary.circulars && summary.circulars.items.length > 0),
     followUps: Boolean(summary.admissions && summary.admissions.followUps.items.length > 0),
@@ -708,6 +709,50 @@ function ChartCard({
         ) : (
           <p className="empty">{t("reports.dash.collectionsEmpty")}</p>
         )}
+      </section>
+    );
+  }
+
+  if (chart === "finance" && summary.accounts) {
+    const fin = summary.accounts;
+    return (
+      <section className="card" data-testid="chart-finance">
+        <div className="card-head">
+          <h2>{t("accounts.dash.title")}</h2>
+          <Link href="/app/accounts" className="link text-[13.5px]">
+            {t("accounts.dash.open")}
+          </Link>
+        </div>
+        <dl className="kv" data-testid="finance-card">
+          <dt>{t("accounts.dash.income")}</dt>
+          <dd className="num font-semibold" data-testid="finance-income">
+            {formatPaise(fin.incomePaise)}
+            <span className="ml-1 text-[12.5px] font-normal text-ink-3">
+              {t("accounts.overview.feesPart", { amount: formatPaise(fin.feeIncomePaise) })}
+            </span>
+          </dd>
+          <dt>{t("accounts.dash.expense")}</dt>
+          <dd className="num font-semibold" data-testid="finance-expense">
+            {formatPaise(fin.expensePaise)}
+            <span className="ml-1 text-[12.5px] font-normal text-ink-3">
+              {t("accounts.overview.payrollPart", { amount: formatPaise(fin.payrollPaise) })}
+            </span>
+          </dd>
+          <dt>{t("accounts.bank.cashInHand")}</dt>
+          <dd className="num">{formatPaise(fin.cashInHandPaise)}</dd>
+          <dt>{t("accounts.bank.inBank")}</dt>
+          <dd className="num">{formatPaise(fin.bankPaise)}</dd>
+          <dt>{t("accounts.overview.awaiting")}</dt>
+          <dd>
+            {fin.awaitingApproval > 0 ? (
+              <Link href="/app/accounts/approvals" className="link">
+                {plural(t, "accounts.approvals.count", fin.awaitingApproval)} · {formatPaise(fin.awaitingApprovalPaise)}
+              </Link>
+            ) : (
+              t("accounts.dash.nothingWaiting")
+            )}
+          </dd>
+        </dl>
       </section>
     );
   }

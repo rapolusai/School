@@ -7,6 +7,7 @@ import {
   BookOpenText,
   Building2,
   Bus,
+  Calculator,
   CalendarDays,
   CalendarOff,
   CarFront,
@@ -106,6 +107,9 @@ export const PERMISSIONS = {
   frontofficeRead: "frontoffice.read",
   frontofficeManage: "frontoffice.manage",
   gatePass: "gate.pass",
+  accountsRead: "accounts.read",
+  accountsManage: "accounts.manage",
+  accountsApprove: "accounts.approve",
 } as const;
 
 export type NavGroup = "overview" | "academics" | "finance" | "staff" | "communication" | "administration" | "platform";
@@ -141,6 +145,7 @@ export const REPORT_PERMISSIONS: readonly string[] = [
   PERMISSIONS.transportRead,
   PERMISSIONS.certificatesRead,
   PERMISSIONS.frontofficeRead,
+  PERMISSIONS.accountsRead,
 ];
 
 /** Every navigation item, in display order. */
@@ -273,6 +278,17 @@ export const NAV_ITEMS: readonly NavItem[] = [
     shortLabelKey: "nav.payroll.short",
     icon: Landmark,
     permission: PERMISSIONS.payrollRead,
+    group: "finance",
+  },
+  {
+    key: "accounts",
+    href: "/app/accounts",
+    labelKey: "nav.accounts",
+    shortLabelKey: "nav.accounts.short",
+    icon: Calculator,
+    permission: PERMISSIONS.accountsRead,
+    // Readers, approvers and managers all open it (docs/api/phase-2-accounts.md).
+    anyOf: [PERMISSIONS.accountsManage, PERMISSIONS.accountsApprove],
     group: "finance",
   },
   {

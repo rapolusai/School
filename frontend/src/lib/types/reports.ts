@@ -2,6 +2,7 @@ import type { FrontOfficeCard } from "./frontoffice";
 
 /** Types mirroring docs/api/phase-1-reports.md (staff dashboard and reports). Keep in sync with the contract. */
 
+import type { FinanceCard } from "./accounts";
 import type { ApplicationSource, ApplicationStage } from "./admissions";
 import type { AttendanceCounts, AttendanceStatus } from "./attendance";
 import type { CollectionTotal } from "./fees";
@@ -140,6 +141,8 @@ export type DashboardSummary = {
   lessons?: { plansToSubmit: number; answersToMark: number; plansToApprove: number } | null;
   /** Visitors, passes and follow-ups (frontoffice.*, gate.pass) and a class teacher's early pickups today. */
   frontOffice?: FrontOfficeCard | null;
+  /** This month's income, expenses, cash and bank (accounts.read). */
+  accounts?: FinanceCard | null;
 };
 
 /* ------------------------------------------------------------------ reports */
