@@ -46,6 +46,9 @@ public class SecurityConfig {
      */
     static final String PUBLIC_VEHICLE_POSITIONS = "/api/public/transport/vehicles/*/positions";
 
+    /** Checks a certificate by the token in its QR code (no sign-in; rate-limited by the certificates module). */
+    static final String PUBLIC_VERIFY = "/api/public/verify/*";
+
     @Bean
     SecurityFilterChain api(HttpSecurity http, JwtService jwtService) throws Exception {
         http
@@ -61,6 +64,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, PUBLIC_PRIVACY_NOTICE).permitAll()
                         .requestMatchers(HttpMethod.POST, PUBLIC_ENQUIRIES).permitAll()
                         .requestMatchers(HttpMethod.POST, PUBLIC_VEHICLE_POSITIONS).permitAll()
+                        .requestMatchers(HttpMethod.GET, PUBLIC_VERIFY).permitAll()
                         .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
                         .requestMatchers("/api/platform/**").hasAuthority(Permissions.PLATFORM_ADMIN)
                         .requestMatchers("/api/**").authenticated()

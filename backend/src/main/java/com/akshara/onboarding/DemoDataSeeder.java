@@ -77,6 +77,7 @@ public class DemoDataSeeder implements ApplicationRunner {
     private final DemoChatData chatData;
     private final DemoLessonsData lessonsData;
     private final DemoTransportData transportData;
+    private final DemoCertificatesData certificatesData;
 
     public DemoDataSeeder(SchoolProvisioning provisioning, TenantDirectory tenants, UserService users,
             PasswordEncoder passwordEncoder, @Value("${akshara.demo.password:}") String password,
@@ -86,7 +87,7 @@ public class DemoDataSeeder implements ApplicationRunner {
             DemoTimetableHomeworkData timetableHomeworkData, DemoBillingData billing, DemoPrivacyData privacy,
             DemoPortalData portalData, DemoLibraryData libraryData, DemoPayrollData payrollData,
             DemoExamsData examsData, DemoChatData chatData, DemoLessonsData lessonsData,
-            DemoTransportData transportData) {
+            DemoTransportData transportData, DemoCertificatesData certificatesData) {
         this.provisioning = provisioning;
         this.tenants = tenants;
         this.users = users;
@@ -110,6 +111,7 @@ public class DemoDataSeeder implements ApplicationRunner {
         this.chatData = chatData;
         this.lessonsData = lessonsData;
         this.transportData = transportData;
+        this.certificatesData = certificatesData;
     }
 
     @Override
@@ -159,5 +161,6 @@ public class DemoDataSeeder implements ApplicationRunner {
         log.info("Seeded demo lessons with {} lesson plans", lessonsData.seed(school.tenant().id(), userIds));
         log.info("Seeded {} demo students on the buses",
                 transportData.seed(school.tenant().id(), userIds, school.adminUserId(), hash));
+        log.info("Seeded {} demo certificates", certificatesData.seed(school.tenant().id(), userIds));
     }
 }

@@ -2,11 +2,13 @@ package com.akshara.onboarding;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
@@ -107,12 +109,15 @@ class DemoDataSeederIT extends IntegrationTest {
     @Autowired
     DemoTransportData transportData;
 
+    @Autowired
+    DemoCertificatesData certificatesData;
+
     @Test
     void seedsADemoSchoolWithClassesAndStudentsOnce() throws Exception {
         DemoDataSeeder seeder = new DemoDataSeeder(provisioning, tenants, users, passwordEncoder, DEMO_PASSWORD,
                 academics, students, transactionManager, admissions, attendanceData, demoFees, staffData,
                 communicationData, timetableHomeworkData, demoBilling, demoPrivacy, portalData, libraryData,
-                payrollData, examsData, chatData, lessonsData, transportData);
+                payrollData, examsData, chatData, lessonsData, transportData, certificatesData);
         seeder.run(null);
         // A second start leaves the existing demo school alone.
         seeder.run(null);
@@ -398,6 +403,20 @@ class DemoDataSeederIT extends IntegrationTest {
                 .andExpect(jsonPath("$.total").value(1))
                 .andExpect(jsonPath("$.items[0].member.name").value("Kunal Mehta"))
                 .andExpect(jsonPath("$.items[0].receiptNo", startsWith("LIBF/")));
+        // Certificates: two bonafide certificates and Laila Ahmed's transfer certificate issued (she left), ID cards
+        // for Class 5 A; Arjun's mother sees his certificate and his card.
+        api.get("/api/certificates?status=ISSUED", admin.accessToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(3))
+                .andExpect(jsonPath("$.items[*].type", hasItems("BONAFIDE", "TRANSFER")));
+        api.get("/api/students?status=TRANSFERRED", admin.accessToken())
+                .andExpect(jsonPath("$.items[*].fullName", hasItem(DemoCertificatesData.LEFT_STUDENT)));
+        api.get("/api/certificates/id-cards?subjectType=STUDENT", admin.accessToken())
+                .andExpect(jsonPath("$.total").value(greaterThanOrEqualTo(2)))
+                .andExpect(jsonPath("$.items[0].subject.detail").value(DemoCertificatesData.CARDS_SECTION));
+        api.get("/api/me/certificates", parent.accessToken())
+                .andExpect(jsonPath("$.children[?(@.name=='Arjun Sharma')].certificates[0].status").value("ISSUED"))
+                .andExpect(jsonPath("$.children[?(@.name=='Arjun Sharma')].idCard.cardNo").exists());
         api.get("/api/me/library", parent.accessToken())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.members[*].name", contains("Arjun Sharma", "Diya Sharma")))

@@ -25,7 +25,8 @@ public final class RoleCatalog {
                     ADMISSIONS_READ, ADMISSIONS_MANAGE, ATTENDANCE_MANAGE, MESSAGES_READ, STAFF_READ, LEAVE_REQUEST,
                     LEAVE_APPROVE, NOTICES_READ, NOTICES_APPROVE, CALENDAR_MANAGE, TIMETABLE_READ, TIMETABLE_MANAGE,
                     HOMEWORK_MANAGE, PRIVACY_MANAGE, LIBRARY_READ, EXAMS_READ, EXAMS_SETUP, EXAMS_PUBLISH, CHAT_USE,
-                    CHAT_OVERSEE, PTM_MANAGE, LESSONS_READ, LESSONS_APPROVE, TRANSPORT_READ)),
+                    CHAT_OVERSEE, PTM_MANAGE, LESSONS_READ, LESSONS_APPROVE, TRANSPORT_READ, CERTIFICATES_READ,
+                    CERTIFICATES_ISSUE, CERTIFICATES_SIGN)),
             new RoleTemplate("TEACHER", "Teacher", List.of(DASHBOARD_VIEW, STUDENTS_READ, ATTENDANCE_MARK,
                     ATTENDANCE_READ, EXAMS_MANAGE, NOTICES_SEND, ACADEMICS_READ, LEAVE_REQUEST, NOTICES_READ,
                     TIMETABLE_READ, HOMEWORK_MANAGE, LIBRARY_READ, EXAMS_READ, CHAT_USE, LESSONS_READ,
@@ -36,7 +37,7 @@ public final class RoleCatalog {
             // Front office handles admissions paperwork, so it may add and edit student records.
             new RoleTemplate("FRONT_OFFICE", "Front office", List.of(DASHBOARD_VIEW, STUDENTS_READ, STUDENTS_MANAGE,
                     ACADEMICS_READ, ADMISSIONS_READ, ADMISSIONS_MANAGE, LEAVE_REQUEST, NOTICES_READ, TIMETABLE_READ,
-                    LIBRARY_READ)),
+                    LIBRARY_READ, CERTIFICATES_READ, CERTIFICATES_ISSUE)),
             // The school librarian runs the library; like all staff they can apply for leave and read notices.
             new RoleTemplate(LIBRARIAN, "Librarian", List.of(DASHBOARD_VIEW, ACADEMICS_READ, LEAVE_REQUEST,
                     NOTICES_READ, TIMETABLE_READ, LIBRARY_READ, LIBRARY_MANAGE)),
