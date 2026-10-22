@@ -112,12 +112,15 @@ class DemoDataSeederIT extends IntegrationTest {
     @Autowired
     DemoCertificatesData certificatesData;
 
+    @Autowired
+    DemoFrontOfficeData frontOfficeData;
+
     @Test
     void seedsADemoSchoolWithClassesAndStudentsOnce() throws Exception {
         DemoDataSeeder seeder = new DemoDataSeeder(provisioning, tenants, users, passwordEncoder, DEMO_PASSWORD,
                 academics, students, transactionManager, admissions, attendanceData, demoFees, staffData,
                 communicationData, timetableHomeworkData, demoBilling, demoPrivacy, portalData, libraryData,
-                payrollData, examsData, chatData, lessonsData, transportData, certificatesData);
+                payrollData, examsData, chatData, lessonsData, transportData, certificatesData, frontOfficeData);
         seeder.run(null);
         // A second start leaves the existing demo school alone.
         seeder.run(null);
@@ -261,9 +264,9 @@ class DemoDataSeederIT extends IntegrationTest {
         assertThat(JsonPath.<Integer>read(overview, "$.overdueStudents")).isBetween(5, 15);
 
         // Staff records: every demo staff member has a profile, plus the extra teachers, the timetable's subject
-        // teachers, the librarian and the bus drivers and attendants.
+        // teachers, the librarian and the bus drivers and attendants, and the security guard.
         int staffCount = DemoDataSeeder.PEOPLE.size() - 2 + 1 + DemoStaffData.EXTRA_TEACHERS
-                + DemoTimetableHomeworkData.TEACHERS.size() + 1 + DemoTransportData.CREW.size();
+                + DemoTimetableHomeworkData.TEACHERS.size() + 1 + DemoTransportData.CREW.size() + 1;
         api.get("/api/staff?size=100", admin.accessToken())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(staffCount))
@@ -544,5 +547,33 @@ class DemoDataSeederIT extends IntegrationTest {
                 .andExpect(jsonPath("$.children[0].allocation.routeName").value(DemoTransportData.ROUTE_ONE))
                 .andExpect(jsonPath("$.children[0].trips[0].status").value("COMPLETED"))
                 .andExpect(jsonPath("$.children[0].trips[0].childStatus").value("BOARDED"));
+        // Front office: the security guard signs in and works the gate, where two visitors are inside and Arjun's
+        // approved early pickup waits for the OTP his mother got by (simulated) message; the office has a follow-up
+        // due today and two courier entries.
+        Session securityGuard = api.login(code, DemoFrontOfficeData.SECURITY_EMAIL, DEMO_PASSWORD);
+        api.get("/api/frontoffice/gate", securityGuard.accessToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.inside.length()").value(2))
+                .andExpect(jsonPath("$.passes.length()").value(1))
+                .andExpect(jsonPath("$.passes[0].studentName").value(DemoFrontOfficeData.ARJUN))
+                .andExpect(jsonPath("$.passes[0].status").value("APPROVED"))
+                .andExpect(jsonPath("$.passes[0].collectorName").value("Rajesh Sharma"))
+                .andExpect(jsonPath("$.passes[0].canRelease").value(true));
+        api.get("/api/frontoffice/gate-passes", securityGuard.accessToken()).andExpect(status().isForbidden());
+        api.get("/api/frontoffice/visitors", frontOffice.accessToken())
+                .andExpect(jsonPath("$.visitors.length()").value(3))
+                .andExpect(jsonPath("$.inside").value(2))
+                .andExpect(jsonPath("$.visitors[?(@.status == 'OUT')].name", contains("Prakash Nair")));
+        api.get("/api/frontoffice/follow-ups", frontOffice.accessToken())
+                .andExpect(jsonPath("$.dueToday").value(2))
+                .andExpect(jsonPath("$.overdue").value(1));
+        api.get("/api/frontoffice/courier", frontOffice.accessToken()).andExpect(jsonPath("$.length()").value(2));
+        api.get("/api/frontoffice/blocklist", frontOffice.accessToken()).andExpect(jsonPath("$.length()").value(1));
+        api.get("/api/me/children/" + arjun + "/pickup", parent.accessToken())
+                .andExpect(jsonPath("$.passes[0].status").value("APPROVED"))
+                .andExpect(jsonPath("$.persons[*].name", contains("Kamla Devi", "Rajesh Sharma")));
+        api.get("/api/frontoffice/visitors", principal.accessToken()).andExpect(status().isOk());
+        api.post("/api/frontoffice/visitors", principal.accessToken(), """
+                {"name":"X","purpose":"MEETING"}""").andExpect(status().isForbidden());
     }
 }

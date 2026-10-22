@@ -10,15 +10,18 @@ import {
   ChartColumnBig,
   ClipboardCheck,
   ClipboardList,
+  DoorOpen,
   FileSpreadsheet,
   FileClock,
   Filter,
   Handshake,
   History,
+  KeyRound,
   Landmark,
   LibraryBig,
   ListChecks,
   NotebookPen,
+  PhoneCall,
   Receipt,
   ScanBarcode,
   TrendingUp,
@@ -38,7 +41,7 @@ import { hasAnyPermission, hasPermission, PERMISSIONS, REPORT_PERMISSIONS } from
 
 type PermissionSubject = Parameters<typeof hasPermission>[0];
 
-export const REPORT_GROUPS = ["attendance", "fees", "admissions", "staff", "academics", "library", "transport", "administration"] as const;
+export const REPORT_GROUPS = ["attendance", "fees", "admissions", "staff", "academics", "library", "transport", "frontoffice", "administration"] as const;
 export type ReportGroup = (typeof REPORT_GROUPS)[number];
 
 export type ReportLink = {
@@ -62,6 +65,7 @@ const GROUP_LABELS: Record<ReportGroup, MessageKey> = {
   library: "reports.group.library",
   transport: "reports.group.transport",
   administration: "reports.group.administration",
+  frontoffice: "reports.group.frontoffice",
 };
 
 /** Every report, new and existing, with the permission that opens it. */
@@ -286,6 +290,46 @@ export const REPORT_LINKS: readonly ReportLink[] = [
     description: "library.report.stock.description",
     permission: PERMISSIONS.libraryManage,
     icon: ScanBarcode,
+    excel: true,
+  },
+  {
+    key: "foVisitors",
+    group: "frontoffice",
+    href: "/app/reports/frontoffice-visitors",
+    title: "frontoffice.report.visitors.title",
+    description: "frontoffice.report.visitors.description",
+    permission: PERMISSIONS.frontofficeRead,
+    icon: DoorOpen,
+    excel: true,
+  },
+  {
+    key: "foPasses",
+    group: "frontoffice",
+    href: "/app/reports/frontoffice-passes",
+    title: "frontoffice.report.passes.title",
+    description: "frontoffice.report.passes.description",
+    permission: PERMISSIONS.frontofficeRead,
+    icon: KeyRound,
+    excel: true,
+  },
+  {
+    key: "foEnquiries",
+    group: "frontoffice",
+    href: "/app/reports/frontoffice-enquiries",
+    title: "frontoffice.report.enquiries.title",
+    description: "frontoffice.report.enquiries.description",
+    permission: PERMISSIONS.frontofficeRead,
+    icon: PhoneCall,
+    excel: true,
+  },
+  {
+    key: "foFollowUps",
+    group: "frontoffice",
+    href: "/app/reports/frontoffice-follow-ups",
+    title: "frontoffice.report.followUps.title",
+    description: "frontoffice.report.followUps.description",
+    permission: PERMISSIONS.frontofficeRead,
+    icon: ClipboardList,
     excel: true,
   },
   {

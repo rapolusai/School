@@ -17,6 +17,7 @@ public final class RoleCatalog {
     public static final String LIBRARIAN = "LIBRARIAN";
     public static final String TRANSPORT_MANAGER = "TRANSPORT_MANAGER";
     public static final String BUS_ATTENDANT = "BUS_ATTENDANT";
+    public static final String SECURITY = "SECURITY";
 
     public static final List<RoleTemplate> DEFAULTS = List.of(
             new RoleTemplate(SCHOOL_ADMIN, "School Admin", ALL_SCHOOL),
@@ -26,7 +27,7 @@ public final class RoleCatalog {
                     LEAVE_APPROVE, NOTICES_READ, NOTICES_APPROVE, CALENDAR_MANAGE, TIMETABLE_READ, TIMETABLE_MANAGE,
                     HOMEWORK_MANAGE, PRIVACY_MANAGE, LIBRARY_READ, EXAMS_READ, EXAMS_SETUP, EXAMS_PUBLISH, CHAT_USE,
                     CHAT_OVERSEE, PTM_MANAGE, LESSONS_READ, LESSONS_APPROVE, TRANSPORT_READ, CERTIFICATES_READ,
-                    CERTIFICATES_ISSUE, CERTIFICATES_SIGN)),
+                    CERTIFICATES_ISSUE, CERTIFICATES_SIGN, FRONTOFFICE_READ)),
             new RoleTemplate("TEACHER", "Teacher", List.of(DASHBOARD_VIEW, STUDENTS_READ, ATTENDANCE_MARK,
                     ATTENDANCE_READ, EXAMS_MANAGE, NOTICES_SEND, ACADEMICS_READ, LEAVE_REQUEST, NOTICES_READ,
                     TIMETABLE_READ, HOMEWORK_MANAGE, LIBRARY_READ, EXAMS_READ, CHAT_USE, LESSONS_READ,
@@ -37,7 +38,8 @@ public final class RoleCatalog {
             // Front office handles admissions paperwork, so it may add and edit student records.
             new RoleTemplate("FRONT_OFFICE", "Front office", List.of(DASHBOARD_VIEW, STUDENTS_READ, STUDENTS_MANAGE,
                     ACADEMICS_READ, ADMISSIONS_READ, ADMISSIONS_MANAGE, LEAVE_REQUEST, NOTICES_READ, TIMETABLE_READ,
-                    LIBRARY_READ, CERTIFICATES_READ, CERTIFICATES_ISSUE)),
+                    LIBRARY_READ, CERTIFICATES_READ, CERTIFICATES_ISSUE, FRONTOFFICE_READ, FRONTOFFICE_MANAGE,
+                    GATE_PASS)),
             // The school librarian runs the library; like all staff they can apply for leave and read notices.
             new RoleTemplate(LIBRARIAN, "Librarian", List.of(DASHBOARD_VIEW, ACADEMICS_READ, LEAVE_REQUEST,
                     NOTICES_READ, TIMETABLE_READ, LIBRARY_READ, LIBRARY_MANAGE)),
@@ -47,6 +49,8 @@ public final class RoleCatalog {
             // Drivers and attendants run their route's trips from a phone.
             new RoleTemplate(BUS_ATTENDANT, "Bus attendant", List.of(DASHBOARD_VIEW, LEAVE_REQUEST, NOTICES_READ,
                     TRANSPORT_TRIP)),
+            // Gate security checks visitors in and out and releases children against a parent's OTP, on a phone.
+            new RoleTemplate(SECURITY, "Security", List.of(DASHBOARD_VIEW, LEAVE_REQUEST, NOTICES_READ, GATE_PASS)),
             new RoleTemplate("PARENT", "Parent", List.of(DASHBOARD_VIEW, CHILD_VIEW, NOTICES_READ)),
             new RoleTemplate("STUDENT", "Student", List.of(DASHBOARD_VIEW, NOTICES_READ)));
 

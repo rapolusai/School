@@ -122,6 +122,27 @@ describe("navFor", () => {
     expect(keys(frontOffice)).toEqual(["dashboard", "students", "setup"]);
   });
 
+  it("opens the front office with frontoffice.read, the gate with gate.pass, and pickup to parents", () => {
+    // Seeded in docs/api/phase-2-frontoffice.md: front office holds frontoffice.read/manage and gate.pass, security
+    // only gate.pass, parents reach early pickup through child.view.
+    const frontOffice = user(["FRONT_OFFICE"], ["dashboard.view", "students.read", "frontoffice.read", "frontoffice.manage", "gate.pass"]);
+    expect(keys(frontOffice)).toEqual(["dashboard", "students", "frontoffice", "gate", "reports"]);
+    expect(navFor(frontOffice).find((item) => item.key === "frontoffice")).toMatchObject({
+      href: "/app/frontoffice",
+      labelKey: "nav.frontoffice",
+      group: "administration",
+    });
+    const security = user(["SECURITY"], ["dashboard.view", "gate.pass"]);
+    expect(keys(security)).toEqual(["dashboard", "gate"]);
+    expect(navFor(security).find((item) => item.key === "gate")).toMatchObject({ href: "/app/frontoffice/gate", labelKey: "nav.gate" });
+    expect(navFor(PARENT).find((item) => item.key === "family-pickup")).toMatchObject({ href: "/app/family/pickup", labelKey: "nav.pickup" });
+    const student = user(["STUDENT"], ["dashboard.view", "notices.read"]);
+    expect(keys(student)).not.toContain("family-pickup");
+    expect(navItemForPath("/app/frontoffice/passes")?.key).toBe("frontoffice");
+    expect(navItemForPath("/app/frontoffice/gate")?.key).toBe("gate");
+    expect(navItemForPath("/app/family/pickup")?.key).toBe("family-pickup");
+  });
+
   it("groups attendance, students and setup under the School group", () => {
     expect(navFor(SCHOOL_ADMIN).filter((item) => item.group === "academics").map((item) => item.key)).toEqual([
       "attendance",
@@ -142,6 +163,7 @@ describe("navFor", () => {
       "family-attendance",
       "family-homework",
       "family-fees",
+      "family-pickup",
       "family-leave",
       "family-library",
       "family-results",
@@ -162,6 +184,7 @@ describe("navFor", () => {
       "family-attendance",
       "family-homework",
       "family-fees",
+      "family-pickup",
       "board",
       "calendar",
       "family-leave",
