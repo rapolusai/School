@@ -79,7 +79,7 @@ public class AllotmentService {
             throw new ApiException(HttpStatus.CONFLICT, "Already a boarder", pupil.fullName()
                     + " already has a bed; move or vacate it instead.");
         });
-        Room room = requireFreeBed(bed);
+        Room room = requireFreeBed(bed, null);
         Hostel hostel = hostels.findById(bed.getHostelId()).orElseThrow(() -> ApiException.notFound("Hostel"));
         Instant now = Instant.now();
         Allotment a = allotments.save(new Allotment(pupil.id(), bed.getHostelId(), bed.getRoomId(), bed.getId(),
@@ -133,7 +133,7 @@ public class AllotmentService {
             throw ApiException.badRequest("The move date must be after the current allotment started and within "
                     + "the next four months.", "fromDate");
         }
-        Room room = requireFreeBed(bed);
+        Room room = requireFreeBed(bed, old);
         Hostel hostel = hostels.findById(bed.getHostelId()).orElseThrow(() -> ApiException.notFound("Hostel"));
         Pupil pupil = people.requirePupil(old.getStudentId());
         Instant now = Instant.now();
@@ -154,7 +154,8 @@ public class AllotmentService {
         return views(List.of(a)).get(0);
     }
 
-    private Room requireFreeBed(Bed bed) {
+    /** The bed's room, when the bed is free and the room has room; {@code leaving} is a boarder moving out of it. */
+    private Room requireFreeBed(Bed bed, Allotment leaving) {
         Room room = rooms.findById(bed.getRoomId()).orElseThrow(() -> ApiException.notFound("Room"));
         if (!room.isActive()) {
             throw ApiException.badRequest("Room " + room.getNumber() + " is not in use.", "bedId");
@@ -163,6 +164,14 @@ public class AllotmentService {
             throw new ApiException(HttpStatus.CONFLICT, "Bed taken", "Bed " + bed.getLabel() + " in room "
                     + room.getNumber() + " already has a boarder.");
         });
+        long boarders = allotments.countActiveInRoom(room.getId());
+        if (leaving != null && leaving.getRoomId().equals(room.getId())) {
+            boarders--;
+        }
+        if (boarders >= room.getCapacity()) {
+            throw new ApiException(HttpStatus.CONFLICT, "Room full", "Room " + room.getNumber() + " has capacity "
+                    + room.getCapacity() + " and already " + boarders + (boarders == 1 ? " boarder." : " boarders."));
+        }
         return room;
     }
 

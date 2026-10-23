@@ -155,7 +155,7 @@ Student rules:
 
 - `admissionNo`: 1–30 letters, digits and `/ . _ -`, starting with a letter or digit, unique in the school
   (ignoring case). `firstName` 1–100 characters; `lastName` optional (some students use one name).
-- `dateOfBirth` in the past and before `admissionDate`. `bloodGroup` one of `A+ A- B+ B- AB+ AB- O+ O-`.
+- `dateOfBirth` in the past and before `admissionDate`, at most 25 years before it and not before 1900 (`400 errors.dateOfBirth`; a CSV import reports it as a `date_of_birth` row error). `bloodGroup` one of `A+ A- B+ B- AB+ AB- O+ O-`.
 - `apaarId`: optional, 12 digits. **Aadhaar numbers are not collected or stored anywhere.**
 - A new student joins the given section in the **current** academic year (`400` on `sectionId` when
   there is none). `rollNo` 1–999, unique within the section and year (`409`). A section at capacity

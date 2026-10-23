@@ -186,6 +186,12 @@ public class SafetyService {
     }
 
     private static SafetyAudit.Details auditDetails(AuditForm form) {
+        if (form.auditDate().isAfter(HealthText.today())) {
+            throw ApiException.badRequest("The audit date cannot be in the future.", "auditDate");
+        }
+        if (form.auditDate().isBefore(HealthText.EARLIEST)) {
+            throw ApiException.badRequest("Check the audit date.", "auditDate");
+        }
         if (form.dueOn() != null && form.dueOn().isBefore(form.auditDate())) {
             throw ApiException.badRequest("The due date is on or after the audit.", "dueOn");
         }

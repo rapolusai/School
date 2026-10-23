@@ -75,6 +75,9 @@ public class ComplaintService {
         TenantContext.require();
         Complaint c = complaints.findById(id).orElseThrow(() -> ApiException.notFound("Complaint"));
         Hostel hostel = scope.requireWarden(c.getHostelId());
+        if (c.getStatus() == ComplaintStatus.RESOLVED) {
+            throw new ApiException(HttpStatus.CONFLICT, "Already resolved", "This complaint is already resolved.");
+        }
         if (c.getStatus() == form.status()) {
             throw new ApiException(HttpStatus.CONFLICT, "No change", "The complaint is already "
                     + form.status().name().toLowerCase().replace('_', ' ') + ".");

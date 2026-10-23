@@ -51,7 +51,7 @@ Personal data: a boarder's guardian phone is **masked** (`98765•••01`) in 
 | PUT | `/api/hostel/hostels/{id}/blocks/{blockId}` | `hostel.manage` | `200 BlockView` |
 | DELETE | `/api/hostel/hostels/{id}/blocks/{blockId}` | `hostel.manage` | `204`; `409` while it has rooms |
 | POST | `/api/hostel/hostels/{id}/blocks/{blockId}/rooms` | `hostel.manage` | `201 RoomView`; body `RoomForm` |
-| PUT | `/api/hostel/hostels/{id}/rooms/{roomId}` | `hostel.manage` | `200 RoomView` |
+| PUT | `/api/hostel/hostels/{id}/rooms/{roomId}` | `hostel.manage` | `200 RoomView`; `400 errors.capacity` when the capacity is below the room's bed count or its boarders |
 | DELETE | `/api/hostel/hostels/{id}/rooms/{roomId}` | `hostel.manage` | `204`; `409` while a bed is taken |
 | POST | `/api/hostel/hostels/{id}/rooms/{roomId}/beds` | `hostel.manage` | `201 BedView[]`; body `{labels: string[]}`; `400 errors.labels` on a repeated label (case-insensitive) or beyond the capacity |
 | DELETE | `/api/hostel/hostels/{id}/beds/{bedId}` | `hostel.manage` | `204`; `409` while taken |
@@ -78,7 +78,7 @@ type OccupancyBoard = { hostelId, hostelName, type, beds, occupied, free, occupa
 
 | Method | Path | Permission | Success |
 | --- | --- | --- | --- |
-| POST | `/api/hostel/allotments` | `hostel.manage` | `201 AllotmentView`; body `{studentId, bedId, fromDate, guardianConsent}` |
+| POST | `/api/hostel/allotments` | `hostel.manage` | `201 AllotmentView`; body `{studentId, bedId, fromDate, guardianConsent}`; `409` when the bed is taken or the room already holds its capacity in boarders |
 | POST | `/api/hostel/allotments/{id}/vacate` | `hostel.manage` | `200 AllotmentView`; body `{reason, toDate?}` (default today) |
 | POST | `/api/hostel/allotments/{id}/move` | `hostel.manage` | `200 AllotmentView` (the new one); body `{bedId, fromDate?}` |
 | GET | `/api/hostel/boarders?hostelId=` | read or warden | `200 BoarderView[]` ordered by class, then name |
@@ -116,7 +116,7 @@ hostel).
 | --- | --- | --- | --- |
 | GET | `/api/hostel/passes?hostelId=&from=&to=` | read or warden | `200 PassView[]`, newest first (default: the last 30 days and everything open) |
 | GET | `/api/hostel/passes/{id}` | read or warden | `200 PassView` |
-| POST | `/api/hostel/passes` | warden | `201 PassView`; body `{studentId, kind, fromDate, toDate?, reason}` (source `WARDEN`) |
+| POST | `/api/hostel/passes` | warden | `201 PassView`; body `{studentId, kind, fromDate, toDate?, reason}` (source `WARDEN`); `409` when it overlaps an open pass of the boarder (also for requests sent at the same moment: one wins) |
 | POST | `/api/hostel/passes/{id}/approve` | warden | `200 PassView`; body `{note?}`; `409` unless REQUESTED |
 | POST | `/api/hostel/passes/{id}/reject` | warden | `200 PassView`; body `{note}` (required); `409` unless REQUESTED |
 | POST | `/api/hostel/passes/{id}/out` | warden | `200 PassView`; `409` unless APPROVED |
@@ -130,7 +130,7 @@ hostel).
 type PassView = { id, studentId, studentName, admissionNo, className, hostelId, hostelName,
   kind: "OUTING"|"HOME_LEAVE", source: "PARENT_APP"|"WARDEN", requestedByName, fromDate, toDate, returnBy, reason,
   status: "REQUESTED"|"APPROVED"|"OUT"|"RETURNED"|"REJECTED"|"CANCELLED", decidedByName, decidedAt, decisionNote,
-  outAt, outByName, inAt, inByName, late, createdAt, canCancel, canDecide, canMarkOut, canMarkIn };
+  outAt, outByName, inAt, inByName, late, createdAt, canCancel, canDecide /* REQUESTED only */, canMarkOut, canMarkIn };
 type FamilyHostel = { studentId, studentName, className, boarder, hostelName, blockName, roomNumber, bedLabel,
   wardenName, nextPass: PassView | null, lastRollCallNight, lastRollCallStatus, canRequest, passes: PassView[] };
 ```

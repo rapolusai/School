@@ -684,9 +684,25 @@ public class StudentService {
                 blankToNull(apaarId));
     }
 
+    /**
+     * A date of birth too long before the admission to be a pupil's: more than {@link #MAX_AGE_AT_ADMISSION} years
+     * before it (the bound admissions applies to applicants), or before 1900.
+     */
+    static boolean implausiblyOld(LocalDate dateOfBirth, LocalDate admissionDate) {
+        return dateOfBirth.isBefore(EARLIEST_BIRTH)
+                || dateOfBirth.isBefore(admissionDate.minusYears(MAX_AGE_AT_ADMISSION));
+    }
+
+    static final int MAX_AGE_AT_ADMISSION = 25;
+    private static final LocalDate EARLIEST_BIRTH = LocalDate.of(1900, 1, 1);
+
     private void checkProfile(UUID id, Student.Profile p) {
         if (!p.dateOfBirth().isBefore(p.admissionDate())) {
             throw ApiException.badRequest("The date of birth must be before the admission date.", "dateOfBirth");
+        }
+        if (implausiblyOld(p.dateOfBirth(), p.admissionDate())) {
+            throw ApiException.badRequest("Check the date of birth: at most " + MAX_AGE_AT_ADMISSION
+                    + " years before the admission date.", "dateOfBirth");
         }
         if (students.existsByAdmissionNoExcept(p.admissionNo(), id == null ? new UUID(0, 0) : id)) {
             throw ApiException.conflict("Admission number " + p.admissionNo() + " is already used.", "admissionNo");

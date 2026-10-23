@@ -167,6 +167,7 @@ public class MedicalRecordService {
         if (form.measuredOn().isAfter(HealthText.today())) {
             throw ApiException.badRequest("The date cannot be in the future.", "measuredOn");
         }
+        notBeforeBirth(studentId, form.measuredOn(), "measuredOn");
         recordOrNew(studentId);
         growth.findByStudentIdAndMeasuredOn(studentId, form.measuredOn()).ifPresent(growth::delete);
         growth.flush();
@@ -268,8 +269,22 @@ public class MedicalRecordService {
         if (item.getKind() == ItemKind.VACCINATION && form.itemDate() == null) {
             throw ApiException.badRequest("Give the date of the vaccination.", "itemDate");
         }
+        if (form.itemDate() != null) {
+            if (item.getKind() == ItemKind.VACCINATION && form.itemDate().isAfter(HealthText.today())) {
+                throw ApiException.badRequest("The vaccination date cannot be in the future.", "itemDate");
+            }
+            notBeforeBirth(item.getStudentId(), form.itemDate(), "itemDate");
+        }
         item.apply(form.name().trim(), HealthText.clean(form.detail()), form.severity(), form.itemDate(), source,
                 actor.name());
+    }
+
+    /** A dated health entry belongs to the student's life: not before their date of birth (nor before 1900). */
+    private void notBeforeBirth(UUID studentId, LocalDate date, String field) {
+        LocalDate born = people.dateOfBirth(studentId);
+        if (date.isBefore(HealthText.EARLIEST) || (born != null && date.isBefore(born))) {
+            throw ApiException.badRequest("The date cannot be before the student's date of birth.", field);
+        }
     }
 
     private static void parentKind(ItemKind kind) {

@@ -72,6 +72,15 @@ public class StaffChecksService {
         if (form.status() == VerificationStatus.CLEARED && form.clearedOn() == null) {
             throw ApiException.badRequest("Give the date it was cleared.", "clearedOn");
         }
+        LocalDate today = HealthText.today();
+        if (form.requestedOn() != null && (form.requestedOn().isAfter(today)
+                || form.requestedOn().isBefore(HealthText.EARLIEST))) {
+            throw ApiException.badRequest("Check the request date; it cannot be in the future.", "requestedOn");
+        }
+        if (form.clearedOn() != null && (form.clearedOn().isAfter(today)
+                || form.clearedOn().isBefore(HealthText.EARLIEST))) {
+            throw ApiException.badRequest("Check the clearance date; it cannot be in the future.", "clearedOn");
+        }
         if (form.requestedOn() != null && form.clearedOn() != null && form.clearedOn().isBefore(form.requestedOn())) {
             throw ApiException.badRequest("Cleared before it was requested?", "clearedOn");
         }

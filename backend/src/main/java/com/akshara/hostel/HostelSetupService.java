@@ -214,6 +214,11 @@ public class HostelSetupService {
             throw ApiException.badRequest("The room has " + occupied + " boarders; the capacity cannot be lower.",
                     "capacity");
         }
+        long bedCount = beds.countByRoomId(roomId);
+        if (form.capacity() < bedCount) {
+            throw ApiException.badRequest("Room " + room.getNumber() + " has " + bedCount
+                    + (bedCount == 1 ? " bed" : " beds") + "; remove beds before lowering the capacity.", "capacity");
+        }
         room.update(form.floor() == null ? room.getFloor() : form.floor(), number, form.capacity(), form.type(),
                 form.monthlyFeePaise() == null ? room.getMonthlyFeePaise() : form.monthlyFeePaise(),
                 form.active() == null || form.active());
@@ -335,7 +340,7 @@ public class HostelSetupService {
             long bedCount = beds.countByHostelId(h.getId());
             long occupied = allotments.countActiveInHostel(h.getId());
             result.add(new HostelView(h.getId(), h.getName(), h.getType(), h.getWardenUserId(),
-                    wardens.get(h.getWardenUserId()), h.getAddress(), h.isActive(), blocks.countByHostelId(h.getId()),
+                    h.getWardenUserId() == null ? null : wardens.get(h.getWardenUserId()), h.getAddress(), h.isActive(), blocks.countByHostelId(h.getId()),
                     rooms.findByHostelIdOrderByFloorAscNumberAsc(h.getId()).size(), bedCount, occupied,
                     HostelRules.occupancyPercent(occupied, bedCount), manage, scope.canWarden(h)));
         }

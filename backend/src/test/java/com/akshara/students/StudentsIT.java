@@ -140,6 +140,17 @@ class StudentsIT extends IntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors.guardians").exists());
 
+        // A date of birth more than 25 years before the admission (or before 1900) is a typing mistake.
+        for (String dob : List.of("1800-01-01", "1850-06-01", "2001-06-01")) {
+            api.post("/api/students", admin.accessToken(), """
+                    {"admissionNo":"A-1","firstName":"Asha","dateOfBirth":"%s","gender":"FEMALE",
+                     "admissionDate":"2026-06-02","sectionId":"%s",
+                     "guardians":[{"name":"Lata","relation":"MOTHER","phone":"9876501003","primary":true}]}"""
+                    .formatted(dob, sectionA))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors.dateOfBirth").exists());
+        }
+
         fixtures.student(admin, sectionA, "A-1", "Asha", null, "Lata Rao", "9876501003");
         api.post("/api/students", admin.accessToken(),
                 SchoolFixtures.studentJson(sectionA, "a-1", "Other", null, "Lata Rao", "9876501003", null))

@@ -149,6 +149,9 @@ public class HostelPassService {
                     "toDate");
         }
         LocalDate end = kind == PassKind.OUTING ? from : to;
+        // One request at a time per boarder: the allotment row is the lock, so parallel identical requests see
+        // each other's pass in the overlap check below.
+        allotments.lock(a.getId());
         for (HostelPass open : passes.openOfStudent(pupil.id())) {
             if (HostelRules.overlaps(from, end, open.getFromDate(), open.getToDate())) {
                 throw new ApiException(HttpStatus.CONFLICT, "Pass overlaps", pupil.fullName()
@@ -189,7 +192,7 @@ public class HostelPassService {
     public PassView reject(UUID id, DecisionForm form, Actor actor) {
         TenantContext.require();
         HostelPass pass = lockForWarden(id);
-        if (!pass.getStatus().pending()) {
+        if (pass.getStatus() != HostelPassStatus.REQUESTED) {
             throw new ApiException(HttpStatus.CONFLICT, "Already closed",
                     "This pass is " + pass.getStatus().name().toLowerCase() + " and cannot be refused.");
         }
@@ -332,7 +335,7 @@ public class HostelPassService {
                     p.getStatus(), p.getDecidedByName(), p.getDecidedAt(), p.getDecisionNote(), p.getOutAt(),
                     p.getOutByName(), p.getInAt(), p.getInByName(), p.isLate(), p.getCreatedAt(),
                     p.getStatus().pending() && myChildren.contains(p.getStudentId()),
-                    warden && p.getStatus().pending(),
+                    warden && p.getStatus() == HostelPassStatus.REQUESTED,
                     warden && p.getStatus() == HostelPassStatus.APPROVED,
                     warden && p.getStatus() == HostelPassStatus.OUT));
         }
