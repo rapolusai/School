@@ -76,6 +76,10 @@ public class IncomeService {
         UUID tenantId = TenantContext.require();
         LocalDate on = AccountsAccess.notFuture(form.receivedOn(), "receivedOn");
         Head head = chart.activeHead(form.headId(), HeadKind.INCOME, "headId");
+        if (head.getFeeHeadId() != null || "FEES".equals(head.getSystemCode())) {
+            // Fee income comes from the fees module only; a receipt here would be counted twice in the reports.
+            throw ApiException.badRequest("Fee heads take fee payments only. Pick another income head.", "headId");
+        }
         UUID bankAccountId = bankAccountFor(form.mode(), form.bankAccountId());
         String pan = AccountsForms.upper(form.payerPan());
         String eightyG = null;
@@ -110,7 +114,7 @@ public class IncomeService {
 
     public IncomeReceiptView cancel(UUID id, CancelForm form, Actor actor) {
         TenantContext.require();
-        IncomeReceipt r = receipts.findById(id).orElseThrow(() -> ApiException.notFound("Receipt"));
+        IncomeReceipt r = receipts.findForUpdate(id).orElseThrow(() -> ApiException.notFound("Receipt"));
         if (!r.issued()) {
             throw new ApiException(HttpStatus.CONFLICT, "Already cancelled",
                     "Receipt " + r.getReceiptNo() + " is already cancelled.");

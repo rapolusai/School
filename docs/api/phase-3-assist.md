@@ -41,7 +41,7 @@ editing term records there (class teacher of the section, or exams publish): oth
 | GET | `/remarks?termId&sectionId` | use | | `200 RemarkSheet`: students with current report card remark, overall and per-subject drafts, `canAccept` |
 | POST | `/remarks/drafts` | use | `{ termId, sectionId, tone: ENCOURAGING\|FORMAL, studentIds?: (max 60), subjectId? }` | `200 RemarkDraftView[]` each with `inputs` and `inputLines` (what was used) |
 | PUT | `/remarks/{id}` | use | `{ text ≤500 }` | `200`; `409` once accepted |
-| POST | `/remarks/{id}/accept` | use | `{ text }` | `200`; overall remarks saved to the report card |
+| POST | `/remarks/{id}/accept` | use | `{ text }` | `200`; overall remarks saved to the report card; `409` once accepted (draft again to change it; of accepts sent together one wins) |
 | GET | `/watch-list?classId&status` | use | | `200 WatchList { lastRunAt, high, medium, low, assignees, entries[] }` |
 | POST | `/watch-list/run` | use | | `200 { at, students, listed }` |
 | GET | `/watch-list/{id}` | use | | `200 { entry, notes[] }` |
@@ -96,7 +96,9 @@ What a request holds, and therefore what would leave the school with a real prov
 class and section label, percentage and grade overall and per subject, attendance percentage, the tone, the language;
 for papers, title, duration and section shape (question text stays in the school); for writing help, the text the user
 typed. `AssistRequest` refuses keys naming Aadhaar, phone, address, email, health, guardian or surname fields, and any
-value that looks like a phone or Aadhaar number. The usage log keeps a SHA-256 hash of the request, never its text.
+value that looks like a phone or Aadhaar number: 10 digits from 6–9 in up to three groups (optionally after +91,
+91 or 0) or 12 digits together or as 4-4-4, with or without single spaces or dashes ("98765 43210", "987-654-3210",
+"2345-6789-0123"). Runs of short numbers such as marks, dates and amounts are not matched. The usage log keeps a SHA-256 hash of the request, never its text.
 
 Before any real provider is switched on, the school's **parent consent and DPDP privacy notice must cover it** (who the
 processor is, what is sent, where it is processed, how long it is kept) and the provider must be bound by a data

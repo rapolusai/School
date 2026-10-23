@@ -175,6 +175,7 @@ public class StudentFieldsService {
         Lists lists = lists(today);
         Map<UUID, StudentRow> known = studentsById(entries.stream().map(StudentFieldsForm::studentId).toList());
         Map<UUID, StudentGovRecord> saved = recordsOf(known.keySet());
+        checkUnique(entries, saved);
         List<StudentFieldsRow> rows = new ArrayList<>();
         int i = 0;
         for (StudentFieldsForm f : entries) {
@@ -203,6 +204,50 @@ public class StudentFieldsService {
         audit.record(actor, via == UpdatedVia.IMPORT ? "govreport_fields.imported" : "govreport_fields.saved",
                 "govreport_fields", null, details);
         return new BulkResult(rows.size(), rows);
+    }
+
+    /**
+     * A student appears once in a save (400), and an APAAR ID belongs to one student of the school (409, also when
+     * two rows of the save carry it). A student of the save whose ID is changing frees the old one.
+     */
+    private void checkUnique(List<StudentFieldsForm> entries, Map<UUID, StudentGovRecord> saved) {
+        Set<UUID> students = new java.util.HashSet<>();
+        Map<String, UUID> claimed = new HashMap<>();
+        for (int i = 0; i < entries.size(); i++) {
+            StudentFieldsForm f = entries.get(i);
+            if (!students.add(f.studentId())) {
+                throw ApiException.badRequest("This student appears more than once.",
+                        "entries[" + i + "].studentId");
+            }
+            String apaar = GovReportAuth.blankToNull(f.apaarId());
+            if (apaar != null && claimed.putIfAbsent(apaar, f.studentId()) != null) {
+                throw ApiException.conflict("This APAAR ID is given for two students.", "entries[" + i + "].apaarId");
+            }
+        }
+        if (claimed.isEmpty()) {
+            return;
+        }
+        Map<UUID, String> newIds = new HashMap<>();
+        entries.forEach(f -> newIds.put(f.studentId(), GovReportAuth.blankToNull(f.apaarId())));
+        for (StudentGovRecord other : records.findByApaarIdIn(claimed.keySet())) {
+            UUID claimant = claimed.get(other.getApaarId());
+            boolean freed = newIds.containsKey(other.getStudentId())
+                    && !other.getApaarId().equals(newIds.get(other.getStudentId()));
+            if (!other.getStudentId().equals(claimant) && !freed) {
+                int i = 0;
+                while (!entries.get(i).studentId().equals(claimant)) {
+                    i++;
+                }
+                throw ApiException.conflict("This APAAR ID is already recorded for another student.",
+                        "entries[" + i + "].apaarId");
+            }
+        }
+    }
+
+    /** True when another student of the school already has this APAAR ID. */
+    private boolean apaarTaken(String apaarId, UUID studentId) {
+        return records.findByApaarIdIn(List.of(apaarId)).stream()
+                .anyMatch(r -> !r.getStudentId().equals(studentId));
     }
 
     private Map<UUID, StudentRow> studentsById(Collection<UUID> ids) {
@@ -307,6 +352,7 @@ public class StudentFieldsService {
         List<StudentFieldsForm> valid = new ArrayList<>();
         Map<UUID, StudentGovRecord> saved = recordsOf(byAdmission.values().stream().map(StudentRow::id).toList());
         Set<UUID> seen = new java.util.HashSet<>();
+        Map<String, UUID> apaarInFile = new HashMap<>();
         for (GovCsvParser.Row row : data) {
             int before = errors.size();
             String admission = cell(row, col, "admission_no");
@@ -325,6 +371,13 @@ public class StudentFieldsService {
             String apaar = merge(cell(row, col, "apaar_id"), current == null ? null : current.getApaarId());
             if (apaar != null && !apaar.matches("[0-9]{12}")) {
                 errors.add(new RowError(row.line(), "apaar_id", "An APAAR ID has 12 digits."));
+            } else if (apaar != null && apaarInFile.putIfAbsent(apaar, s.id()) != null) {
+                errors.add(new RowError(row.line(), "apaar_id", "APAAR ID " + apaar
+                        + " is given for another student in this file."));
+            } else if (apaar != null && (current == null || !apaar.equals(current.getApaarId()))
+                    && apaarTaken(apaar, s.id())) {
+                errors.add(new RowError(row.line(), "apaar_id", "APAAR ID " + apaar
+                        + " is already recorded for another student."));
             }
             String pen = merge(cell(row, col, "pen"), current == null ? null : current.getPen());
             if (pen != null && !pen.matches("[A-Za-z0-9]{1,20}")) {
@@ -483,6 +536,10 @@ public class StudentFieldsService {
         if (apaar != null && (r.getApaarId() != null || r.isApaarLocked()) && !apaar.equals(r.getApaarId())) {
             throw ApiException.badRequest("The APAAR ID has been recorded; ask the school office to change it.",
                     "apaarId");
+        }
+        if (apaar != null && !apaar.equals(r.getApaarId()) && apaarTaken(apaar, studentId)) {
+            throw ApiException.conflict("This APAAR ID is already recorded for another student; check it with the "
+                    + "school office.", "apaarId");
         }
         r.updateByFamily(tongue, apaar, actor);
         records.saveAndFlush(r);

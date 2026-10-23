@@ -137,7 +137,8 @@ public class ResultsService {
     public ExamClassDetail publish(UUID examId, UUID classId, Actor actor) {
         TenantContext.require();
         Exam exam = support.exam(examId);
-        ExamClass ec = support.examClass(examId, classId);
+        // Locked, so of two publishes at once the second waits and then finds the results published (409).
+        ExamClass ec = support.lockExamClass(examId, classId);
         ClassView schoolClass = support.classView(classId);
         if (ec.resultsPublished()) {
             throw new ApiException(HttpStatus.CONFLICT, "Already published", "The results of " + exam.getName()
@@ -176,7 +177,7 @@ public class ResultsService {
     public ExamClassDetail withdraw(UUID examId, UUID classId, String reason, Actor actor) {
         TenantContext.require();
         Exam exam = support.exam(examId);
-        ExamClass ec = support.examClass(examId, classId);
+        ExamClass ec = support.lockExamClass(examId, classId);
         ClassView schoolClass = support.classView(classId);
         if (!ec.resultsPublished()) {
             throw new ApiException(HttpStatus.CONFLICT, "Not published", "These results are not published.");

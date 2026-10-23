@@ -179,6 +179,11 @@ interface IncomeReceiptRepository extends JpaRepository<IncomeReceipt, UUID> {
     @Query("select r from IncomeReceipt r order by r.receivedOn desc, r.seq desc")
     List<IncomeReceipt> findAllNewestFirst();
 
+    /** The receipt locked until the transaction ends, so two cancellations cannot both pass the status check. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select r from IncomeReceipt r where r.id = ?1")
+    Optional<IncomeReceipt> findForUpdate(UUID id);
+
     @Query("select r from IncomeReceipt r where r.receivedOn between ?1 and ?2 order by r.receivedOn, r.seq")
     List<IncomeReceipt> findBetween(LocalDate from, LocalDate to);
 

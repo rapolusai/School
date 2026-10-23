@@ -6,8 +6,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import jakarta.persistence.LockModeType;
+
 import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
 interface AssistSettingsRepository extends JpaRepository<AssistSettings, UUID> {
@@ -30,6 +33,10 @@ interface UsageRepository extends JpaRepository<UsageEntry, UUID> {
 }
 
 interface RemarkDraftRepository extends JpaRepository<RemarkDraft, UUID> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select d from RemarkDraft d where d.id = ?1")
+    Optional<RemarkDraft> findForUpdate(UUID id);
 
     List<RemarkDraft> findByTermIdAndSectionIdOrderByStudentName(UUID termId, UUID sectionId);
 

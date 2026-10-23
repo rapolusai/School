@@ -286,7 +286,12 @@ public class RemarkService {
      */
     public RemarkDraftView accept(UUID id, String text, Actor actor) {
         TenantContext.require();
-        RemarkDraft draft = draft(id);
+        // Locked until the transaction ends: of two accepts at once, the second sees the first's and answers 409.
+        RemarkDraft draft = drafts.findForUpdate(id).orElseThrow(() -> ApiException.notFound("Draft"));
+        if (draft.getStatus() == RemarkDraft.Status.ACCEPTED) {
+            throw new ApiException(org.springframework.http.HttpStatus.CONFLICT, "Already accepted",
+                    "This remark was accepted; draft it again to change it.");
+        }
         String remark = clean(text);
         if (draft.getSubjectId() == null) {
             TermRecords recs = records.records(draft.getTermId(), draft.getSectionId());

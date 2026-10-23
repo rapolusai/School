@@ -61,7 +61,9 @@ type StatutoryView = { month: string; rate: RateView | null; rates: RateView[];
   taxRules: TaxRuleView[]; ptStates: string[]; ptSlabs: PtSlabsView | null };
 type PtSlab = { appliesTo: "ALL" | "WOMEN" | "OTHERS"; fromPaise: number; toPaise: number | null;
   amountPaise: number; months: number[] };                // months 1–12 it applies in; [] = every month
-type PtSlabsForm = { effectiveFrom: string; slabs: PtSlab[] };   // 1–40 slabs, amount ≤ ₹10,000
+type PtSlabsForm = { effectiveFrom: string; slabs: PtSlab[] };   // 1–40 slabs, amount ≤ ₹10,000; no two may
+  // overlap (400 slabs[i].fromPaise): same pay range (limits included), same people (ALL overlaps WOMEN and OTHERS)
+  // and both every-month or sharing a month. A month-specific slab on top of an every-month slab is allowed.
 type PtSlabsView = { state: string; custom: boolean; effectiveFrom: string | null; slabs: PtSlab[] };
 ```
 
@@ -152,9 +154,9 @@ never their values.
 | GET | `/runs/{id}` | `payroll.read` | `200 RunDetail` |
 | POST | `/runs/{id}/recalculate` | `payroll.manage` | `200 RunDetail` |
 | DELETE | `/runs/{id}` | `payroll.manage` | `204` (drafts only) |
-| POST | `/runs/{id}/adjustments` | `payroll.manage` | `201 RunDetail` |
+| POST | `/runs/{id}/adjustments` | `payroll.manage` | `201 RunDetail`; `400 amountPaise` when the person's `DEDUCTION` adjustments would add up to more than the payslip's gross |
 | DELETE | `/runs/{id}/adjustments/{adjustmentId}` | `payroll.manage` | `200 RunDetail` |
-| PUT | `/runs/{id}/payslips/{payslipId}/tds` | `payroll.manage` | `200 RunDetail`: `{ amountPaise, reason }` replaces the month's calculated TDS |
+| PUT | `/runs/{id}/payslips/{payslipId}/tds` | `payroll.manage` | `200 RunDetail`: `{ amountPaise, reason }` replaces the month's calculated TDS; `400 amountPaise` above the payslip's gross |
 | DELETE | `/runs/{id}/payslips/{payslipId}/tds` | `payroll.manage` | `200 RunDetail`: back to the calculated TDS |
 | POST | `/runs/{id}/approve` | `payroll.approve` | `200 RunDetail`, status `APPROVED`; publishes `PayrollApproved` |
 | POST | `/runs/{id}/paid` | `payroll.manage` | `200 RunDetail`: `{ paidOn, reference? }`, status `PAID` |

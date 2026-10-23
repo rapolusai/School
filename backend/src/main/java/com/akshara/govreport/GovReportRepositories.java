@@ -43,6 +43,8 @@ interface StudentGovRecordRepository extends JpaRepository<StudentGovRecord, UUI
     Optional<StudentGovRecord> findByStudentId(UUID studentId);
 
     List<StudentGovRecord> findByStudentIdIn(Collection<UUID> studentIds);
+
+    List<StudentGovRecord> findByApaarIdIn(Collection<String> apaarIds);
 }
 
 interface RteIntakeRepository extends JpaRepository<RteIntake, UUID> {

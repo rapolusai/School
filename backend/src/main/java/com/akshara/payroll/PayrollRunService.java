@@ -162,9 +162,8 @@ public class PayrollRunService {
     public RunDetail addAdjustment(UUID runId, AdjustmentForm form, Actor actor) {
         TenantContext.require();
         PayrollRun run = draft(runId);
-        if (payslips.findByRunAndUser(runId, form.userId()).isEmpty()) {
-            throw ApiException.badRequest("This person is not in this month's payroll.", "userId");
-        }
+        Payslip target = payslips.findByRunAndUser(runId, form.userId()).orElseThrow(
+                () -> ApiException.badRequest("This person is not in this month's payroll.", "userId"));
         Long amount = null;
         BigDecimal days = null;
         if (form.kind().money()) {
@@ -175,6 +174,15 @@ public class PayrollRunService {
                 throw ApiException.badRequest("Days apply to loss-of-pay corrections only.", "days");
             }
             amount = form.amountPaise();
+            if (form.kind() == AdjustmentKind.DEDUCTION) {
+                long earlier = adjustments.findByRun(runId).stream()
+                        .filter(x -> x.getUserId().equals(form.userId()) && x.getKind() == AdjustmentKind.DEDUCTION)
+                        .mapToLong(x -> x.getAmountPaise() == null ? 0 : x.getAmountPaise()).sum();
+                if (earlier + amount > target.getGrossPaise()) {
+                    throw ApiException.badRequest("Deductions cannot be more than this month's gross pay.",
+                            "amountPaise");
+                }
+            }
         } else {
             BigDecimal d = form.days();
             if (d == null || d.signum() == 0 || d.abs().compareTo(BigDecimal.valueOf(31)) > 0
@@ -222,6 +230,9 @@ public class PayrollRunService {
         TenantContext.require();
         PayrollRun run = draft(runId);
         Payslip slip = slipOf(runId, payslipId);
+        if (form.amountPaise() > slip.getGrossPaise()) {
+            throw ApiException.badRequest("TDS cannot be more than this month's gross pay.", "amountPaise");
+        }
         String reason = form.reason().strip();
         slip.overrideTds(form.amountPaise(), reason);
         payslips.flush();

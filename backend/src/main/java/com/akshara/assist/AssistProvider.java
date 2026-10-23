@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -37,6 +38,52 @@ public interface AssistProvider {
         /** An Aadhaar number (12 digits, with or without spaces) or an Indian mobile number anywhere in a value. */
         static final Pattern FORBIDDEN_VALUES =
                 Pattern.compile("(?<!\\d)(\\d{4}\\s?\\d{4}\\s?\\d{4}|[6-9]\\d{9})(?!\\d)");
+        /** Digits in groups joined by one space or dash ("98765 43210", "2345-6789-0123", "+91 98765-43210"). */
+        private static final Pattern DIGIT_GROUPS = Pattern.compile("\\d+(?:[ \\u00A0-]\\d+)*");
+
+        /**
+         * True when the value holds something that looks like an Aadhaar number (12 digits, together or as 4-4-4) or
+         * an Indian mobile number (10 digits from 6 to 9, in at most three groups, optionally after +91, 91 or 0),
+         * written with or without single spaces or dashes. Runs of short numbers (marks, dates, amounts) are not
+         * matched: a phone number is at most three groups and an Aadhaar number split up is exactly three of four.
+         */
+        static boolean holdsIdentifier(String value) {
+            if (FORBIDDEN_VALUES.matcher(value).find()) {
+                return true;
+            }
+            Matcher m = DIGIT_GROUPS.matcher(value);
+            while (m.find()) {
+                String[] groups = m.group().split("[ \\u00A0-]");
+                for (int from = 0; from < groups.length; from++) {
+                    StringBuilder digits = new StringBuilder();
+                    for (int to = from; to < groups.length && to < from + 4; to++) {
+                        digits.append(groups[to]);
+                        int count = to - from + 1;
+                        if (identifier(digits.toString(), count, groups, from)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        private static boolean identifier(String digits, int groupCount, String[] groups, int from) {
+            if (digits.length() == 12 && (groupCount == 1 || (groupCount == 3 && groups[from].length() == 4
+                    && groups[from + 1].length() == 4))) {
+                return true;
+            }
+            if (digits.length() == 10 && groupCount <= 3) {
+                return digits.charAt(0) >= '6';
+            }
+            // A country or trunk prefix as its own group: "+91 98765 43210", "0 98765-43210".
+            String prefix = groups[from];
+            if (groupCount >= 2 && (prefix.equals("91") || prefix.equals("0") || prefix.equals("091"))) {
+                String rest = digits.substring(prefix.length());
+                return rest.length() == 10 && rest.charAt(0) >= '6' && groupCount - 1 <= 3;
+            }
+            return false;
+        }
 
         public AssistRequest {
             if (feature == null || template == null || template.isBlank()) {
@@ -63,7 +110,7 @@ public interface AssistProvider {
                     throw new IllegalArgumentException("The field '" + key + "' must never be sent to a provider");
                 }
             }
-            if (value != null && FORBIDDEN_VALUES.matcher(value).find()) {
+            if (value != null && holdsIdentifier(value)) {
                 throw new IllegalArgumentException("The field '" + key + "' holds a number that looks like an Aadhaar "
                         + "or phone number and must never be sent to a provider");
             }

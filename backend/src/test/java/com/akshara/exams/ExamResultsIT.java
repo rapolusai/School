@@ -12,6 +12,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -370,6 +376,42 @@ class ExamResultsIT extends IntegrationTest {
         api.get("/api/dashboard", principal.accessToken())
                 .andExpect(jsonPath("$.exams.marksToEnter").value(0))
                 .andExpect(jsonPath("$.exams.resultsToPublish").value(1));
+    }
+
+    @Test
+    void parallelPublishesOfOneClassAnswerOneSuccessAndConflicts() throws Exception {
+        enter(s.admin, maths, s.s5A, line(s.asha, "70", "18", null) + "," + line(s.bala, "20", "5", null));
+        enter(s.admin, english, s.s5A, line(s.asha, "36", null, null) + "," + line(s.bala, "12", null, null));
+        enter(s.admin, maths, s.s5B, line(s.dev, "60", "15", null));
+        enter(s.admin, english, s.s5B, line(s.dev, "30", null, null));
+        Session principal = s.login("principal");
+        String publish = "/api/exams/" + exam + "/classes/" + s.class5 + "/results/publish";
+        ExecutorService pool = Executors.newFixedThreadPool(5);
+        CountDownLatch start = new CountDownLatch(1);
+        List<Future<Integer>> results = new ArrayList<>();
+        try {
+            for (int i = 0; i < 5; i++) {
+                results.add(pool.submit(() -> {
+                    start.await();
+                    return api.post(publish, principal.accessToken(), null).andReturn().getResponse().getStatus();
+                }));
+            }
+            start.countDown();
+            List<Integer> statuses = new ArrayList<>();
+            for (Future<Integer> f : results) {
+                statuses.add(f.get());
+            }
+            assertThat(statuses).containsOnly(200, 409);
+            assertThat(statuses).filteredOn(c -> c == 200).hasSize(1);
+        } finally {
+            pool.shutdownNow();
+        }
+        // Parents are told once, not once per request.
+        String messages = api.get("/api/messages?q=Unit", s.admin.accessToken()).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        List<String> told = com.jayway.jsonpath.JsonPath.read(messages,
+                "$.items[?(@.templateKey == 'exams.results_published')].recipientName");
+        assertThat(told).doesNotHaveDuplicates();
     }
 
     /** Saves and submits a sheet. */

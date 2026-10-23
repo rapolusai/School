@@ -1,5 +1,6 @@
 package com.akshara.govreport;
 
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +68,7 @@ public class SchemeService {
                 .isPresent()) {
             throw ApiException.conflict("This student is already in the scheme for the year.", "schemeCode");
         }
+        notFuture(form.appliedOn());
         SchemeEnrolment e = new SchemeEnrolment(student.id(), year.id(), form.schemeCode());
         e.update(form.status(), form.amountPaise(), GovReportAuth.blankToNull(form.referenceNo()), form.appliedOn(),
                 GovReportAuth.blankToNull(form.notes()));
@@ -78,12 +80,20 @@ public class SchemeService {
 
     public SchemeView update(UUID id, SchemeUpdateForm form, Actor actor) {
         SchemeEnrolment e = find(id);
+        notFuture(form.appliedOn());
         e.update(form.status(), form.amountPaise(), GovReportAuth.blankToNull(form.referenceNo()), form.appliedOn(),
                 GovReportAuth.blankToNull(form.notes()));
         Map<String, CodeView> schemes = codes.inForce(CodeListType.SCHEME, GovReportAuth.today());
         SchemeView view = view(e, schemes);
         audit.record(actor, "govreport_scheme.updated", "govreport_scheme", e.getId(), details(e, view.fullName()));
         return view;
+    }
+
+    /** An application date is a day that has happened (400 on appliedOn otherwise). */
+    private static void notFuture(LocalDate appliedOn) {
+        if (appliedOn != null && appliedOn.isAfter(GovReportAuth.today())) {
+            throw ApiException.badRequest("The application date cannot be in the future.", "appliedOn");
+        }
     }
 
     public void remove(UUID id, Actor actor) {
