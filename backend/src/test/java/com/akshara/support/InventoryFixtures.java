@@ -118,7 +118,8 @@ public final class InventoryFixtures {
                 {"counts":[{"itemId":"%s","countedQty":16}]}""".formatted(item)).andExpect(status().isOk());
         api.post("/api/inventory/stock-takes/" + take + "/close", session.accessToken(), null)
                 .andExpect(status().isOk());
-        String asset = asset(session, "Projector", category, store, staffId, 4200000, today().minusYears(1));
+        // Bought without a location, then moved into the store (a transfer to where it already is is refused).
+        String asset = asset(session, "Projector", category, null, staffId, 4200000, today().minusYears(1));
         api.post("/api/inventory/assets/" + asset + "/transfer", session.accessToken(), """
                 {"toLocationId":"%s","reason":"Moved","movedOn":"%s"}""".formatted(store, today()))
                 .andExpect(status().isOk());

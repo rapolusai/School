@@ -75,17 +75,26 @@ type Lookups = { categories: CategoryView[]; locations: LocationView[];
 | DELETE | `/items/{id}` | `inventory.manage` | `204`; `409 id` once it has movements |
 | GET | `/movements?from&to&kind` | `inventory.read` | `200 MovementView[]` |
 | POST | `/movements/receipt` | `inventory.manage` | `201 MovementView` (a direct receipt, not against an order) |
-| POST | `/movements/issue` | `inventory.manage` | `201 MovementView`; `409 quantity` above stock; `400 departmentId` when neither department nor person |
-| POST | `/movements/return` | `inventory.manage` | `201 MovementView` (same body as an issue) |
-| POST | `/movements/write-off` | `inventory.manage` | `201 MovementView`; `409 quantity` above stock |
+| POST | `/movements/issue` | `inventory.manage` | `201 MovementView`; `409 quantity` above stock (on that date and every later one); `400 departmentId` when neither department nor person |
+| POST | `/movements/return` | `inventory.manage` | `201 MovementView` (same body as an issue); `409 quantity` above what was issued and not yet returned |
+| POST | `/movements/write-off` | `inventory.manage` | `201 MovementView`; `409 quantity` above stock (on that date and every later one) |
 | GET | `/stock-takes` | `inventory.read` | `200 StockTakeView[]` (without lines) |
 | GET | `/stock-takes/{id}` | `inventory.read` | `200 StockTakeView` with lines |
 | POST | `/stock-takes` | `inventory.manage` | `201 StockTakeView`: every active consumable with its expected quantity |
 | POST | `/stock-takes/{id}/count` | `inventory.manage` | `200 StockTakeView`; `409 id` when closed |
 | POST | `/stock-takes/{id}/close` | `inventory.manage` | `200 StockTakeView`: an `ADJUSTMENT` movement per variance |
 
-Only consumables carry stock; an asset item answers `400` on `itemId`. A movement date in the future answers
-`400 movedOn`.
+Only consumables carry stock; an asset item answers `400` on `itemId`. A movement date in the future, or more than
+five years before today, answers `400 movedOn`.
+
+**Stock never goes below zero.** Movements of one item are serialised (the item's row is locked while a movement is
+checked and written), so parallel issues and write-offs cannot overdraw it: those that fit succeed and the rest answer
+`409 quantity`. The ledger runs in date order (then entry order), and a movement goes after everything else on its
+day. An issue or write-off must leave the running balance at zero or above on its date and on every later day, so a
+back-dated issue needs the stock to have been there then and must not starve later movements; one dated today is
+checked against the stock on hand, as before. A return brings back only what was issued and not yet returned (per
+item, counted the same way: issues minus returns up to its date and every later day); anything more answers
+`409 quantity`.
 
 ```ts
 type ItemKind = "CONSUMABLE" | "ASSET";
@@ -123,9 +132,9 @@ type StockTakeView = { id: string; locationId: string | null; locationName: stri
 | GET | `/assets/labels?ids=a,b` | read or approve | `200 AssetLabel[]` (all in-use assets without `ids`) |
 | GET | `/assets/by-tag/{tag}` | read or approve | `200 AssetDetail` |
 | GET | `/assets/{id}` | read or approve | `200 AssetDetail` with transfers |
-| POST | `/assets` | `inventory.manage` | `201 AssetView` with the next tag `AST-nnnnnn` |
-| PUT | `/assets/{id}` | `inventory.manage` | `200 AssetView`; `409 id` when disposed |
-| POST | `/assets/{id}/transfer` | `inventory.manage` | `200 AssetDetail`; `400 toLocationId` when neither target given |
+| POST | `/assets` | `inventory.manage` | `201 AssetView` with the next tag `AST-nnnnnn`; `400 warrantyExpiresOn` before the purchase date |
+| PUT | `/assets/{id}` | `inventory.manage` | `200 AssetView`; `409 id` when disposed; `400 warrantyExpiresOn` before the purchase date |
+| POST | `/assets/{id}/transfer` | `inventory.manage` | `200 AssetDetail`; `400 toLocationId` when neither target given or the asset is already there (and the custodian does not change); `400 toCustodianId` when only the custodian is given and already holds it; `400 movedOn` before the purchase date |
 | POST | `/assets/{id}/disposal` | `inventory.manage` | `200 AssetView` (`DISPOSAL_REQUESTED`); `409 id` if already requested |
 | POST | `/assets/{id}/disposal/approve` | `purchase.approve` | `200 AssetView` (`DISPOSED`, `disposedOn` today) |
 | POST | `/assets/{id}/disposal/refuse` | `purchase.approve` | `200 AssetView` (back to `IN_USE`) |
@@ -196,8 +205,8 @@ head stage) approves a purchase order. Numbers are per financial year: `REQ/2026
 | POST | `/rfqs/{id}/cancel` | `inventory.manage` | `200 RfqView` |
 | GET | `/purchase-orders?status&vendorId` | read or approve | `200 OrderRow[]` |
 | GET | `/purchase-orders/{id}` | read or approve | `200 OrderView` with lines, approvals and receipts |
-| POST | `/purchase-orders?submit=false` | `inventory.manage` | `201 OrderView`; `400 requisitionId` unless that requisition is approved; `400 lines` above ₹10 crore |
-| PUT | `/purchase-orders/{id}` | `inventory.manage` | `200`; `409 id` unless draft |
+| POST | `/purchase-orders?submit=false` | `inventory.manage` | `201 OrderView`; `400 requisitionId` unless that requisition is approved; `400 lines` above ₹10 crore; `400 orderedOn` in the future or more than five years back; `400 expectedOn` before the order date |
+| PUT | `/purchase-orders/{id}` | `inventory.manage` | `200`; `409 id` unless draft; the same date checks as creating |
 | POST | `/purchase-orders/{id}/submit` | `inventory.manage` | `200 OrderView` (`SUBMITTED`) |
 | POST | `/purchase-orders/{id}/approve` | `purchase.approve` | `200` (`APPROVED` or escalated); the linked requisition becomes `ORDERED` |
 | POST | `/purchase-orders/{id}/reject` | `purchase.approve` | `200` (body `ReasonForm`) |

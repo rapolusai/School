@@ -144,9 +144,13 @@ public class StockService {
         return d;
     }
 
-    /** The item, which must be active and a consumable, for a stock movement; 400 on the field otherwise. */
+    /**
+     * The item, which must be active and a consumable, for a stock movement; 400 on the field otherwise. The item's
+     * row is locked until the transaction ends, so concurrent movements of one item are checked one after another
+     * and a race cannot take the stock below zero.
+     */
     Item consumable(UUID id, String field) {
-        Item i = items.findById(id).filter(Item::isActive)
+        Item i = items.findForUpdate(id).filter(Item::isActive)
                 .orElseThrow(() -> ApiException.badRequest("Pick an item.", field));
         if (i.getKind() != ItemKind.CONSUMABLE) {
             throw ApiException.badRequest("Only consumables are counted as stock; assets go in the register.", field);
@@ -229,7 +233,7 @@ public class StockService {
         TenantContext.require();
         Item i = consumable(form.itemId(), "itemId");
         Location l = setup.location(form.locationId(), "locationId");
-        notFuture(form.movedOn(), "movedOn");
+        movementDate(form.movedOn(), "movedOn");
         StockMovement m = new StockMovement(i.getId(), l == null ? null : l.getId(), MovementKind.RECEIPT, 1,
                 form.quantity(), form.unitCostPaise(), form.movedOn(), null, null, null, null,
                 InventoryForms.clean(form.purpose()), null, null, null, actor.id(), actor.name());
@@ -262,10 +266,12 @@ public class StockService {
         if (d == null && p == null) {
             throw ApiException.badRequest("Give the department or the person.", "departmentId");
         }
-        notFuture(form.movedOn(), "movedOn");
+        movementDate(form.movedOn(), "movedOn");
         int direction = InventoryMath.direction(kind, false);
         if (direction < 0) {
-            enough(i, form.quantity());
+            enough(i, form.quantity(), form.movedOn());
+        } else {
+            issuedEnough(i, form.quantity(), form.movedOn());
         }
         StockMovement m = new StockMovement(i.getId(), l == null ? null : l.getId(), kind, direction,
                 form.quantity(), null, form.movedOn(), d == null ? null : d.id(), d == null ? null : d.name(),
@@ -278,19 +284,61 @@ public class StockService {
         TenantContext.require();
         Item i = consumable(form.itemId(), "itemId");
         Location l = setup.location(form.locationId(), "locationId");
-        notFuture(form.movedOn(), "movedOn");
-        enough(i, form.quantity());
+        movementDate(form.movedOn(), "movedOn");
+        enough(i, form.quantity(), form.movedOn());
         StockMovement m = new StockMovement(i.getId(), l == null ? null : l.getId(), MovementKind.WRITE_OFF, -1,
                 form.quantity(), null, form.movedOn(), null, null, null, null, form.reason().strip(), null, null,
                 null, actor.id(), actor.name());
         return post(m, i, "stock.written_off", actor);
     }
 
-    private void enough(Item i, int quantity) {
-        long stock = stockOf(i.getId());
-        if (stock < quantity) {
-            throw ApiException.conflict("Only " + stock + " " + i.getUnit() + " in stock.", "quantity");
+    /**
+     * 409 on the quantity when taking it out on that date would leave the stock below zero on that day or on any
+     * later day of the ledger (a back-dated issue must have had the stock then, and must not starve later movements).
+     * For a movement dated on or after the ledger's last day this is simply the stock on hand. The item is locked.
+     */
+    private void enough(Item i, int quantity, LocalDate on) {
+        List<StockMovement> ledger = movements.findByItem(i.getId());
+        long available = lowestFrom(ledger, on, m -> (long) m.getDirection() * m.getQuantity());
+        if (available < quantity) {
+            boolean backDated = !ledger.isEmpty() && on.isBefore(ledger.get(ledger.size() - 1).getMovedOn());
+            throw ApiException.conflict("Only " + Math.max(available, 0) + " " + i.getUnit() + " in stock"
+                    + (backDated ? " from " + on + " onwards." : "."), "quantity");
         }
+    }
+
+    /**
+     * 409 on the quantity when a return would bring back more than was issued and not yet returned, on that date or
+     * on any later day of the ledger: stock that never left the store cannot come back to it.
+     */
+    private void issuedEnough(Item i, int quantity, LocalDate on) {
+        long outstanding = lowestFrom(movements.findByItem(i.getId()), on, m -> switch (m.getKind()) {
+            case ISSUE -> (long) m.getQuantity();
+            case RETURN -> -(long) m.getQuantity();
+            default -> 0L;
+        });
+        if (outstanding < quantity) {
+            throw ApiException.conflict("Only " + Math.max(outstanding, 0) + " " + i.getUnit()
+                    + " issued and not yet returned.", "quantity");
+        }
+    }
+
+    /**
+     * The lowest running total of the ledger (ordered by date, then entry) where a new movement dated {@code on}
+     * would go (after every movement of that day) and at every later point.
+     */
+    static long lowestFrom(List<StockMovement> ledger, LocalDate on, Function<StockMovement, Long> amount) {
+        long running = 0;
+        int n = 0;
+        while (n < ledger.size() && !ledger.get(n).getMovedOn().isAfter(on)) {
+            running += amount.apply(ledger.get(n++));
+        }
+        long lowest = running;
+        for (; n < ledger.size(); n++) {
+            running += amount.apply(ledger.get(n));
+            lowest = Math.min(lowest, running);
+        }
+        return lowest;
     }
 
     private MovementView post(StockMovement m, Item i, String action, Actor actor) {
@@ -316,6 +364,17 @@ public class StockService {
     static void notFuture(LocalDate date, String field) {
         if (date.isAfter(today())) {
             throw ApiException.badRequest("The date cannot be in the future.", field);
+        }
+    }
+
+    /** How many years back a stock movement or a purchase order may be dated. */
+    static final int MAX_YEARS_BACK = 5;
+
+    /** A stock movement's or an order's date: not in the future and not more than five years back; 400 otherwise. */
+    static void movementDate(LocalDate date, String field) {
+        notFuture(date, field);
+        if (date.isBefore(today().minusYears(MAX_YEARS_BACK))) {
+            throw ApiException.badRequest("The date is more than " + MAX_YEARS_BACK + " years back.", field);
         }
     }
 
@@ -379,6 +438,9 @@ public class StockService {
         TenantContext.require();
         StockTake t = takes.findForUpdate(id).orElseThrow(() -> ApiException.notFound("Stock take"));
         open(t);
+        // Lock the counted items, in a fixed order, so no issue slips in between reading the stock and adjusting it.
+        takeLines.findByTake(id).stream().filter(l -> l.getCountedQty() != null).map(StockTakeLine::getItemId)
+                .sorted().forEach(items::findForUpdate);
         Map<UUID, Item> byId = itemsById();
         Map<UUID, Long> stock = stockByItem();
         int adjustments = 0;

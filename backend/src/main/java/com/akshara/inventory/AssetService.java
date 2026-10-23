@@ -140,6 +140,9 @@ public class AssetService {
 
     private Refs refs(AssetForm form) {
         StockService.notFuture(form.purchaseDate(), "purchaseDate");
+        if (form.warrantyExpiresOn() != null && form.warrantyExpiresOn().isBefore(form.purchaseDate())) {
+            throw ApiException.badRequest("The warranty cannot end before the purchase date.", "warrantyExpiresOn");
+        }
         return new Refs(setup.category(form.categoryId(), "categoryId"), setup.location(form.locationId(),
                 "locationId"), setup.person(form.custodianId(), "custodianId"), setup.vendor(form.vendorId(),
                         "vendorId"));
@@ -174,8 +177,18 @@ public class AssetService {
             throw ApiException.badRequest("Give the new location or the new custodian.", "toLocationId");
         }
         StockService.notFuture(form.movedOn(), "movedOn");
+        if (form.movedOn().isBefore(a.getPurchaseDate())) {
+            throw ApiException.badRequest("The transfer cannot be before the purchase date.", "movedOn");
+        }
         Location to = setup.location(form.toLocationId(), "toLocationId");
         PayrollPerson custodian = setup.person(form.toCustodianId(), "toCustodianId");
+        boolean sameLocation = to == null || to.getId().equals(a.getLocationId());
+        boolean sameCustodian = custodian == null || custodian.userId().equals(a.getCustodianId());
+        if (sameLocation && sameCustodian) {
+            throw to != null
+                    ? ApiException.badRequest("The asset is already at this location.", "toLocationId")
+                    : ApiException.badRequest("The asset is already with this custodian.", "toCustodianId");
+        }
         Map<UUID, Location> locations = setup.locationsById();
         AssetTransfer t = new AssetTransfer(id, a.getLocationId(), InventorySetupService.nameOf(locations,
                 a.getLocationId()), to == null ? a.getLocationId() : to.getId(),

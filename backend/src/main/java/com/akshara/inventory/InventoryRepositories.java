@@ -52,6 +52,11 @@ interface ItemRepository extends JpaRepository<Item, UUID> {
 
     @Query("select count(i) > 0 from Item i where i.categoryId = ?1")
     boolean anyInCategory(UUID categoryId);
+
+    /** The item row locked, so that one item's stock movements are checked and written one at a time. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select i from Item i where i.id = ?1")
+    Optional<Item> findForUpdate(UUID id);
 }
 
 interface StockMovementRepository extends JpaRepository<StockMovement, UUID> {
