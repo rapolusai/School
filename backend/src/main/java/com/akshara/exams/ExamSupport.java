@@ -75,6 +75,13 @@ class ExamSupport {
                 .orElseThrow(() -> ApiException.notFound("Exam class"));
     }
 
+    /** The exam's class locked until the transaction ends (404 as {@link #examClass}). */
+    ExamClass lockExamClass(UUID examId, UUID classId) {
+        exam(examId);
+        return examClasses.lockByExamAndClass(examId, classId)
+                .orElseThrow(() -> ApiException.notFound("Exam class"));
+    }
+
     YearInfo year(UUID id) {
         return academics.year(id).orElseThrow(() -> ApiException.notFound("Academic year"));
     }

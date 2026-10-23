@@ -244,6 +244,8 @@ type PettyCashBook = { floatPaise: number; balancePaise: number;   // in the box
 
 A top-up moves cash from the cash book into the box; a spend is recorded against a head and counts as an expense of
 that head in the reports and budgets, with no approval (petty cash is for small things; the float is the control).
+A spend larger than the box holds on that day is `409`; entries are recorded one at a time per school, so spends sent
+together cannot overdraw the box between them.
 
 ## Other income — `/api/accounts/income`
 
@@ -252,11 +254,12 @@ that head in the reports and budgets, with no approval (petty cash is for small 
 | GET | `/income?from&to` | `accounts.read` | `200 IncomeRow[]` newest first |
 | GET | `/income/{id}` | `accounts.read` | `200 IncomeReceiptView` (with the school header for printing) |
 | POST | `/income` | `accounts.manage` | `201 IncomeReceiptView`, receipt `INC/2026-27/000001` |
-| POST | `/income/{id}/cancel` | `accounts.manage` | `200 IncomeReceiptView`: `{ reason }`; the number is not reused |
+| POST | `/income/{id}/cancel` | `accounts.manage` | `200 IncomeReceiptView`: `{ reason }`; the number is not reused; `409` when already cancelled (also for the losers of cancellations sent together) |
 
 ```ts
 type IncomeKind = "DONATION" | "GRANT" | "RENTAL" | "MISC";
-type IncomeForm = { kind: IncomeKind; headId: string;    // an income head that is not a fee head
+type IncomeForm = { kind: IncomeKind; headId: string;    // an income head that is not a fee head (400 headId
+                                                          // on Fee income or a head mapped from a fee head)
   receivedOn: string; amountPaise: number; payerName: string;
   payerPan: string | null;                                // required for a DONATION when the school has 80G
   payerAddress: string | null; mode: PayMode; bankAccountId: string | null;   // required unless CASH

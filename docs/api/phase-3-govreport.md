@@ -38,7 +38,11 @@ category, management, and the facility counts and yes/no flags the UDISE+ school
 | `PUT /api/me/govreport/children/{studentId}` | parent fills APAAR ID, PEN and category for their own child |
 
 APAAR linking: when the office has entered an APAAR ID the record is locked against the parent; a parent can fill
-an empty one once. Each record notes whether it was last updated by the office, an import or the family.
+an empty one once. An APAAR ID belongs to one student of the school: saving it for a second student (in the grid,
+twice in one save, or from the family app) is `409` on that field, and the import reports it on the row. A student
+may appear once in a bulk save (`400 entries[i].studentId`). Migration V28 kept the first-entered of any existing
+duplicates and cleared (and unlocked) the others, recording each cleared ID in the audit log as
+`govreport_fields.apaar_duplicate_cleared`. Each record notes whether it was last updated by the office, an import or the family.
 
 ## Exports (`/api/govreport/exports`)
 
@@ -77,8 +81,9 @@ updating (409).
 
 ## Errors
 
-400 for validation (field keyed), 403 without the permission, 404 for ids of another school, 409 for duplicate codes,
-locked APAAR, or changes after a lottery.
+400 for validation (field keyed, including a scheme `appliedOn` in the future), 403 without the permission, 404 for
+ids of another school, 409 for duplicate codes, an APAAR ID already recorded for another student, locked APAAR, or
+changes after a lottery.
 
 ## Audit actions
 

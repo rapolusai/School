@@ -118,4 +118,18 @@ class SimulatedAssistProviderTest {
         assertThat(request.lines()).containsExactly("Mathematics: 92% (A1)", "English: 68% (B2)");
         assertThat(UsageService.hash(request)).hasSize(64).isEqualTo(UsageService.hash(request));
     }
+
+    @Test
+    void identifiersAreFoundWithSpacesAndDashesWithoutCatchingOrdinaryNumbers() {
+        for (String text : List.of("9876543210", "+919876543210", "98765 43210", "98765-43210", "987-654-3210",
+                "9876 543 210", "+91 98765 43210", "+91-98765-43210", "0 98765 43210", "2345 6789 0123",
+                "2345-6789-0123", "234567890123", "Room 12 98765 43210")) {
+            assertThat(AssistRequest.holdsIdentifier("Contact " + text + " please")).as(text).isTrue();
+        }
+        for (String text : List.of("Fees of Rs 12,500 due on 2026-11-15", "Marks 78 65 90 45 88",
+                "Classes 6 7 8 9 10 11 12", "Mathematics: 92% (A1)", "Bus 12 at 7 30", "Roll 1234",
+                "Total 5000000", "Rs 1,50,000", "12345 6789", "1234 5678 90")) {
+            assertThat(AssistRequest.holdsIdentifier(text)).as(text).isFalse();
+        }
+    }
 }

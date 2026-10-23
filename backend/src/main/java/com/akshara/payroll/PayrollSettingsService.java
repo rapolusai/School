@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -131,6 +132,12 @@ public class PayrollSettingsService {
                 throw ApiException.badRequest("The upper limit must not be below the lower limit.",
                         "slabs[" + i + "].toPaise");
             }
+            for (int j = 0; j < i; j++) {
+                if (overlap(slabs.get(j), s)) {
+                    throw ApiException.badRequest("This slab overlaps slab " + (j + 1)
+                            + ": the same pay would fall in both.", "slabs[" + i + "].fromPaise");
+                }
+            }
         }
         ownSlabs.deleteByState(code);
         ownSlabs.flush();
@@ -147,6 +154,28 @@ public class PayrollSettingsService {
         details.put("slabs", slabs.size());
         audit.record(actor, "payroll_pt_slabs.updated", "payroll_settings", code, details);
         return ptSlabs(code);
+    }
+
+    /**
+     * Two slabs overlap when they can apply to the same person in the same month at the same pay. A slab for
+     * specific months may sit on top of an every-month slab (it replaces it in those months), and slabs for women
+     * and for everyone else are separate; slabs for everyone conflict with both.
+     */
+    static boolean overlap(PtSlabInput a, PtSlabInput b) {
+        if (a.appliesTo() != b.appliesTo() && a.appliesTo() != PtAppliesTo.ALL && b.appliesTo() != PtAppliesTo.ALL) {
+            return false;
+        }
+        boolean aEvery = a.months() == null || a.months().isEmpty();
+        boolean bEvery = b.months() == null || b.months().isEmpty();
+        if (aEvery != bEvery) {
+            return false;
+        }
+        if (!aEvery && Collections.disjoint(a.months(), b.months())) {
+            return false;
+        }
+        long aTo = a.toPaise() == null ? Long.MAX_VALUE : a.toPaise();
+        long bTo = b.toPaise() == null ? Long.MAX_VALUE : b.toPaise();
+        return a.fromPaise() <= bTo && b.fromPaise() <= aTo;
     }
 
     /** Removes the school's own slabs for a state, so the published ones apply again. */

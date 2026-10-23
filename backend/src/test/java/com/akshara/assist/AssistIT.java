@@ -12,9 +12,14 @@ import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -286,6 +291,65 @@ class AssistIT extends IntegrationTest {
                 {"text":"Fine."}""").andExpect(status().isForbidden());
         api.post("/api/assist/remarks/" + id + "/accept", principal.accessToken(), """
                 {"text":"Fine."}""").andExpect(status().isOk());
+    }
+
+    @Test
+    void anAcceptedRemarkCannotBeAcceptedAgainEvenByParallelRequests() throws Exception {
+        api.put("/api/assist/settings", admin.accessToken(), ON).andExpect(status().isOk());
+        String drafts = api.post("/api/assist/remarks/drafts", ravi.accessToken(), """
+                {"termId":"%s","sectionId":"%s","tone":"ENCOURAGING"}""".formatted(term, s5A))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        String ashaDraft = JsonPath.read(drafts, "$[0].id");
+        String balaDraft = JsonPath.read(drafts, "$[1].id");
+        api.post("/api/assist/remarks/" + ashaDraft + "/accept", ravi.accessToken(), """
+                {"text":"Reads well."}""").andExpect(status().isOk());
+        api.post("/api/assist/remarks/" + ashaDraft + "/accept", ravi.accessToken(), """
+                {"text":"Overwritten after accept"}""").andExpect(status().isConflict());
+        api.get("/api/exams/terms/" + term + "/sections/" + s5A + "/records", ravi.accessToken())
+                .andExpect(jsonPath("$.students[?(@.studentId == '" + asha + "')].remark")
+                        .value(hasItem("Reads well.")));
+
+        // Five accepts of one draft at once: one wins, the others are told it was accepted (never a 500).
+        ExecutorService pool = Executors.newFixedThreadPool(5);
+        CountDownLatch start = new CountDownLatch(1);
+        List<Future<Integer>> results = new ArrayList<>();
+        try {
+            for (int i = 0; i < 5; i++) {
+                String text = "Attempt " + i + ".";
+                results.add(pool.submit(() -> {
+                    start.await();
+                    return api.post("/api/assist/remarks/" + balaDraft + "/accept", ravi.accessToken(), """
+                            {"text":"%s"}""".formatted(text)).andReturn().getResponse().getStatus();
+                }));
+            }
+            start.countDown();
+            List<Integer> statuses = new ArrayList<>();
+            for (Future<Integer> f : results) {
+                statuses.add(f.get());
+            }
+            assertThat(statuses).containsOnly(200, 409);
+            assertThat(statuses).filteredOn(c -> c == 200).hasSize(1);
+        } finally {
+            pool.shutdownNow();
+        }
+        assertThat(audit("assist_remark.accepted")).hasSize(2);
+    }
+
+    @Test
+    void theWritingHelperRefusesPhoneAndAadhaarNumbersWrittenWithSpacesOrDashes() throws Exception {
+        api.put("/api/assist/settings", admin.accessToken(), ON).andExpect(status().isOk());
+        for (String text : List.of("Call 98765 43210", "phone: 98765-43210", "Aadhaar 2345-6789-0123",
+                "Ring +91 98765 43210 today", "Call 987-654-3210", "Aadhaar 234567890123")) {
+            api.post("/api/assist/writing/improve", ravi.accessToken(), """
+                    {"text":"%s"}""".formatted(text)).andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors.text").exists());
+        }
+        // Ordinary numbers in a circular still go through.
+        for (String text : List.of("Fees of Rs 12,500 are due on 2026-11-15 for classes 6 7 8 9 10",
+                "Marks: 78 65 90 45 88 and 92.5% overall", "Bus 12 leaves at 7 30 from stop 4")) {
+            api.post("/api/assist/writing/improve", ravi.accessToken(), """
+                    {"text":"%s"}""".formatted(text)).andExpect(status().isOk());
+        }
     }
 
     // ------------------------------------------------------------------ early warning

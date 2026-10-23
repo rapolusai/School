@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import jakarta.persistence.EntityManager;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,9 +33,11 @@ public class PettyCashService {
     private final ChartService chart;
     private final AccountsSettingsService settings;
     private final AuditService audit;
+    private final EntityManager entityManager;
 
     PettyCashService(PettyCashEntryRepository entries, ChartService chart, AccountsSettingsService settings,
-            AuditService audit) {
+            AuditService audit, EntityManager entityManager) {
+        this.entityManager = entityManager;
         this.entries = entries;
         this.chart = chart;
         this.settings = settings;
@@ -73,7 +77,7 @@ public class PettyCashService {
     }
 
     public PettyCashBook record(PettyCashForm form, Actor actor) {
-        TenantContext.require();
+        lockBook(TenantContext.require());
         LocalDate date = AccountsAccess.notFuture(form.entryDate(), "entryDate");
         UUID headId = null;
         Head head = null;
@@ -105,5 +109,15 @@ public class PettyCashService {
         LocalDate from = date.withDayOfMonth(1);
         LocalDate today = FinancialYear.today();
         return book(from.isAfter(today) ? today.withDayOfMonth(1) : from, today);
+    }
+
+    /**
+     * Serialises entries in the school's petty cash book for the length of the transaction, so two spends cannot
+     * both pass the balance check against the same balance.
+     */
+    private void lockBook(UUID tenantId) {
+        entityManager.createNativeQuery("select 1 from (select pg_advisory_xact_lock(hashtextextended(?1, 0))) l")
+                .setParameter(1, "accounts.petty_cash:" + tenantId)
+                .getSingleResult();
     }
 }
