@@ -7484,6 +7484,10 @@ export const en = {
   "accounts.v.eightyG": "Enter the 80G registration number.",
   "accounts.v.limit": "Limits must be amounts above zero.",
   "accounts.v.dayOfMonth": "Give a day from 1 to 28.",
+  // ---- languages ----
+  "alerts.language.te": "Telugu",
+  "audit.action.user_language.updated": "Language preference changed",
+  "audit.entity.user_language": "Language preference",
 } satisfies Record<string, string>;
 
 export type MessageKey = keyof typeof en;

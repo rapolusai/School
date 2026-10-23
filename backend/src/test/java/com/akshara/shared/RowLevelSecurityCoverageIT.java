@@ -105,7 +105,8 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
             "accounts.bank_account", "accounts.opening_balance", "accounts.number_counter",
             "accounts.recurring_expense", "accounts.expense", "accounts.expense_approval",
             "accounts.petty_cash_entry", "accounts.income_receipt", "accounts.fee_income_day",
-            "accounts.payroll_cost", "accounts.budget", "accounts.budget_month", "accounts.bank_statement_line");
+            "accounts.payroll_cost", "accounts.budget", "accounts.budget_month", "accounts.bank_statement_line",
+            "preferences.user_language");
 
     @Autowired
     HomeworkService homework;
@@ -241,6 +242,7 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         certificateRecords(admin, student, section);
         frontOfficeRecords(admin, lata, student);
         accountsRecords(school, admin);
+        languageRecords(admin);
         School other = api.signup();
 
         try (Connection app = appConnection(); Connection owner = ownerConnection()) {
@@ -703,6 +705,12 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         new AccountsFixtures(api).everything(admin, adminId);
         AccountsFixtures.payrollApproved(events, school.tenantId(), YearMonth.now(ZoneId.of("Asia/Kolkata")),
                 6_000_000, 720_000, UUID.fromString(adminId));
+    }
+
+    /** The admin chooses Telugu for themselves. */
+    private void languageRecords(Session admin) throws Exception {
+        api.put("/api/me/preferences", admin.accessToken(), "{\"language\":\"te\"}")
+                .andExpect(status().isOk());
     }
 
     /** The student's mother asks for a day of leave for her child. */

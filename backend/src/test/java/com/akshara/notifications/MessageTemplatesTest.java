@@ -30,6 +30,29 @@ class MessageTemplatesTest {
     }
 
     @Test
+    void theTeluguAlertUsesTeluguMonthNames() {
+        String telugu = MessageTemplates.render(MessageTemplates.ABSENCE_ALERT, "te", PARAMS);
+        assertThat(telugu).startsWith("ప్రియమైన Anitha Sharma, Arjun Sharma (Class 5 A) 09 ")
+                .contains("2026న Akshara Demo Schoolలో గైర్హాజరుగా నమోదయ్యారు.")
+                .doesNotContain("{").doesNotContain("Oct");
+        assertThat(MessageTemplates.LANGUAGES).containsExactly("en", "hi", "te");
+    }
+
+    @Test
+    void everyTemplateHasHindiAndTeluguWithTheSamePlaceholders() {
+        java.util.regex.Pattern placeholder = java.util.regex.Pattern.compile("\\{(\\w+)}");
+        MessageTemplates.all().forEach((key, texts) -> {
+            java.util.Set<String> english = placeholder.matcher(texts.get("en")).results()
+                    .map(m -> m.group(1)).collect(java.util.stream.Collectors.toSet());
+            for (String lang : MessageTemplates.LANGUAGES) {
+                assertThat(texts).as(key).containsKey(lang);
+                assertThat(placeholder.matcher(texts.get(lang)).results().map(m -> m.group(1))
+                        .collect(java.util.stream.Collectors.toSet())).as(key + " " + lang).isEqualTo(english);
+            }
+        });
+    }
+
+    @Test
     void anUnknownLanguageFallsBackToEnglish() {
         assertThat(MessageTemplates.language("ta")).isEqualTo("en");
         assertThat(MessageTemplates.language(null)).isEqualTo("en");

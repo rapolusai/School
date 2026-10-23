@@ -7482,4 +7482,8 @@ export const te: Record<MessageKey, string> = {
   "accounts.v.eightyG": "80G రిజిస్ట్రేషన్ నంబర్ నమోదు చేయండి.",
   "accounts.v.limit": "పరిమితులు సున్నా కంటే ఎక్కువ సొమ్ములు కావాలి.",
   "accounts.v.dayOfMonth": "1 నుండి 28 వరకు రోజు ఇవ్వండి.",
+  // ---- languages ----
+  "alerts.language.te": "తెలుగు",
+  "audit.action.user_language.updated": "భాష ఎంపిక మార్చబడింది",
+  "audit.entity.user_language": "భాష ఎంపిక",
 };

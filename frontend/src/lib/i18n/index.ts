@@ -28,7 +28,7 @@ export function translate(lang: Lang, key: MessageKey, vars?: TranslateVars): st
   );
 }
 
-function isLang(value: unknown): value is Lang {
+export function isLang(value: unknown): value is Lang {
   return LANGUAGES.some((l) => l.code === value);
 }
 
@@ -56,6 +56,23 @@ export function setLang(lang: Lang): void {
   } catch {
     // Storage blocked (private mode etc.): the choice still applies for this page view.
   }
+  document.documentElement.lang = lang;
+  for (const listener of listeners) listener();
+}
+
+/** True once someone picked a language on this device (that choice wins over the account's saved language). */
+export function hasDeviceLang(): boolean {
+  try {
+    return isLang(window.localStorage.getItem(LANG_STORAGE_KEY));
+  } catch {
+    return false;
+  }
+}
+
+/** Shows the app in the account's saved language without remembering it as this device's own choice. */
+export function applyAccountLang(lang: Lang): void {
+  if (hasDeviceLang() || current === lang) return;
+  current = lang;
   document.documentElement.lang = lang;
   for (const listener of listeners) listener();
 }

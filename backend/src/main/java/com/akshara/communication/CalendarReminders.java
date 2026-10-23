@@ -38,6 +38,8 @@ class CalendarReminders {
     private static final DateTimeFormatter ENGLISH_DATE = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH);
     private static final DateTimeFormatter HINDI_DATE = DateTimeFormatter.ofPattern("dd MMMM yyyy",
             Locale.forLanguageTag("hi-IN"));
+    private static final DateTimeFormatter TELUGU_DATE = DateTimeFormatter.ofPattern("dd MMMM yyyy",
+            Locale.forLanguageTag("te-IN"));
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm");
 
     private final CalendarEntryRepository entries;
@@ -66,13 +68,16 @@ class CalendarReminders {
         UUID circularId = null;
         if (!audience.isEmpty()) {
             String language = MessageTemplates.language(messageSettings.current().alertLanguage());
-            boolean hindi = MessageTemplates.HINDI.equals(language);
-            String title = (hindi ? "अनुस्मारक: " : "Reminder: ") + entry.getTitle();
+            String title = switch (language) {
+                case MessageTemplates.HINDI -> "अनुस्मारक: ";
+                case MessageTemplates.TELUGU -> "అనుస్మారకం: ";
+                default -> "Reminder: ";
+            } + entry.getTitle();
             if (title.length() > NoticeForms.MAX_TITLE) {
                 title = title.substring(0, NoticeForms.MAX_TITLE - 3) + "...";
             }
             Circular circular = new Circular(Source.CALENDAR, entry.getId(), CALENDAR, now);
-            circular.edit(title, body(entry, hindi), category(entry.getKind()), audience.wholeSchool(),
+            circular.edit(title, body(entry, language), category(entry.getKind()), audience.wholeSchool(),
                     audiences.label(audience), channels(entry), null);
             circulars.saveAndFlush(circular);
             sender.saveAudience(circular, audience);
@@ -133,11 +138,17 @@ class CalendarReminders {
     }
 
     /** The when (dates and time) on the first line, then the entry's description. */
-    static String body(CalendarEntry entry, boolean hindi) {
-        DateTimeFormatter dates = hindi ? HINDI_DATE : ENGLISH_DATE;
+    static String body(CalendarEntry entry, String language) {
+        boolean hindi = MessageTemplates.HINDI.equals(language);
+        boolean telugu = MessageTemplates.TELUGU.equals(language);
+        DateTimeFormatter dates = hindi ? HINDI_DATE : telugu ? TELUGU_DATE : ENGLISH_DATE;
         StringBuilder when = new StringBuilder(dates.format(entry.getStartsOn()));
         if (!entry.getEndsOn().equals(entry.getStartsOn())) {
-            when.append(hindi ? " से " : " to ").append(dates.format(entry.getEndsOn()));
+            if (telugu) {
+                when.append(" నుండి ").append(dates.format(entry.getEndsOn())).append(" వరకు");
+            } else {
+                when.append(hindi ? " से " : " to ").append(dates.format(entry.getEndsOn()));
+            }
         }
         if (entry.getStartTime() != null) {
             when.append(", ").append(TIME.format(entry.getStartTime()));

@@ -42,7 +42,7 @@ public class NotificationSettingsController {
     public record SettingsRequest(
             @NotNull Boolean absenceAlertsEnabled,
             @NotNull AlertChannel absenceAlertChannel,
-            @NotNull @Pattern(regexp = "^(en|hi)$", message = "Choose English or Hindi.") String alertLanguage,
+            @NotNull @Pattern(regexp = "^(en|hi|te)$", message = "Choose English, Hindi or Telugu.") String alertLanguage,
             @NotNull Boolean quietHoursEnabled,
             @NotNull @Pattern(regexp = TIME, message = TIME_MESSAGE) String quietHoursStart,
             @NotNull @Pattern(regexp = TIME, message = TIME_MESSAGE) String quietHoursEnd) {

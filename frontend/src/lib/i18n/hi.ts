@@ -7483,4 +7483,8 @@ export const hi: Record<MessageKey, string> = {
   "accounts.v.eightyG": "80G पंजीकरण संख्या दर्ज करें।",
   "accounts.v.limit": "सीमाएँ शून्य से अधिक राशि हों।",
   "accounts.v.dayOfMonth": "1 से 28 तक दिन दें।",
+  // ---- languages ----
+  "alerts.language.te": "तेलुगु",
+  "audit.action.user_language.updated": "भाषा की पसंद बदली गई",
+  "audit.entity.user_language": "भाषा की पसंद",
 };
