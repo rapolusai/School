@@ -1,4 +1,4 @@
-import { apiFetch } from "./api";
+import { apiFetch, pathSegment } from "./api";
 import { downloadXlsx, reportQuery, type ReportParams } from "./reports-api";
 import type {
   ApplicationPick,
@@ -33,7 +33,7 @@ import type {
 
 /* Endpoint helpers for docs/api/phase-3-govreport.md. */
 
-const id = (value: string) => encodeURIComponent(value);
+const id = pathSegment;
 const q = (params: ReportParams) => reportQuery(params);
 
 export type ExportParams = { yearId?: string; asOf?: string; classId?: string };

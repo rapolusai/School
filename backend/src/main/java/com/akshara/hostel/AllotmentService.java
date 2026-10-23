@@ -13,6 +13,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -82,8 +83,8 @@ public class AllotmentService {
         Room room = requireFreeBed(bed, null);
         Hostel hostel = hostels.findById(bed.getHostelId()).orElseThrow(() -> ApiException.notFound("Hostel"));
         Instant now = Instant.now();
-        Allotment a = allotments.save(new Allotment(pupil.id(), bed.getHostelId(), bed.getRoomId(), bed.getId(),
-                form.fromDate(), Boolean.TRUE.equals(form.guardianConsent()), actor, now));
+        Allotment a = saveRacing(new Allotment(pupil.id(), bed.getHostelId(), bed.getRoomId(), bed.getId(),
+                form.fromDate(), Boolean.TRUE.equals(form.guardianConsent()), actor, now), pupil, bed, room);
         events.publishEvent(new HostelAllotted(TenantContext.require(), a.getId(), null, pupil.id(), hostel.getId(),
                 hostel.getName(), room.getId(), room.getNumber(), room.getMonthlyFeePaise(), a.getFromDate()));
         audit.record(actor, "hostel_allotment.allotted", "hostel_allotment", a.getId(),
@@ -139,8 +140,8 @@ public class AllotmentService {
         Instant now = Instant.now();
         old.vacate(from, Allotment.ROOM_CHANGE, actor);
         allotments.flush();
-        Allotment a = allotments.save(new Allotment(old.getStudentId(), bed.getHostelId(), bed.getRoomId(),
-                bed.getId(), from, old.isGuardianConsent(), actor, now));
+        Allotment a = saveRacing(new Allotment(old.getStudentId(), bed.getHostelId(), bed.getRoomId(),
+                bed.getId(), from, old.isGuardianConsent(), actor, now), pupil, bed, room);
         UUID tenantId = TenantContext.require();
         events.publishEvent(new HostelVacated(tenantId, old.getId(), old.getStudentId(), old.getHostelId(),
                 old.getRoomId(), from, Allotment.ROOM_CHANGE));
@@ -152,6 +153,28 @@ public class AllotmentService {
         audit.record(actor, "hostel_allotment.moved", "hostel_allotment", a.getId(), d);
         allotments.flush();
         return views(List.of(a)).get(0);
+    }
+
+    /**
+     * Saves a new allotment. When another request took the same bed (or gave the same student a bed) at the same
+     * moment, the partial unique indexes on active allotments refuse the second one: answer the same 409 as the
+     * sequential checks instead of the generic "already exists".
+     */
+    private Allotment saveRacing(Allotment allotment, Pupil pupil, Bed bed, Room room) {
+        try {
+            return allotments.saveAndFlush(allotment);
+        } catch (DataIntegrityViolationException e) {
+            String cause = String.valueOf(e.getMostSpecificCause().getMessage());
+            if (cause.contains("uq_allotment_active_student")) {
+                throw new ApiException(HttpStatus.CONFLICT, "Already a boarder", pupil.fullName()
+                        + " was just given a bed by someone else; move or vacate it instead.");
+            }
+            if (cause.contains("uq_allotment_active_bed")) {
+                throw new ApiException(HttpStatus.CONFLICT, "Bed taken", "Bed " + bed.getLabel() + " in room "
+                        + room.getNumber() + " was just taken by another boarder. Pick another bed.");
+            }
+            throw e;
+        }
     }
 
     /** The bed's room, when the bed is free and the room has room; {@code leaving} is a boarder moving out of it. */

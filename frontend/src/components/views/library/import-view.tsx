@@ -6,7 +6,7 @@ import { useState } from "react";
 import { FormAlert, PageHead } from "@/components/ui/states";
 import { toApiError } from "@/lib/api";
 import { countCsvRows, csvLine } from "@/lib/csv";
-import { errorMessage } from "@/lib/error-message";
+import { errorMessage, fieldErrorMessage } from "@/lib/error-message";
 import { plural, useI18n } from "@/lib/i18n";
 import { libraryApi } from "@/lib/library-api";
 import type { LibraryImportResult } from "@/lib/types";
@@ -120,11 +120,11 @@ export function LibraryImportView() {
     } catch (caught) {
       const apiError = toApiError(caught);
       if (apiError.errors?.csv) {
-        setFieldError(apiError.errors.csv);
+        setFieldError(fieldErrorMessage(apiError.errors.csv, t));
         setStage({ kind: "idle" });
       } else if (!dryRun && apiError.status === 400) {
         // Something changed since the check (an accession number was taken meanwhile): check again to show why.
-        setError(apiError.detail ?? t("import.failed"));
+        setError(apiError.detail ? errorMessage(apiError, t) : t("import.failed"));
         try {
           setStage({ kind: "checked", result: await libraryApi.importCsv(file.text, true) });
         } catch {

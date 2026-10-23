@@ -1,4 +1,4 @@
-import { apiFetch } from "./api";
+import { apiFetch, pathSegment } from "./api";
 import { sendForm } from "./files-api";
 import type {
   ChatAway,
@@ -32,7 +32,7 @@ import type {
 
 /* Endpoint helpers for docs/api/phase-2-chat.md: messages (staff and parents), oversight and parent-teacher meetings. */
 
-const id = (value: string) => encodeURIComponent(value);
+const id = pathSegment;
 
 /** What a conversation screen needs, for staff (/api/chat) and for parents (/api/me/chat) alike. */
 export type ChatClient = {

@@ -1,4 +1,4 @@
-import { apiFetch } from "./api";
+import { apiFetch, pathSegment } from "./api";
 import { reportQuery } from "./reports-api";
 import type {
   Allocation,
@@ -35,7 +35,7 @@ import type {
 
 /* Endpoint helpers for docs/api/phase-2-transport.md. */
 
-const id = (value: string) => encodeURIComponent(value);
+const id = pathSegment;
 
 export type AllocationQuery = {
   routeId?: string;

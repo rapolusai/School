@@ -5,7 +5,7 @@ import { useState } from "react";
 import { ErrorState, FormAlert, LoadingRows } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
 import { toApiError } from "@/lib/api";
-import { errorMessage } from "@/lib/error-message";
+import { errorMessage, fieldErrorMessages } from "@/lib/error-message";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { timetableApi } from "@/lib/timetable-api";
 import { WEEK_DAYS, type BellSchedule, type PeriodRow, type PeriodView, type WeekDay } from "@/lib/types";
@@ -183,7 +183,7 @@ function BellsEditor({ bells, onSaved }: { bells: BellSchedule; onSaved: (bells:
       onSaved(saved);
     } catch (caught) {
       const error = toApiError(caught);
-      setErrors(error.errors ?? {});
+      setErrors(error.errors ? fieldErrorMessages(error.errors, t) : {});
       setProblem(errorMessage(error, t));
     } finally {
       setSaving(false);

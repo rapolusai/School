@@ -24,6 +24,7 @@ import org.springframework.security.oauth2.server.resource.web.authentication.Be
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.firewall.RequestRejectedHandler;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 
 @Configuration(proxyBeanMethods = false)
@@ -76,6 +77,17 @@ public class SecurityConfig {
                 .exceptionHandling(e -> e.authenticationEntryPoint(entryPoint()).accessDeniedHandler(deniedHandler()))
                 .addFilterAfter(new TenantContextFilter(), BearerTokenAuthenticationFilter.class);
         return http.build();
+    }
+
+    /**
+     * A request the firewall refuses (e.g. a path with ";", an encoded "/" or "%"), answered as a 400 problem here.
+     * The default handler calls sendError, whose error dispatch has no bearer token and so came back as a 401 that
+     * made the web app think the session had ended. Nothing is let through: the request is still refused.
+     */
+    @Bean
+    RequestRejectedHandler requestRejectedHandler() {
+        return (request, response, ex) -> writeProblem(response, HttpStatus.BAD_REQUEST, "Bad request",
+                "The request could not be read.");
     }
 
     @Bean

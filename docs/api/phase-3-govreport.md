@@ -64,6 +64,9 @@ verify them before upload.
 | `POST /intakes/{id}/lottery` | run the lottery |
 | `GET /runs/{runId}` | run with its allotments |
 
+`applicationsCloseOn` is optional; a new or changed closing date before today (India time) is
+`400 errors.applicationsCloseOn` (an unchanged date that has since passed can be saved again).
+
 Screening checks the state income limit in force and the document flags. The lottery is a pure function: eligible
 applications are ordered by id, grouped into distance bands 1 to 4 (the band is entered as the 1 km, 3 km and so on
 range) and drawn with a seeded `java.util.Random`, so the same seed reproduces the result. Runs and allotments are

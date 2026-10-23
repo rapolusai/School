@@ -5,7 +5,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { TextField } from "@/components/ui/field";
 import { FormAlert, LoadingRows } from "@/components/ui/states";
 import { api, toApiError } from "@/lib/api";
-import { errorMessage } from "@/lib/error-message";
+import { errorMessage, fieldErrorMessages } from "@/lib/error-message";
 import { roleLabel, useI18n, type MessageKey } from "@/lib/i18n";
 import type { Role, UserSummary } from "@/lib/types";
 import { isValidEmail, MIN_PASSWORD_LENGTH } from "@/lib/validation";
@@ -94,11 +94,11 @@ export function AddUserDialog({
     } catch (caught) {
       const error = toApiError(caught);
       if (error.errors) {
-        setErrors(error.errors as Partial<Record<Field, string>>);
+        setErrors(fieldErrorMessages(error.errors, t) as Partial<Record<Field, string>>);
         setFormError(t("validation.fixErrors"));
       } else if (error.status === 409) {
         // Duplicate email within this school.
-        setErrors({ email: error.detail ?? error.title });
+        setErrors({ email: errorMessage(error, t) });
       } else {
         setFormError(errorMessage(error, t));
       }

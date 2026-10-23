@@ -140,8 +140,8 @@ class DemoGovReportData {
     private IntakeView rteIntake(YearInfo year, Actor office, Actor principal) {
         ClassView entry = academicsService.classes().stream().filter(c -> c.name().equals(RTE_CLASS)).findFirst()
                 .orElseThrow(() -> new IllegalStateException("No " + RTE_CLASS));
-        IntakeView intake = rte.create(new IntakeForm(year.id(), entry.id(), 40, 10, "TS", null, null, null, null,
-                null, year.startsOn().minusMonths(2)), office);
+        IntakeView intake = rte.createClosedEarlier(new IntakeForm(year.id(), entry.id(), 40, 10, "TS", null, null,
+                null, null, null, year.startsOn().minusMonths(2)), office);
         int phone = 3001;
         for (String[] f : RTE_FAMILIES) {
             Gender gender = f[2].equals("F") ? Gender.FEMALE : Gender.MALE;

@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { toApiError } from "./api";
-import { errorMessage } from "./error-message";
+import { errorMessage, fieldErrorMessages } from "./error-message";
 import type { MessageKey, Translate } from "./i18n";
 
 export type FieldErrors = Record<string, string | undefined>;
@@ -58,8 +58,8 @@ export function useForm<V extends Record<string, unknown>>(initial: V) {
     } catch (caught) {
       const error = toApiError(caught);
       if (error.errors && Object.keys(error.errors).length) {
-        setErrors(error.errors);
-        setFormError(error.status === 409 ? (error.detail ?? t("validation.fixErrors")) : t("validation.fixErrors"));
+        setErrors(fieldErrorMessages(error.errors, t));
+        setFormError(error.status === 409 && error.detail ? errorMessage(error, t) : t("validation.fixErrors"));
       } else {
         setFormError(errorMessage(error, t));
       }

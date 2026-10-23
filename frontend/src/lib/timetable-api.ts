@@ -1,4 +1,4 @@
-import { apiFetch } from "./api";
+import { apiFetch, pathSegment } from "./api";
 import type {
   AbsenceRequest,
   AssignmentRequest,
@@ -23,7 +23,7 @@ import type {
 
 /* Endpoint helpers for docs/api/phase-1-timetable-homework.md (timetable). */
 
-const id = (value: string) => encodeURIComponent(value);
+const id = pathSegment;
 
 function query(params: Record<string, string | number | undefined | null>): string {
   const search = new URLSearchParams();

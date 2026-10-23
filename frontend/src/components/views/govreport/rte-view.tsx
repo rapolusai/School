@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
 import { api } from "@/lib/api";
-import { formatPaise, formatPlainDate, parseRupees } from "@/lib/format";
+import { formatPaise, formatPlainDate, parseRupees, todayInIndia } from "@/lib/format";
 import { govreportApi } from "@/lib/govreport-api";
 import { localeFor, useI18n, type MessageKey } from "@/lib/i18n";
 import type { IntakeStatus, IntakeView } from "@/lib/types";
@@ -124,7 +124,7 @@ type IntakeValues = {
 };
 
 /** Client checks mirroring the API. Exported for tests. */
-export function validateIntake(v: IntakeValues): Problems {
+export function validateIntake(v: IntakeValues, today: string = todayInIndia()): Problems {
   const problems: Problems = {};
   if (!v.entryClassId) problems.entryClassId = "govreport.v.class";
   const seats = Number(v.totalSeats);
@@ -143,6 +143,8 @@ export function validateIntake(v: IntakeValues): Problems {
     problems.incomeLimit = "govreport.v.amount";
   if (!v.stateCode.trim() && !v.incomeLimit.trim())
     problems.incomeLimit = "govreport.v.incomeOrState";
+  // ISO dates compare as text; the API refuses a closing date before today too.
+  if (v.closeOn && v.closeOn < today) problems.closeOn = "govreport.v.closeOnPast";
   return problems;
 }
 
@@ -252,7 +254,8 @@ function NewIntakeCard({
           type="date"
           value={form.values.closeOn}
           onChange={(e) => form.set("closeOn", e.target.value)}
-          error={form.errors.applicationsCloseOn}
+          min={todayInIndia()}
+          error={form.errors.closeOn ?? form.errors.applicationsCloseOn}
         />
       </div>
       <div>

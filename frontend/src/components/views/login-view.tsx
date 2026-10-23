@@ -9,7 +9,7 @@ import { TextField } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/states";
 import { toApiError, type ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { errorMessage } from "@/lib/error-message";
+import { errorMessage, fieldErrorMessages } from "@/lib/error-message";
 import { useI18n, type Translate } from "@/lib/i18n";
 import { landingPath, safeNextPath } from "@/lib/permissions";
 
@@ -73,7 +73,7 @@ export function LoginView({
     } catch (caught) {
       const apiError = toApiError(caught);
       setError(loginErrorMessage(apiError, mode, t));
-      setFieldErrors(apiError.status === 400 ? (apiError.errors ?? {}) : {});
+      setFieldErrors(apiError.status === 400 && apiError.errors ? fieldErrorMessages(apiError.errors, t) : {});
       setSubmitting(false);
     }
   };

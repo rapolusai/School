@@ -1,4 +1,4 @@
-import { apiFetch } from "./api";
+import { apiFetch, pathSegment } from "./api";
 import type {
   BillingDetailsRequest,
   BillingNotice,
@@ -16,7 +16,7 @@ import type {
 
 /* Billing endpoints (docs/api/phase-1-billing.md). Kept apart from api.ts so the slices merge cleanly. */
 
-const id = (value: string) => encodeURIComponent(value);
+const id = pathSegment;
 const school = (tenantId: string) => `/api/platform/billing/schools/${id(tenantId)}`;
 
 /** The school's own billing (billing.read): plan, trial, invoices and the banner. */

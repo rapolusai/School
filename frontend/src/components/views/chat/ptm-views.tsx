@@ -8,7 +8,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog } from "@/components/ui/dialog";
 import { SelectField, TextAreaField, TextField } from "@/components/ui/field";
 import { Pill } from "@/components/ui/pill";
-import { ErrorState, FormAlert, LoadingRows, PageHead } from "@/components/ui/states";
+import { ErrorState, FormAlert, LoadFailure, LoadingRows, PageHead, pendingTitle } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
 import { api, toApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -274,7 +274,7 @@ function ManagedEvent({ id }: { id: string }) {
     <>
       <PageHead
         eyebrow={t("ptm.title")}
-        title={data?.title ?? t("common.loading")}
+        title={data?.title ?? pendingTitle(t, loaded.error)}
         actions={
           <>
             <Link href="/app/ptm" className="btn">
@@ -303,7 +303,7 @@ function ManagedEvent({ id }: { id: string }) {
         }
       />
       {loaded.error && !data ? (
-        <ErrorState error={loaded.error} onRetry={loaded.reload} />
+        <LoadFailure error={loaded.error} onRetry={loaded.reload} />
       ) : !data ? (
         <LoadingRows rows={6} />
       ) : (
@@ -506,7 +506,7 @@ function TeacherEvent({ id }: { id: string }) {
     <>
       <PageHead
         eyebrow={t("ptm.title")}
-        title={data?.event.title ?? t("common.loading")}
+        title={data?.event.title ?? pendingTitle(t, loaded.error)}
         actions={
           <>
             <Link href="/app/ptm" className="btn">
@@ -523,7 +523,7 @@ function TeacherEvent({ id }: { id: string }) {
         }
       />
       {loaded.error && !data ? (
-        <ErrorState error={loaded.error} onRetry={loaded.reload} />
+        <LoadFailure error={loaded.error} onRetry={loaded.reload} />
       ) : !data ? (
         <LoadingRows rows={6} />
       ) : (

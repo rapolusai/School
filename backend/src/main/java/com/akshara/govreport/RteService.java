@@ -98,12 +98,24 @@ public class RteService {
     }
 
     public IntakeView create(IntakeForm form, Actor actor) {
+        return create(form, actor, false);
+    }
+
+    /**
+     * Records an intake whose applications have already closed (the demo school's finished lottery). The API never
+     * calls this: a closing date before today is refused there.
+     */
+    public IntakeView createClosedEarlier(IntakeForm form, Actor actor) {
+        return create(form, actor, true);
+    }
+
+    private IntakeView create(IntakeForm form, Actor actor, boolean pastCloseAllowed) {
         TenantContext.require();
         YearInfo year = academics.year(form.academicYearId())
                 .orElseThrow(() -> ApiException.badRequest("Choose an academic year.", "academicYearId"));
         ClassView entry = classView(form.entryClassId());
         RteIntake intake = new RteIntake(year.id(), entry.id(), actor);
-        apply(intake, form);
+        apply(intake, form, pastCloseAllowed);
         try {
             intakes.saveAndFlush(intake);
         } catch (DataIntegrityViolationException e) {
@@ -126,7 +138,7 @@ public class RteService {
             throw new ApiException(org.springframework.http.HttpStatus.CONFLICT, "Lottery done",
                     "The intake cannot change after its lottery has run.");
         }
-        apply(intake, form);
+        apply(intake, form, false);
         intakes.saveAndFlush(intake);
         Map<String, Object> details = new LinkedHashMap<>();
         details.put("totalSeats", intake.getTotalSeats());
@@ -144,7 +156,7 @@ public class RteService {
         return view(intake);
     }
 
-    private void apply(RteIntake intake, IntakeForm form) {
+    private void apply(RteIntake intake, IntakeForm form, boolean pastCloseAllowed) {
         int seats = form.totalSeats();
         int rteSeats = form.rteSeats() != null ? form.rteSeats() : (int) Math.ceil(seats * 0.25);
         if (rteSeats > seats) {
@@ -162,6 +174,12 @@ public class RteService {
         BigDecimal b3 = form.distanceBand3Km() != null ? form.distanceBand3Km() : BigDecimal.valueOf(6);
         if (b2.compareTo(b1) < 0 || b3.compareTo(b2) < 0) {
             throw ApiException.badRequest("The distance bands must grow: first, second, third.", "distanceBand2Km");
+        }
+        // A new closing date must not be in the past (an unchanged one may have passed since it was set).
+        LocalDate closeOn = form.applicationsCloseOn();
+        if (!pastCloseAllowed && closeOn != null && !closeOn.equals(intake.getApplicationsCloseOn())
+                && closeOn.isBefore(GovReportAuth.today())) {
+            throw ApiException.badRequest("The closing date cannot be in the past.", "applicationsCloseOn");
         }
         List<String> documents = form.documents() != null ? form.documents().stream().map(String::trim)
                 .map(s -> s.toUpperCase(java.util.Locale.ROOT)).distinct().toList()

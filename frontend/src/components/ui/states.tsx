@@ -3,7 +3,7 @@
 import { CircleAlert, RefreshCw } from "lucide-react";
 import type { ApiError } from "@/lib/api";
 import { errorMessage } from "@/lib/error-message";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, type Translate } from "@/lib/i18n";
 
 /** Shimmering placeholder rows while data loads. */
 export function LoadingRows({ rows = 3 }: { rows?: number }) {
@@ -16,6 +16,15 @@ export function LoadingRows({ rows = 3 }: { rows?: number }) {
       ))}
     </div>
   );
+}
+
+/**
+ * The page title of a record that has not loaded: "Loading…" while it loads, then "Not found" (404) or
+ * "Couldn't load" once the load failed, so a failed page never keeps saying it is loading.
+ */
+export function pendingTitle(t: Translate, error: ApiError | undefined): string {
+  if (!error) return t("common.loading");
+  return error.status === 404 ? t("common.notFound") : t("common.error.loadTitle");
 }
 
 export function ErrorState({ error, onRetry }: { error: ApiError; onRetry?: () => void }) {
@@ -36,6 +45,13 @@ export function ErrorState({ error, onRetry }: { error: ApiError; onRetry?: () =
       ) : null}
     </div>
   );
+}
+
+/** A record that failed to load: the plain not-found note for a 404, else the error with a retry button. */
+export function LoadFailure({ error, onRetry }: { error: ApiError; onRetry?: () => void }) {
+  const { t } = useI18n();
+  if (error.status === 404) return <p className="empty">{t("common.error.notFound")}</p>;
+  return <ErrorState error={error} onRetry={onRetry} />;
 }
 
 export function FormAlert({ message }: { message: string | null | undefined }) {

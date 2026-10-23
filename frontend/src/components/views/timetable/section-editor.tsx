@@ -5,7 +5,7 @@ import { useState } from "react";
 import { FormAlert } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
 import { toApiError } from "@/lib/api";
-import { errorMessage } from "@/lib/error-message";
+import { errorMessage, fieldErrorMessages } from "@/lib/error-message";
 import { plural, useI18n } from "@/lib/i18n";
 import { timetableApi } from "@/lib/timetable-api";
 import type { SectionTimetable, WeekDay } from "@/lib/types";
@@ -120,7 +120,7 @@ export function SectionEditor({
       onSaved(saved);
     } catch (caught) {
       const error = toApiError(caught);
-      setCellErrors(error.errors ?? {});
+      setCellErrors(error.errors ? fieldErrorMessages(error.errors, t) : {});
       setProblem(errorMessage(error, t));
     } finally {
       setSaving(false);

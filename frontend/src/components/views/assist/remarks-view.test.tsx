@@ -163,6 +163,28 @@ describe("RemarksView", () => {
     await waitFor(() => expect(m.acceptRemark).toHaveBeenCalledWith("d1", "Works hard."));
   });
 
+  it("marks the remark box when the saved text is too long", async () => {
+    const { ApiError } = await import("@/lib/api");
+    m.remarks.mockResolvedValue(sheet(1, true));
+    m.editRemark.mockRejectedValue(
+      new ApiError({
+        status: 400,
+        title: "Check the form",
+        detail: "Some fields need attention.",
+        errors: { text: "size must be between 0 and 500" },
+      }),
+    );
+    renderAs(TEACHER, <RemarksView />);
+    const user = await pick();
+    const row = await screen.findByTestId("remark-row");
+    const box = within(row).getByLabelText("Remark for Student1 Rao");
+    await user.type(box, " More.");
+    await user.click(within(row).getByRole("button", { name: "Save edit" }));
+    expect(await within(row).findByText("Use at most 500 characters.")).toBeInTheDocument();
+    expect(box).toHaveAttribute("aria-invalid", "true");
+    expect(within(row).queryByText("Some fields need attention.")).not.toBeInTheDocument();
+  });
+
   it("explains the monthly limit in plain words", async () => {
     const { ApiError } = await import("@/lib/api");
     m.remarks.mockResolvedValue(sheet(2));

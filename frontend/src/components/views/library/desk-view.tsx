@@ -10,7 +10,7 @@ import { Pill } from "@/components/ui/pill";
 import { ErrorState, FormAlert, LoadingRows, PageHead } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
 import { toApiError } from "@/lib/api";
-import { errorMessage } from "@/lib/error-message";
+import { errorMessage, fieldErrorMessage } from "@/lib/error-message";
 import { formatPaise, formatPlainDate, initials, parseRupees, todayInIndia } from "@/lib/format";
 import { localeFor, plural, useI18n, type Translate } from "@/lib/i18n";
 import { libraryApi } from "@/lib/library-api";
@@ -44,7 +44,8 @@ export function blockedReason(t: Translate, account: MemberAccount): string | nu
 /** The message under the accession field for a failed issue or return: the field's own error first. */
 function deskError(caught: unknown, t: Translate): string {
   const error = toApiError(caught);
-  return error.errors?.accessionNo ?? error.errors?.issuedOn ?? errorMessage(error, t);
+  const field = error.errors?.accessionNo ?? error.errors?.issuedOn;
+  return field ? fieldErrorMessage(field, t) : errorMessage(error, t);
 }
 
 /** /app/library/desk: lend books to a member and take books back, with a barcode scanner or by hand. */

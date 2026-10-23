@@ -1,4 +1,4 @@
-import { apiFetch } from "./api";
+import { apiFetch, pathSegment } from "./api";
 import { downloadXlsx, reportQuery } from "./reports-api";
 import type {
   AdjustmentRequest,
@@ -31,7 +31,7 @@ import type {
 
 /* Endpoint helpers for docs/api/phase-2-payroll.md. */
 
-const id = (value: string) => encodeURIComponent(value);
+const id = pathSegment;
 
 export type RegisterParams = { month?: string; departmentId?: string };
 export type YearParams = { financialYear?: string };

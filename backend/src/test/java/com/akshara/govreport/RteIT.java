@@ -5,6 +5,8 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -14,6 +16,34 @@ import com.akshara.support.TestApi;
 
 /** The RTE intake: seats, applications from admissions, screening, the lottery, reruns and immutability. */
 class RteIT extends IntegrationTest {
+
+    @Test
+    void anIntakeCannotCloseInThePast() throws Exception {
+        GovReportSchool s = new GovReportSchool(api);
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Kolkata"));
+        api.post("/api/govreport/rte/intakes", s.principal.accessToken(), """
+                {"academicYearId":"%s","entryClassId":"%s","totalSeats":40,"rteSeats":10,"stateCode":"TS",
+                 "incomeLimitPaise":10000000,"applicationsCloseOn":"2001-01-01"}""".formatted(s.yearId, s.classId))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.applicationsCloseOn").value("The closing date cannot be in the past."));
+        api.get("/api/govreport/rte/intakes", s.principal.accessToken())
+                .andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(0)));
+        String intake = TestApi.read(api.post("/api/govreport/rte/intakes", s.principal.accessToken(), """
+                {"academicYearId":"%s","entryClassId":"%s","totalSeats":40,"stateCode":"TS",
+                 "applicationsCloseOn":"%s"}""".formatted(s.yearId, s.classId, today))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.applicationsCloseOn").value(today.toString())), "$.id");
+        api.put("/api/govreport/rte/intakes/" + intake, s.principal.accessToken(), """
+                {"academicYearId":"%s","entryClassId":"%s","totalSeats":40,"stateCode":"TS",
+                 "applicationsCloseOn":"%s"}""".formatted(s.yearId, s.classId, today.minusDays(1)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.applicationsCloseOn").exists());
+        // An unchanged closing date can still be saved with other changes.
+        api.put("/api/govreport/rte/intakes/" + intake, s.principal.accessToken(), """
+                {"academicYearId":"%s","entryClassId":"%s","totalSeats":30,"stateCode":"TS",
+                 "applicationsCloseOn":"%s"}""".formatted(s.yearId, s.classId, today))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.totalSeats").value(30));
+    }
 
     @Test
     void anIntakeTakesApplicationsScreensThemAndRunsAReproducibleLottery() throws Exception {

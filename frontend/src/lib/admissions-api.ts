@@ -1,4 +1,4 @@
-import { apiFetch } from "./api";
+import { apiFetch, pathSegment } from "./api";
 import type {
   AdmissionsBoard,
   AdmissionsSummary,
@@ -19,7 +19,7 @@ import type {
 
 /* Endpoint helpers for docs/api/phase-1-admissions.md. */
 
-const id = (value: string) => encodeURIComponent(value);
+const id = pathSegment;
 
 /** "?yearId=…&q=…" from the set filters only. Exported for tests. */
 export function admissionsQueryString(query: ApplicationQuery): string {

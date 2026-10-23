@@ -1,4 +1,4 @@
-import { apiFetch, getAccessToken, parseErrorResponse, refreshSession, toApiError } from "./api";
+import { apiFetch, getAccessToken, parseErrorResponse, refreshSession, toApiError, pathSegment } from "./api";
 import type {
   AttendanceToday,
   ChildAttendance,
@@ -12,7 +12,7 @@ import type {
 
 /* Endpoint helpers for docs/api/phase-1-attendance.md (attendance). */
 
-const id = (value: string) => encodeURIComponent(value);
+const id = pathSegment;
 
 function query(params: Record<string, string | undefined>): string {
   const search = new URLSearchParams();
