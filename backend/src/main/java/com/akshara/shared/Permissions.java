@@ -174,6 +174,12 @@ public final class Permissions {
     /** Approving or rejecting requisitions and purchase orders, within the approver's limit. */
     public static final String PURCHASE_APPROVE = "purchase.approve";
 
+    /** Government reporting: the school's government profile, students' government fields, UDISE+/CBSE exports,
+     * the RTE intake and lottery results, and the scheme register. */
+    public static final String GOVREPORT_READ = "govreport.read";
+    /** Editing the profile, fields and code lists, importing fields, running the RTE lottery, schemes. */
+    public static final String GOVREPORT_MANAGE = "govreport.manage";
+
     public static final String PLATFORM_ADMIN = "platform.admin";
 
     public static final List<String> ALL_SCHOOL = List.of(
@@ -190,7 +196,8 @@ public final class Permissions {
             FRONTOFFICE_MANAGE, GATE_PASS, ACCOUNTS_READ, ACCOUNTS_MANAGE,
             ACCOUNTS_APPROVE, HEALTH_READ, HEALTH_MANAGE, SAFETY_MANAGE,
             HOSTEL_READ, HOSTEL_MANAGE, HOSTEL_WARDEN,
-            INVENTORY_READ, INVENTORY_MANAGE, PURCHASE_APPROVE);
+            INVENTORY_READ, INVENTORY_MANAGE, PURCHASE_APPROVE,
+            GOVREPORT_READ, GOVREPORT_MANAGE);
 
     private Permissions() {
     }

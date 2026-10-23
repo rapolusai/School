@@ -127,6 +127,9 @@ class DemoDataSeederIT extends IntegrationTest {
     @Autowired
     DemoInventoryData inventoryData;
 
+    @Autowired
+    DemoGovReportData govReportData;
+
     @Test
     void seedsADemoSchoolWithClassesAndStudentsOnce() throws Exception {
         DemoDataSeeder seeder = new DemoDataSeeder(provisioning, tenants, users, passwordEncoder, DEMO_PASSWORD,
@@ -135,7 +138,8 @@ class DemoDataSeederIT extends IntegrationTest {
                 payrollData, examsData, chatData, lessonsData, transportData, certificatesData, frontOfficeData,
                 accountsData, healthData,
                 hostelData,
-                inventoryData);
+                inventoryData,
+                govReportData);
         seeder.run(null);
         // A second start leaves the existing demo school alone.
         seeder.run(null);
@@ -190,9 +194,9 @@ class DemoDataSeederIT extends IntegrationTest {
         // The admissions pipeline: every stage has applications, with upcoming tests and one child admitted.
         api.get("/api/admissions/applications", frontOffice.accessToken())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.total").value(DemoAdmissionsData.APPLICATIONS))
+                .andExpect(jsonPath("$.total").value(DemoAdmissionsData.APPLICATIONS + DemoGovReportData.RTE_APPLICATIONS))
                 .andExpect(jsonPath("$.stageCounts.ENQUIRY").value(5))
-                .andExpect(jsonPath("$.stageCounts.APPLICATION").value(2))
+                .andExpect(jsonPath("$.stageCounts.APPLICATION").value(2 + DemoGovReportData.RTE_APPLICATIONS))
                 .andExpect(jsonPath("$.stageCounts.ASSESSMENT").value(3))
                 .andExpect(jsonPath("$.stageCounts.OFFERED").value(2))
                 .andExpect(jsonPath("$.stageCounts.ADMITTED").value(1))

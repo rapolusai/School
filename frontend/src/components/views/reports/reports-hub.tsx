@@ -58,7 +58,7 @@ import { hasAnyPermission, hasPermission, PERMISSIONS, REPORT_PERMISSIONS } from
 
 type PermissionSubject = Parameters<typeof hasPermission>[0];
 
-export const REPORT_GROUPS = ["attendance", "fees", "accounts", "inventory", "admissions", "staff", "academics", "library", "transport", "frontoffice", "health", "hostel", "administration"] as const;
+export const REPORT_GROUPS = ["attendance", "fees", "accounts", "inventory", "admissions", "staff", "academics", "library", "transport", "frontoffice", "health", "hostel", "administration", "government"] as const;
 export type ReportGroup = (typeof REPORT_GROUPS)[number];
 
 export type ReportLink = {
@@ -87,6 +87,7 @@ const GROUP_LABELS: Record<ReportGroup, MessageKey> = {
   frontoffice: "reports.group.frontoffice",
   health: "reports.group.health",
   hostel: "reports.group.hostel",
+  government: "reports.group.government",
 };
 
 /** Every report, new and existing, with the permission that opens it. */
@@ -650,6 +651,46 @@ export const REPORT_LINKS: readonly ReportLink[] = [
     description: "certificates.report.cards.description",
     permission: PERMISSIONS.certificatesRead,
     icon: IdCard,
+    excel: true,
+  },
+  {
+    key: "govCompleteness",
+    group: "government",
+    href: "/app/reports/govreport-completeness",
+    title: "govreport.report.completeness.title",
+    description: "govreport.report.completeness.description",
+    permission: PERMISSIONS.govreportRead,
+    icon: ListChecks,
+    excel: true,
+  },
+  {
+    key: "govEnrolment",
+    group: "government",
+    href: "/app/reports/govreport-enrolment",
+    title: "govreport.report.enrolment.title",
+    description: "govreport.report.enrolment.description",
+    permission: PERMISSIONS.govreportRead,
+    icon: ChartColumnBig,
+    excel: true,
+  },
+  {
+    key: "govRte",
+    group: "government",
+    href: "/app/reports/govreport-rte",
+    title: "govreport.report.rte.title",
+    description: "govreport.report.rte.description",
+    permission: PERMISSIONS.govreportRead,
+    icon: Scale,
+    excel: true,
+  },
+  {
+    key: "govSchemes",
+    group: "government",
+    href: "/app/reports/govreport-schemes",
+    title: "govreport.report.schemes.title",
+    description: "govreport.report.schemes.description",
+    permission: PERMISSIONS.govreportRead,
+    icon: Landmark,
     excel: true,
   },
 ];

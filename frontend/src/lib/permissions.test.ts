@@ -175,6 +175,7 @@ describe("navFor", () => {
       "myPrivacy",
       "family-chat",
       "family-ptm",
+      "family-govreport",
     ]);
   });
 
@@ -200,6 +201,7 @@ describe("navFor", () => {
       "myPrivacy",
       "family-chat",
       "family-ptm",
+      "family-govreport",
     ]);
     expect(keys(student)).toEqual([
       "dashboard",
