@@ -84,6 +84,10 @@ public final class MessageTemplates {
     public static final String TRANSPORT_DELAYED = "transport.delayed";
     /** The one-time password of an approved early pickup pass, sent to the student's primary contact. */
     public static final String GATE_PASS_OTP = "frontoffice.gate_pass_otp";
+    /** A boarder's outing or home-leave pass was approved or refused by the warden. */
+    public static final String HOSTEL_PASS_DECIDED = "hostel.pass_decided";
+    /** A boarder was marked absent at the night roll call. */
+    public static final String HOSTEL_ROLL_CALL_ABSENT = "hostel.roll_call_absent";
 
     /** Sent to a student's primary contact when the infirmary sends the student home. */
     public static final String INFIRMARY_SENT_HOME = "health.sent_home";
@@ -204,7 +208,16 @@ public final class MessageTemplates {
                     ENGLISH, "Dear {guardian}, {student} ({class}) was taken from the {school} infirmary to hospital "
                             + "at {time} ({complaint}). Please call the school at once.",
                     HINDI, "प्रिय {guardian}, {student} ({class}) को {time} बजे {school} के चिकित्सा कक्ष से अस्पताल "
-                            + "ले जाया गया ({complaint})। कृपया तुरंत विद्यालय को फ़ोन करें।")));
+                            + "ले जाया गया ({complaint})। कृपया तुरंत विद्यालय को फ़ोन करें।")),
+            Map.entry(HOSTEL_PASS_DECIDED, Map.of(
+                    ENGLISH, "Dear {guardian}, the {kind} of {student} from {hostel} ({school}) for {dates} is "
+                            + "{decision}. {note}",
+                    HINDI, "प्रिय {guardian}, {hostel} ({school}) से {student} की {dates} की {kind} {decision}। {note}")),
+            Map.entry(HOSTEL_ROLL_CALL_ABSENT, Map.of(
+                    ENGLISH, "Dear {guardian}, {student} was not found at {hostel} ({school}) during the night roll "
+                            + "call on {date}. Please contact the warden at once.",
+                    HINDI, "प्रिय {guardian}, {date} की रात की हाज़िरी में {student} {hostel} ({school}) में नहीं मिले। "
+                            + "कृपया तुरंत वार्डन से संपर्क करें।")));
 
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{(\\w+)}");
     private static final DateTimeFormatter ENGLISH_DATE = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH);

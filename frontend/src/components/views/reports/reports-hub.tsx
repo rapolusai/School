@@ -42,6 +42,8 @@ import {
   type LucideIcon,
   BadgeCheck,
   IdCard,
+  BedDouble,
+  MoonStar,
 } from "lucide-react";
 import Link from "next/link";
 import { AccessDenied } from "@/components/access";
@@ -52,7 +54,7 @@ import { hasAnyPermission, hasPermission, PERMISSIONS, REPORT_PERMISSIONS } from
 
 type PermissionSubject = Parameters<typeof hasPermission>[0];
 
-export const REPORT_GROUPS = ["attendance", "fees", "accounts", "admissions", "staff", "academics", "library", "transport", "frontoffice", "health", "administration"] as const;
+export const REPORT_GROUPS = ["attendance", "fees", "accounts", "admissions", "staff", "academics", "library", "transport", "frontoffice", "health", "hostel", "administration"] as const;
 export type ReportGroup = (typeof REPORT_GROUPS)[number];
 
 export type ReportLink = {
@@ -79,6 +81,7 @@ const GROUP_LABELS: Record<ReportGroup, MessageKey> = {
   administration: "reports.group.administration",
   frontoffice: "reports.group.frontoffice",
   health: "reports.group.health",
+  hostel: "reports.group.hostel",
 };
 
 /** Every report, new and existing, with the permission that opens it. */
@@ -403,6 +406,46 @@ export const REPORT_LINKS: readonly ReportLink[] = [
     description: "frontoffice.report.passes.description",
     permission: PERMISSIONS.frontofficeRead,
     icon: KeyRound,
+    excel: true,
+  },
+  {
+    key: "hostelOccupancy",
+    group: "hostel",
+    href: "/app/reports/hostel-occupancy",
+    title: "hostel.report.occupancy.title",
+    description: "hostel.report.occupancy.description",
+    permission: PERMISSIONS.hostelRead,
+    icon: BedDouble,
+    excel: true,
+  },
+  {
+    key: "hostelRollCall",
+    group: "hostel",
+    href: "/app/reports/hostel-roll-call",
+    title: "hostel.report.rollCall.title",
+    description: "hostel.report.rollCall.description",
+    permission: PERMISSIONS.hostelRead,
+    icon: MoonStar,
+    excel: true,
+  },
+  {
+    key: "hostelOutings",
+    group: "hostel",
+    href: "/app/reports/hostel-outings",
+    title: "hostel.report.outings.title",
+    description: "hostel.report.outings.description",
+    permission: PERMISSIONS.hostelRead,
+    icon: DoorOpen,
+    excel: true,
+  },
+  {
+    key: "hostelFeeDues",
+    group: "hostel",
+    href: "/app/reports/hostel-fee-dues",
+    title: "hostel.report.feeDues.title",
+    description: "hostel.report.feeDues.description",
+    permission: PERMISSIONS.hostelRead,
+    icon: Banknote,
     excel: true,
   },
   {

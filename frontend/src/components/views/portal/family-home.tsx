@@ -28,6 +28,7 @@ import { frontOfficeApi } from "@/lib/frontoffice-api";
 import { healthApi } from "@/lib/health-api";
 import { classLabel, firstName, formatLongDate, formatPaise, formatPlainDate, hourInIndia, initials, todayInIndia } from "@/lib/format";
 import { homeworkApi } from "@/lib/homework-api";
+import { hostelApi } from "@/lib/hostel-api";
 import { lessonsApi } from "@/lib/lessons-api";
 import { localeFor, plural, translateOr, useI18n, type MessageKey } from "@/lib/i18n";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
@@ -37,6 +38,7 @@ import type { BoardItem, Child, ChildAttendance, FamilyLeave, FamilyTimetable, S
 import { useApiData, type ApiData } from "@/lib/use-api-data";
 import { ChildSwitcher, leaveDates, LeaveStatusPill, TodayPill, useFamilyChildren } from "./family-shared";
 import { FamilyHealthCard } from "./family-health";
+import { FamilyHostelCard } from "./family-hostel";
 import { FamilyPickupCard } from "./family-pickup";
 import { InstallHint } from "./install-hint";
 
@@ -189,6 +191,7 @@ function ChildPanel({ child, self }: { child: Child; self: boolean }) {
   // The health card shows only when the child was in the infirmary today (docs/api/phase-3-health.md).
   const health = useApiData(self ? null : `health:child:${id}`, () => healthApi.childHealth(id));
   const [today] = useState(() => todayInIndia());
+  const hostel = useApiData(self ? null : `hostel:family:${id}`, () => hostelApi.childHostel(id));
   const query = self ? "" : `?child=${encodeURIComponent(id)}`;
   return (
     <>
@@ -208,6 +211,7 @@ function ChildPanel({ child, self }: { child: Child; self: boolean }) {
         {self ? null : <FamilyCertificatesCard data={certificates} studentId={id} href="/app/family/certificates" />}
         {self ? null : <FamilyPickupCard data={pickup} href={`/app/family/pickup${query}`} />}
         {self ? null : <FamilyHealthCard data={health} today={today} href={`/app/family/health${query}`} />}
+        {self ? null : <FamilyHostelCard data={hostel} href={`/app/family/hostel${query}`} />}
       </div>
     </>
   );

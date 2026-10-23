@@ -109,7 +109,10 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
             "health.medical_record", "health.growth_measurement", "health.record_item", "health.medicine",
             "health.infirmary_visit", "health.medicine_given", "health.fire_drill", "health.safety_audit",
             "health.incident", "health.first_aid_kit", "health.pocso_committee", "health.pocso_member",
-            "health.pocso_meeting", "health.pocso_complaint", "health.staff_verification", "health.staff_training");
+            "health.pocso_meeting", "health.pocso_complaint", "health.staff_verification", "health.staff_training",
+            "hostel.hostel", "hostel.block", "hostel.room", "hostel.bed", "hostel.allotment", "hostel.menu_item",
+            "hostel.mess_attendance", "hostel.pass", "hostel.roll_call", "hostel.roll_call_entry", "hostel.alert",
+            "hostel.complaint");
 
     @Autowired
     HomeworkService homework;
@@ -246,6 +249,7 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         frontOfficeRecords(admin, lata, student);
         accountsRecords(school, admin);
         healthRecords(school, admin, lata, student, tara);
+        hostelRecords(admin, lata, student, tara);
         School other = api.signup();
 
         try (Connection app = appConnection(); Connection owner = ownerConnection()) {
@@ -696,6 +700,44 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         api.post("/api/frontoffice/courier", admin.accessToken(), """
                 {"direction":"INWARD","item":"CBSE circulars","sender":"CBSE","receiver":"Principal",
                  "itemDate":"%s"}""".formatted(LocalDate.now(ZoneId.of("Asia/Kolkata"))))
+                .andExpect(status().isCreated());
+    }
+
+    /**
+     * Hostel records: a hostel with Tara as warden, a block, a room with a bed, the student allotted to it, a menu
+     * slot, a mess count, a pass the mother asked for, tonight's roll call with the student absent (which raises the
+     * alert), and a complaint about the room.
+     */
+    private void hostelRecords(Session admin, Session lata, String student, String tara) throws Exception {
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Kolkata"));
+        String hostel = TestApi.read(api.post("/api/hostel/hostels", admin.accessToken(), """
+                {"name":"Boys Hostel","type":"BOYS","wardenUserId":"%s"}""".formatted(tara))
+                .andExpect(status().isCreated()), "$.id");
+        String block = TestApi.read(api.post("/api/hostel/hostels/" + hostel + "/blocks", admin.accessToken(), """
+                {"name":"Block A","floors":1}""").andExpect(status().isCreated()), "$.id");
+        String room = TestApi.read(api.post("/api/hostel/hostels/" + hostel + "/blocks/" + block + "/rooms",
+                admin.accessToken(), """
+                {"floor":0,"number":"1","capacity":2,"type":"DOUBLE","monthlyFeePaise":200000}""")
+                .andExpect(status().isCreated()), "$.id");
+        String bed = TestApi.read(api.post("/api/hostel/hostels/" + hostel + "/rooms/" + room + "/beds",
+                admin.accessToken(), """
+                {"labels":["A"]}""").andExpect(status().isCreated()), "$[0].id");
+        api.post("/api/hostel/allotments", admin.accessToken(), """
+                {"studentId":"%s","bedId":"%s","fromDate":"%s","guardianConsent":true}"""
+                .formatted(student, bed, today)).andExpect(status().isCreated());
+        api.put("/api/hostel/hostels/" + hostel + "/menu", admin.accessToken(), """
+                {"items":[{"dayOfWeek":1,"meal":"BREAKFAST","dish":"Idli","veg":true}]}""")
+                .andExpect(status().isOk());
+        api.put("/api/hostel/hostels/" + hostel + "/mess-attendance/" + today, admin.accessToken(), """
+                {"counts":[{"meal":"LUNCH","headCount":1}]}""").andExpect(status().isOk());
+        api.post("/api/me/children/" + student + "/hostel-passes", lata.accessToken(), """
+                {"kind":"OUTING","fromDate":"%s","reason":"Family lunch"}""".formatted(today.plusDays(1)))
+                .andExpect(status().isCreated());
+        api.put("/api/hostel/hostels/" + hostel + "/roll-call/" + today, admin.accessToken(), """
+                {"entries":[{"studentId":"%s","status":"ABSENT"}]}""".formatted(student))
+                .andExpect(status().isOk());
+        api.post("/api/hostel/complaints", admin.accessToken(), """
+                {"roomId":"%s","category":"PLUMBING","description":"Tap leaks"}""".formatted(room))
                 .andExpect(status().isCreated());
     }
 

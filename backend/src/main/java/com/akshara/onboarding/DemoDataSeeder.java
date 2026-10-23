@@ -81,6 +81,7 @@ public class DemoDataSeeder implements ApplicationRunner {
     private final DemoFrontOfficeData frontOfficeData;
     private final DemoAccountsData accountsData;
     private final DemoHealthData healthData;
+    private final DemoHostelData hostelData;
 
     public DemoDataSeeder(SchoolProvisioning provisioning, TenantDirectory tenants, UserService users,
             PasswordEncoder passwordEncoder, @Value("${akshara.demo.password:}") String password,
@@ -91,7 +92,8 @@ public class DemoDataSeeder implements ApplicationRunner {
             DemoPortalData portalData, DemoLibraryData libraryData, DemoPayrollData payrollData,
             DemoExamsData examsData, DemoChatData chatData, DemoLessonsData lessonsData,
             DemoTransportData transportData, DemoCertificatesData certificatesData, DemoFrontOfficeData frontOfficeData,
-            DemoAccountsData accountsData, DemoHealthData healthData) {
+            DemoAccountsData accountsData, DemoHealthData healthData,
+            DemoHostelData hostelData) {
         this.provisioning = provisioning;
         this.tenants = tenants;
         this.users = users;
@@ -119,6 +121,7 @@ public class DemoDataSeeder implements ApplicationRunner {
         this.frontOfficeData = frontOfficeData;
         this.accountsData = accountsData;
         this.healthData = healthData;
+        this.hostelData = hostelData;
     }
 
     @Override
@@ -162,6 +165,8 @@ public class DemoDataSeeder implements ApplicationRunner {
         log.info("Seeded {} demo child leave requests", portalData.seed(school.tenant().id(), userIds));
         log.info("Seeded {} demo library copies",
                 libraryData.seed(school.tenant().id(), userIds, school.adminUserId(), hash));
+        log.info("Seeded {} demo hostel boarders (before payroll, so the warden gets a salary structure)",
+                hostelData.seed(school.tenant().id(), userIds, school.adminUserId(), hash));
         log.info("Seeded demo payroll for {}", payrollData.seed(school.tenant().id(), userIds, school.adminUserId()));
         log.info("Seeded demo exams with {} marks", examsData.seed(school.tenant().id(), userIds));
         log.info("Seeded demo messages and a PTM with {} bookings", chatData.seed(school.tenant().id(), userIds));

@@ -19,6 +19,7 @@ public final class RoleCatalog {
     public static final String BUS_ATTENDANT = "BUS_ATTENDANT";
     public static final String SECURITY = "SECURITY";
     public static final String NURSE = "NURSE";
+    public static final String WARDEN = "WARDEN";
 
     public static final List<RoleTemplate> DEFAULTS = List.of(
             new RoleTemplate(SCHOOL_ADMIN, "School Admin", ALL_SCHOOL),
@@ -29,7 +30,8 @@ public final class RoleCatalog {
                     HOMEWORK_MANAGE, PRIVACY_MANAGE, LIBRARY_READ, EXAMS_READ, EXAMS_SETUP, EXAMS_PUBLISH, CHAT_USE,
                     CHAT_OVERSEE, PTM_MANAGE, LESSONS_READ, LESSONS_APPROVE, TRANSPORT_READ, CERTIFICATES_READ,
                     CERTIFICATES_ISSUE, CERTIFICATES_SIGN, FRONTOFFICE_READ, ACCOUNTS_READ,
-                    ACCOUNTS_APPROVE, HEALTH_READ, SAFETY_MANAGE, POCSO_COMMITTEE)),
+                    ACCOUNTS_APPROVE, HEALTH_READ, SAFETY_MANAGE, POCSO_COMMITTEE,
+                    HOSTEL_READ)),
             new RoleTemplate("TEACHER", "Teacher", List.of(DASHBOARD_VIEW, STUDENTS_READ, ATTENDANCE_MARK,
                     ATTENDANCE_READ, EXAMS_MANAGE, NOTICES_SEND, ACADEMICS_READ, LEAVE_REQUEST, NOTICES_READ,
                     TIMETABLE_READ, HOMEWORK_MANAGE, LIBRARY_READ, EXAMS_READ, CHAT_USE, LESSONS_READ,
@@ -56,6 +58,8 @@ public final class RoleCatalog {
             // The school nurse keeps medical records and the infirmary log.
             new RoleTemplate(NURSE, "Nurse", List.of(DASHBOARD_VIEW, STUDENTS_READ, ACADEMICS_READ, LEAVE_REQUEST,
                     NOTICES_READ, TIMETABLE_READ, HEALTH_READ, HEALTH_MANAGE)),
+            // The warden runs their hostel block from a phone: roll call, passes, mess attendance, complaints.
+            new RoleTemplate(WARDEN, "Warden", List.of(DASHBOARD_VIEW, LEAVE_REQUEST, NOTICES_READ, HOSTEL_WARDEN)),
             new RoleTemplate("PARENT", "Parent", List.of(DASHBOARD_VIEW, CHILD_VIEW, NOTICES_READ)),
             new RoleTemplate("STUDENT", "Student", List.of(DASHBOARD_VIEW, NOTICES_READ)));
 

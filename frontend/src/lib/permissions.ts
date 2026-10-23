@@ -6,6 +6,7 @@ import {
   BookOpenCheck,
   BookOpenText,
   Building2,
+  BedDouble,
   Bus,
   Calculator,
   CalendarDays,
@@ -115,6 +116,9 @@ export const PERMISSIONS = {
   healthManage: "health.manage",
   safetyManage: "safety.manage",
   pocsoCommittee: "pocso.committee",
+  hostelRead: "hostel.read",
+  hostelManage: "hostel.manage",
+  hostelWarden: "hostel.warden",
 } as const;
 
 export type NavGroup = "overview" | "academics" | "finance" | "staff" | "communication" | "administration" | "platform";
@@ -153,6 +157,7 @@ export const REPORT_PERMISSIONS: readonly string[] = [
   PERMISSIONS.accountsRead,
   PERMISSIONS.healthRead,
   PERMISSIONS.safetyManage,
+  PERMISSIONS.hostelRead,
 ];
 
 /** Every navigation item, in display order. */
@@ -378,6 +383,18 @@ export const NAV_ITEMS: readonly NavItem[] = [
     icon: HeartPulse,
     permission: PERMISSIONS.healthRead,
     anyOf: [PERMISSIONS.healthManage, PERMISSIONS.safetyManage],
+    group: "administration",
+  },
+  {
+    // Hostels, rooms and beds, allotment, the mess, outing passes and the night roll call (docs/api/phase-3-hostel.md).
+    // The office (hostel.read/manage) and wardens (hostel.warden, their own hostels only) share the pages.
+    key: "hostel",
+    href: "/app/hostel",
+    labelKey: "nav.hostel",
+    shortLabelKey: "nav.hostel.short",
+    icon: BedDouble,
+    permission: PERMISSIONS.hostelRead,
+    anyOf: [PERMISSIONS.hostelManage, PERMISSIONS.hostelWarden],
     group: "administration",
   },
   {
@@ -651,6 +668,17 @@ export const FAMILY_NAV_ITEMS: readonly NavItem[] = [
     group: "academics",
   },
   {
+    // A boarding child's hostel: the bed, the warden, outing and home-leave passes (docs/api/phase-3-hostel.md).
+    // Parents only; the shell hides it unless one of the children boards (useFamilyHostelNav).
+    key: "family-hostel",
+    href: "/app/family/hostel",
+    labelKey: "nav.hostel",
+    shortLabelKey: "nav.hostel.short",
+    icon: BedDouble,
+    permission: PERMISSIONS.childView,
+    group: "academics",
+  },
+  {
     // A child's certificates and ID card are for parents (child.view), not students.
     key: "family-certificates",
     href: "/app/family/certificates",
@@ -704,7 +732,7 @@ export const FAMILY_NAV_ITEMS: readonly NavItem[] = [
 
 type PermissionSubject = (Pick<Me, "permissions" | "platformAdmin"> & Partial<Pick<Me, "roles">>) | null | undefined;
 /** Navigation also looks at roles, to tell parents from staff. */
-type NavSubject = PermissionSubject;
+export type NavSubject = PermissionSubject;
 
 export function hasPermission(me: PermissionSubject, permission: string): boolean {
   if (!me) return false;
