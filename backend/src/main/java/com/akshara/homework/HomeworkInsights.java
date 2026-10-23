@@ -233,4 +233,62 @@ public class HomeworkInsights {
         return BigDecimal.valueOf(part).multiply(BigDecimal.valueOf(100))
                 .divide(BigDecimal.valueOf(whole), 1, RoundingMode.HALF_UP).doubleValue();
     }
+    // ------------------------------------------------------------------ per student, for other modules
+
+    /** How much of the online homework due to a student in a period they handed in. */
+    public record SubmissionRate(int expected, int submitted) {
+
+        /** Submitted out of expected as a percentage, one decimal; null when nothing was expected. */
+        public Double percent() {
+            return expected == 0 ? null : Math.round(submitted * 1000.0 / expected) / 10.0;
+        }
+    }
+
+    /**
+     * Each student's online homework due between two days (both included) and how much of it they submitted, for
+     * the early-warning signals of the assist module. {@code sectionOfStudent} maps each student to the section
+     * whose homework counts for them. Not scoped to the caller: the caller decides who may see the students.
+     * Students with no homework due are missing from the map.
+     */
+    @Transactional(readOnly = true)
+    public Map<UUID, SubmissionRate> submissionRatePerStudent(UUID academicYearId, Map<UUID, UUID> sectionOfStudent,
+            LocalDate from, LocalDate to) {
+        TenantContext.require();
+        if (sectionOfStudent.isEmpty() || from == null || to == null || to.isBefore(from)) {
+            return Map.of();
+        }
+        Set<UUID> sectionIds = new HashSet<>(sectionOfStudent.values());
+        List<Homework> due = homework.findForSections(academicYearId, sectionIds).stream()
+                .filter(Homework::isOnlineSubmission)
+                .filter(h -> !h.getDueOn().isBefore(from) && !h.getDueOn().isAfter(to))
+                .toList();
+        if (due.isEmpty()) {
+            return Map.of();
+        }
+        List<UUID> ids = due.stream().map(Homework::getId).toList();
+        Map<UUID, Set<UUID>> sectionsOf = links.findByHomeworkIdIn(ids).stream().collect(Collectors.groupingBy(
+                HomeworkSection::getHomeworkId, Collectors.mapping(HomeworkSection::getSectionId,
+                        Collectors.toSet())));
+        Map<UUID, Set<UUID>> submittedBy = submissions.findByHomeworkIdIn(ids).stream().collect(
+                Collectors.groupingBy(Submission::getStudentId, Collectors.mapping(Submission::getHomeworkId,
+                        Collectors.toSet())));
+        Map<UUID, SubmissionRate> result = new HashMap<>();
+        for (Map.Entry<UUID, UUID> e : sectionOfStudent.entrySet()) {
+            int expected = 0;
+            int submitted = 0;
+            Set<UUID> done = submittedBy.getOrDefault(e.getKey(), Set.of());
+            for (Homework h : due) {
+                if (sectionsOf.getOrDefault(h.getId(), Set.of()).contains(e.getValue())) {
+                    expected++;
+                    if (done.contains(h.getId())) {
+                        submitted++;
+                    }
+                }
+            }
+            if (expected > 0) {
+                result.put(e.getKey(), new SubmissionRate(expected, submitted));
+            }
+        }
+        return result;
+    }
 }
