@@ -95,6 +95,15 @@ akshara:
       # that switched homework reminders on). Runs hourly from 17:00 to 20:00 India time; each homework is done once.
       enabled: ${HOMEWORK_REMINDERS_ENABLED:true}
       cron: ${HOMEWORK_REMINDERS_CRON:0 0 17-20 * * *}
+  assist:
+    # AI assistance. Only the simulated provider exists: deterministic drafts from templates and the school's own
+    # data, nothing leaves the school. A real provider would be chosen here, its key coming from Secrets Manager,
+    # and only after parent consent and the DPDP notice cover it (docs/api/phase-3-assist.md).
+    provider: ${ASSIST_PROVIDER:simulated}
+    early-warning:
+      # Recomputes every school's at-risk watch list nightly at 01:30 India time (schools with the feature on).
+      enabled: ${ASSIST_EARLY_WARNING_ENABLED:true}
+      cron: ${ASSIST_EARLY_WARNING_CRON:0 30 1 * * *}
   library:
     reminders:
       # Parents of students with an overdue library book get a reminder each week it stays overdue (only in schools
@@ -155,6 +164,9 @@ akshara:
       enabled: false
   homework:
     reminders:
+      enabled: false
+  assist:
+    early-warning:
       enabled: false
   library:
     reminders:
