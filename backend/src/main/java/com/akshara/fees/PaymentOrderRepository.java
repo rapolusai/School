@@ -1,5 +1,7 @@
 package com.akshara.fees;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,4 +23,6 @@ interface PaymentOrderRepository extends JpaRepository<PaymentOrder, UUID> {
     Optional<PaymentOrder> lockByGatewayOrder(String gateway, String gatewayOrderId);
 
     Optional<PaymentOrder> findByGatewayAndGatewayOrderId(String gateway, String gatewayOrderId);
+
+    List<PaymentOrder> findByStudentIdAndStatusAndLateFeeAsOf(UUID studentId, String status, LocalDate lateFeeAsOf);
 }

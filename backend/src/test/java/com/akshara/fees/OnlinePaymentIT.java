@@ -2,6 +2,7 @@ package com.akshara.fees;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -167,6 +168,47 @@ class OnlinePaymentIT extends IntegrationTest {
         api.get("/api/audit-events?limit=20", admin.accessToken())
                 .andExpect(jsonPath("$[*].action", hasItem("payment_order.created")))
                 .andExpect(jsonPath("$[*].action", hasItem("fee_payment.recorded")));
+    }
+
+    @Test
+    void twoTabsPayingTheSameInstalmentShareOneOrderAndChargeOnce() throws Exception {
+        String base = "/api/me/children/" + arjun + "/fees";
+        String q2 = TestApi.read(api.get(base, parent.accessToken()), "$.instalments[1].instalmentId");
+        String q3 = TestApi.read(api.get(base, parent.accessToken()), "$.instalments[2].instalmentId");
+        String body = """
+                {"instalmentIds":["%s"]}""".formatted(q2);
+        String first = api.post(base + "/orders", parent.accessToken(), body)
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        String second = api.post(base + "/orders", parent.accessToken(), body)
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        String id = JsonPath.read(first, "$.id");
+        String gatewayOrderId = JsonPath.read(first, "$.gatewayOrderId");
+        assertThat((String) JsonPath.read(second, "$.id")).isEqualTo(id);
+        assertThat(count("fees.payment_order")).isEqualTo(1);
+        // A different choice of instalments is a new order.
+        api.post(base + "/orders", parent.accessToken(), """
+                {"instalmentIds":["%s","%s"]}""".formatted(q2, q3)).andExpect(status().isCreated());
+        assertThat(count("fees.payment_order")).isEqualTo(2);
+
+        // Both tabs finish checkout; the first payment is recorded and the second is refused.
+        String[] verified = new String[2];
+        for (int tab = 0; tab < 2; tab++) {
+            String paid = api.post("/api/payments/sandbox/orders/" + gatewayOrderId + "/complete",
+                    parent.accessToken(), """
+                    {"outcome":"SUCCESS"}""").andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+            verified[tab] = """
+                    {"gatewayPaymentId":"%s","signature":"%s"}""".formatted(
+                    JsonPath.<String>read(paid, "$.gatewayPaymentId"), JsonPath.<String>read(paid, "$.signature"));
+        }
+        api.post(base + "/orders/" + id + "/verify", parent.accessToken(), verified[0]).andExpect(status().isOk());
+        api.post(base + "/orders/" + id + "/verify", parent.accessToken(), verified[1])
+                .andExpect(status().isConflict());
+        assertThat(count("fees.receipt")).isEqualTo(1);
+        api.get(base, parent.accessToken())
+                .andExpect(jsonPath("$.instalments[1].status").value("PAID"))
+                .andExpect(jsonPath("$.instalments[2].status").value(not("PAID")));
+        // Once paid, the same instalment cannot be ordered again.
+        api.post(base + "/orders", parent.accessToken(), body).andExpect(status().is4xxClientError());
     }
 
     @Test

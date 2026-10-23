@@ -10,6 +10,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -113,12 +114,26 @@ public class OnlinePaymentService {
         StudentRoster.Entry student = roster.student(studentId);
         duesService.generateForStudent(studentId);
         LocalDate today = SchoolDay.today();
+        // One student's orders are made one at a time, so two tabs paying the same instalments share one order.
+        jdbc.queryForObject("select 1 from (select pg_advisory_xact_lock(hashtextextended(?, 0))) l", Integer.class,
+                "fees.student:" + studentId);
         List<PlanItem> plan = duesService.plan(studentId, form.instalmentIds(), true, today);
         long amount = plan.stream().mapToLong(PlanItem::outstandingPaise).sum();
         if (amount == 0) {
             throw Fees.conflict("Nothing due", "Nothing is due in the chosen instalments.");
         }
         PaymentGateway gateway = gateway(properties.gateway());
+        Set<UUID> chosen = plan.stream().map(p -> p.instalment().getId()).collect(Collectors.toSet());
+        Optional<PaymentOrder> open = orders.findByStudentIdAndStatusAndLateFeeAsOf(studentId, PaymentOrder.CREATED, today)
+                .stream()
+                .filter(o -> by.id() != null && by.id().equals(o.getCreatedBy()) && o.getGateway().equals(gateway.name())
+                        && o.getAmountPaise() == amount
+                        && Set.copyOf(o.getInstalmentIds()).equals(chosen))
+                .findFirst();
+        if (open.isPresent()) {
+            // The gateway accepts one payment per order, so a parent cannot be charged twice for the same dues.
+            return view(open.get(), student.fullName());
+        }
         UUID id = PaymentOrder.newId();
         GatewayOrder created = gateway.createOrder(new OrderRequest(id.toString(), amount, "INR",
                 Map.of("orderId", id.toString())));
