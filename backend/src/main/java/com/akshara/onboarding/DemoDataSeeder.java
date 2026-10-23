@@ -162,6 +162,8 @@ public class DemoDataSeeder implements ApplicationRunner {
         log.info("Seeded {} demo child leave requests", portalData.seed(school.tenant().id(), userIds));
         log.info("Seeded {} demo library copies",
                 libraryData.seed(school.tenant().id(), userIds, school.adminUserId(), hash));
+        log.info("Seeded {} demo hostel boarders (before payroll, so the warden gets a salary structure)",
+                hostelData.seed(school.tenant().id(), userIds, school.adminUserId(), hash));
         log.info("Seeded demo payroll for {}", payrollData.seed(school.tenant().id(), userIds, school.adminUserId()));
         log.info("Seeded demo exams with {} marks", examsData.seed(school.tenant().id(), userIds));
         log.info("Seeded demo messages and a PTM with {} bookings", chatData.seed(school.tenant().id(), userIds));
@@ -173,7 +175,5 @@ public class DemoDataSeeder implements ApplicationRunner {
                 frontOfficeData.seed(school.tenant().id(), userIds, school.adminUserId(), hash));
         log.info("Seeded demo accounts with {} expenses",
                 accountsData.seed(school.tenant().id(), userIds, school.adminUserId()));
-        log.info("Seeded {} demo hostel boarders",
-                hostelData.seed(school.tenant().id(), userIds, school.adminUserId(), hash));
     }
 }
