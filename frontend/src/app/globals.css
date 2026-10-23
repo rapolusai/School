@@ -31,8 +31,8 @@
   --scrim: rgba(10, 16, 13, 0.45);
   --shadow: 0 1px 2px rgba(22, 32, 27, 0.06), 0 8px 24px rgba(22, 32, 27, 0.06);
 
-  --f-display: "Bricolage Grotesque", "Noto Sans Devanagari", "Segoe UI", system-ui, sans-serif;
-  --f-body: "Figtree", "Noto Sans Devanagari", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-display: "Bricolage Grotesque", "Noto Sans Devanagari", "Noto Sans Telugu", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Figtree", "Noto Sans Devanagari", "Noto Sans Telugu", "Segoe UI", system-ui, -apple-system, sans-serif;
   --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
 
   --r: 10px;
