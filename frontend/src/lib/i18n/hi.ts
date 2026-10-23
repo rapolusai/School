@@ -81,7 +81,7 @@ export const hi: Record<MessageKey, string> = {
     "हर स्कूल को अपनी निजी जगह, भूमिकाएँ और सेटिंग्स मिलती हैं, डेस्कटॉप, टैबलेट या फ़ोन पर।",
   "login.stat.trial.value": "14 दिन",
   "login.stat.trial.label": "मुफ़्त ट्रायल",
-  "login.stat.languages.value": "2",
+  "login.stat.languages.value": "3",
   "login.stat.languages.label": "भाषाएँ",
   "login.stat.roles.value": "7",
   "login.stat.roles.label": "तैयार भूमिकाएँ",

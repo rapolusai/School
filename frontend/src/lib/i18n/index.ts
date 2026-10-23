@@ -1,17 +1,19 @@
 import { useCallback, useSyncExternalStore } from "react";
 import { en, type MessageKey } from "./en";
 import { hi } from "./hi";
+import { te } from "./te";
 
 export type { MessageKey } from "./en";
 
 export const LANGUAGES = [
   { code: "en", label: "EN", htmlLang: "en" },
   { code: "hi", label: "हिन्दी", htmlLang: "hi" },
+  { code: "te", label: "తెలుగు", htmlLang: "te" },
 ] as const;
 
 export type Lang = (typeof LANGUAGES)[number]["code"];
 
-export const dictionaries: Record<Lang, Record<MessageKey, string>> = { en, hi };
+export const dictionaries: Record<Lang, Record<MessageKey, string>> = { en, hi, te };
 
 export const LANG_STORAGE_KEY = "akshara.lang";
 
@@ -81,7 +83,7 @@ export function useI18n(): { lang: Lang; t: Translate; setLang: (lang: Lang) => 
 
 /** BCP 47 locale for Intl formatting in the current language. */
 export function localeFor(lang: Lang): string {
-  return lang === "hi" ? "hi-IN" : "en-IN";
+  return lang === "hi" ? "hi-IN" : lang === "te" ? "te-IN" : "en-IN";
 }
 
 export function isMessageKey(key: string): key is MessageKey {

@@ -155,7 +155,7 @@ export function ConsentForm({
         <p className="alert alert-info">{t("privacy.notice.changed", { summary: notice.changeSummary })}</p>
       ) : null}
       <div className="max-h-[50vh] overflow-y-auto rounded-lg border border-line p-4" tabIndex={0}>
-        <NoticeText text={lang === "hi" ? notice.bodyHi : notice.bodyEn} lang={lang} />
+        <NoticeText text={lang === "hi" ? notice.bodyHi : notice.bodyEn} lang={lang === "hi" ? "hi" : "en"} />
       </div>
       <details>
         <summary className="cursor-pointer text-[13.5px] font-semibold">{t("privacy.my.officer")}</summary>

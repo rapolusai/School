@@ -83,7 +83,7 @@ export const en = {
     "Every school gets its own private space, roles and settings, on desktop, tablet or phone.",
   "login.stat.trial.value": "14 days",
   "login.stat.trial.label": "free trial",
-  "login.stat.languages.value": "2",
+  "login.stat.languages.value": "3",
   "login.stat.languages.label": "languages",
   "login.stat.roles.value": "7",
   "login.stat.roles.label": "built-in roles",

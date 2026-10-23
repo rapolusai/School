@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { en } from "./en";
 import { hi } from "./hi";
+import { te } from "./te";
 import { auditActionLabel, auditEntityLabel, plural, roleLabel, translate, translateOr, type Translate } from "./index";
 
 const placeholders = (text: string) => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
@@ -35,10 +36,29 @@ describe("dictionaries", () => {
   });
 });
 
+describe.each([["Telugu", te as Record<string, string>]])("%s dictionary", (_name, dict) => {
+  it("has every English key and no extra keys", () => {
+    expect(Object.keys(en).filter((key) => !(key in dict))).toEqual([]);
+    expect(Object.keys(dict).filter((key) => !(key in en))).toEqual([]);
+  });
+
+  it("keeps the English key order", () => {
+    expect(Object.keys(dict)).toEqual(Object.keys(en));
+  });
+
+  it("has no empty translations and the same placeholders", () => {
+    for (const key of Object.keys(en) as (keyof typeof en)[]) {
+      expect(dict[key].trim(), key).not.toBe("");
+      expect(placeholders(dict[key]), key).toEqual(placeholders(en[key]));
+    }
+  });
+});
+
 describe("translate", () => {
   it("looks up and interpolates", () => {
     expect(translate("en", "dashboard.greeting.morning", { name: "Asha" })).toBe("Good morning, Asha");
     expect(translate("hi", "dashboard.greeting.morning", { name: "Asha" })).toBe("सुप्रभात, Asha");
+    expect(translate("te", "dashboard.greeting.morning", { name: "Asha" })).toBe("శుభోదయం, Asha");
     expect(translate("en", "common.showing", { shown: 2, total: 5 })).toBe("Showing 2 of 5");
   });
 

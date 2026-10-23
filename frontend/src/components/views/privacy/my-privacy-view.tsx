@@ -184,7 +184,7 @@ function NoticeCard({ notice }: { notice: PrivacyNotice | null }) {
       </button>
       {open ? (
         <div className="max-h-[480px] overflow-y-auto rounded-lg border border-line p-4" tabIndex={0}>
-          <NoticeText text={lang === "hi" ? notice.bodyHi : notice.bodyEn} lang={lang} />
+          <NoticeText text={lang === "hi" ? notice.bodyHi : notice.bodyEn} lang={lang === "hi" ? "hi" : "en"} />
         </div>
       ) : null}
       <h3 className="text-[14px] font-semibold">{t("privacy.my.officer")}</h3>
