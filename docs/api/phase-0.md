@@ -6,9 +6,12 @@ All endpoints live under `/api` and speak JSON. Errors use RFC 9457 problem deta
 Common client mistakes, on any endpoint:
 
 - `400` — a missing required query parameter (`errors.<param>: "This is required."`), a query or path value of the
-  wrong type (`errors.<param>`), or a body that is not JSON or does not fit the form. A JSON number with a fraction
-  sent to a whole-number field (amounts in paise, quantities, counts) is refused, never truncated:
-  `errors.<field>: "Enter a whole number."` (nested fields as `lines[0].quantity`).
+  wrong type (`errors.<param>`; a malformed record id in the path is `404`, below), or a body that is not JSON or
+  does not fit the form. A JSON number with a fraction sent to a whole-number field (amounts in paise, quantities,
+  counts) is refused, never truncated: `errors.<field>: "Enter a whole number."` (nested fields as `lines[0].quantity`).
+- `404` — a record id in the path that is not a UUID (it can name no record, like an id that does not exist).
+- `400` `Bad request` — a path the request firewall refuses (a `;`, an encoded `/`, `\` or `%`, and the like); it is
+  never answered as `401`, so the session stays valid.
 - `405` — the path exists but not for this method; the `Allow` header lists the methods it takes.
 - `415` — the body's `Content-Type` is not one the endpoint accepts (JSON endpoints take `application/json`, uploads
   `multipart/form-data`); the `Accept` header lists them.

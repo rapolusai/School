@@ -83,6 +83,25 @@ class ApiErrorsIT extends IntegrationTest {
     }
 
     @Test
+    void aMalformedRecordIdInThePathIs404AndARejectedPathIs400NeverA401() throws Exception {
+        api.get("/api/accounts/income/abc", accountant.accessToken())
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.title").value("Not found"));
+        api.get("/api/accounts/income/zzz'\"<b>", accountant.accessToken())
+                .andExpect(status().isNotFound());
+        // A path the firewall refuses (";" or an encoded "%") is a 400 problem, not a sign-in error.
+        api.get("/api/accounts/income/a;b", accountant.accessToken())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Bad request"))
+                .andExpect(jsonPath("$.detail").value("The request could not be read."));
+        // A wrong-typed query value still names the parameter.
+        api.get("/api/accounts/petty-cash?from=x&to=2026-01-31", accountant.accessToken())
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.errors.from").exists());
+        // The token is still good.
+        api.get("/api/me", accountant.accessToken()).andExpect(status().isOk());
+    }
+
+    @Test
     void aFractionSentToAWholeNumberFieldIsRefusedNotTruncated() throws Exception {
         api.post("/api/accounts/income", accountant.accessToken(), """
                 {"kind":"RENTAL","headId":"%s","receivedOn":"%s","amountPaise":100.5,"payerName":"Ramesh Gupta",

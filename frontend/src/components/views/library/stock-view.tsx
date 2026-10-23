@@ -8,10 +8,10 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog } from "@/components/ui/dialog";
 import { TextField } from "@/components/ui/field";
 import { Pill } from "@/components/ui/pill";
-import { ErrorState, FormAlert, LoadingRows, PageHead } from "@/components/ui/states";
+import { ErrorState, FormAlert, LoadingRows, PageHead, pendingTitle } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
 import { toApiError } from "@/lib/api";
-import { errorMessage } from "@/lib/error-message";
+import { errorMessage, fieldErrorMessage } from "@/lib/error-message";
 import { formatDateTime } from "@/lib/format";
 import { localeFor, plural, useI18n } from "@/lib/i18n";
 import { libraryApi, libraryReportPaths } from "@/lib/library-api";
@@ -167,7 +167,7 @@ export function StockCheckView({ id }: { id: string }) {
       return null;
     } catch (caught) {
       const error = toApiError(caught);
-      return error.errors?.accessionNo ?? errorMessage(error, t);
+      return error.errors?.accessionNo ? fieldErrorMessage(error.errors.accessionNo, t) : errorMessage(error, t);
     }
   };
 
@@ -188,7 +188,7 @@ export function StockCheckView({ id }: { id: string }) {
     <>
       <PageHead
         eyebrow={t("library.stock.title")}
-        title={data ? t("library.stock.startedAt", { date: formatDateTime(data.check.startedAt, locale) }) : t("common.loading")}
+        title={data ? t("library.stock.startedAt", { date: formatDateTime(data.check.startedAt, locale) }) : pendingTitle(t, detail.error)}
         actions={
           <>
             <Link href="/app/library/stock" className="btn">

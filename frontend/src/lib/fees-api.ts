@@ -1,4 +1,4 @@
-import { apiFetch, getAccessToken, parseErrorResponse, refreshSession, toApiError } from "./api";
+import { apiFetch, getAccessToken, parseErrorResponse, refreshSession, toApiError, pathSegment } from "./api";
 import type {
   CheckoutResult,
   CollectionReport,
@@ -28,7 +28,7 @@ import type {
 
 /* Fees endpoints (docs/api/phase-1-fees.md). Kept apart from api.ts so the slices merge cleanly. */
 
-const id = (value: string) => encodeURIComponent(value);
+const id = pathSegment;
 
 /** "?a=1&b=x" from the values that are set; arrays and empty strings are skipped. */
 export function feesQuery(params: Record<string, string | number | undefined | null>): string {

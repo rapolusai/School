@@ -1,4 +1,4 @@
-import { apiFetch } from "./api";
+import { apiFetch, pathSegment } from "./api";
 import { sendForm } from "./files-api";
 import type {
   AnswerRequest,
@@ -40,7 +40,7 @@ import type {
 
 /* Endpoint helpers for docs/api/phase-2-lessons.md. */
 
-const id = (value: string) => encodeURIComponent(value);
+const id = pathSegment;
 
 /** "?a=1&b=x" from the set values only (empty strings, null, undefined and false are left out). Exported for tests. */
 export function lessonsQuery(params: Record<string, string | number | boolean | null | undefined>): string {

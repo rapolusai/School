@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.MissingPathVariableException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -92,8 +94,15 @@ public class ApiExceptionHandler {
         return problem(HttpStatus.BAD_REQUEST, "Bad request", "The request could not be read.", errors);
     }
 
+    /**
+     * A query or path value of the wrong type is 400 naming it, except a record id in the path that is not a UUID:
+     * such an address can name no record, so it is the same 404 as an id that does not exist.
+     */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     ResponseEntity<ProblemDetail> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
+        if (UUID.class.equals(e.getRequiredType()) && e.getParameter().hasParameterAnnotation(PathVariable.class)) {
+            return problem(HttpStatus.NOT_FOUND, "Not found", "There is nothing at this address.", Map.of());
+        }
         return problem(HttpStatus.BAD_REQUEST, "Bad request", "The request could not be read.",
                 Map.of(e.getName(), "This value is not valid."));
     }

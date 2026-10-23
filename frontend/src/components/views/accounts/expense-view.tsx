@@ -6,7 +6,7 @@ import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog } from "@/components/ui/dialog";
 import { SelectField, TextAreaField, TextField } from "@/components/ui/field";
-import { ErrorState, FormAlert, LoadingRows, PageHead } from "@/components/ui/states";
+import { ErrorState, FormAlert, LoadingRows, PageHead, pendingTitle } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
 import { AttachmentList } from "@/components/views/files/attachments";
 import { validatePaid, type PaidValues } from "@/lib/accounts";
@@ -59,11 +59,11 @@ export function ExpenseView({ id }: { id: string }) {
     }
   };
 
-  const title = e ? e.description : t("accounts.expense.title");
+  const title = e ? e.description : detail.error ? pendingTitle(t, detail.error) : t("accounts.expense.title");
   return (
     <>
       <PageHead
-        eyebrow={e?.number ?? t("accounts.expense.draft")}
+        eyebrow={e ? (e.number ?? t("accounts.expense.draft")) : t("accounts.expense.title")}
         title={title}
         actions={
           e ? (

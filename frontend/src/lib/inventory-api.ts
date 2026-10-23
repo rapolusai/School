@@ -1,4 +1,4 @@
-import { apiFetch } from "./api";
+import { apiFetch, pathSegment } from "./api";
 import { reportQuery, type ReportParams } from "./reports-api";
 import type {
   PurchaseApproversRequest,
@@ -55,7 +55,7 @@ import type {
 
 /* Endpoint helpers for docs/api/phase-3-inventory.md. */
 
-const id = (value: string) => encodeURIComponent(value);
+const id = pathSegment;
 const q = (params: ReportParams) => reportQuery(params);
 
 export type Period = { from: string; to: string };

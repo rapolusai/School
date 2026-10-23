@@ -1,4 +1,4 @@
-import { apiFetch } from "./api";
+import { apiFetch, pathSegment } from "./api";
 import { fetchText } from "./attendance-api";
 import type {
   CreateStaffRequest,
@@ -31,7 +31,7 @@ import type {
 
 /* Endpoint helpers for docs/api/phase-1-staff.md (staff, leave, staff attendance). */
 
-const id = (value: string) => encodeURIComponent(value);
+const id = pathSegment;
 
 /** "?a=1&b=x" from the set values only. Exported for tests. */
 export function staffQueryString(params: Record<string, string | number | boolean | null | undefined>): string {

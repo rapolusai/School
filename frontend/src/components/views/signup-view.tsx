@@ -9,7 +9,7 @@ import { SelectField, TextField } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/states";
 import { api, toApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { errorMessage } from "@/lib/error-message";
+import { errorMessage, fieldErrorMessages } from "@/lib/error-message";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { BOARDS, type Board, type SignupRequest } from "@/lib/types";
 import {
@@ -121,10 +121,10 @@ export function SignupView() {
     } catch (caught) {
       const error = toApiError(caught);
       setSubmitting(false);
-      const serverErrors: Errors = { ...(error.errors as Errors | undefined) };
+      const serverErrors: Errors = { ...(error.errors ? (fieldErrorMessages(error.errors, t) as Errors) : undefined) };
       // The only value that can clash for a brand-new school is its code.
       if (error.status === 409 && Object.keys(serverErrors).length === 0) {
-        serverErrors.schoolCode = error.detail ?? error.title;
+        serverErrors.schoolCode = errorMessage(error, t);
       }
       const fields = Object.keys(serverErrors);
       if (fields.length) {

@@ -1,4 +1,4 @@
-import { apiFetch } from "./api";
+import { apiFetch, pathSegment } from "./api";
 import { sendForm } from "./files-api";
 import { downloadXlsx, reportQuery, type ReportParams } from "./reports-api";
 import type {
@@ -50,7 +50,7 @@ import type {
 
 /* Endpoint helpers for docs/api/phase-2-accounts.md. */
 
-const id = (value: string) => encodeURIComponent(value);
+const id = pathSegment;
 const q = (params: ReportParams) => reportQuery(params);
 
 export type Period = { from: string; to: string };

@@ -86,6 +86,48 @@ class HostelGuardsIT extends IntegrationTest {
     }
 
     @Test
+    void twoStudentsAllottedToOneBedAtOnceGetOneBedAndASpecificConflict() throws Exception {
+        HostelSchool s = new HostelSchool(api);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            for (int round = 0; round < 4; round++) {
+                CountDownLatch start = new CountDownLatch(1);
+                List<Future<org.springframework.mock.web.MockHttpServletResponse>> results = new ArrayList<>();
+                for (String student : List.of(s.asha, s.bala)) {
+                    Callable<org.springframework.mock.web.MockHttpServletResponse> allot = () -> {
+                        start.await();
+                        return api.post("/api/hostel/allotments", s.admin.accessToken(), """
+                                {"studentId":"%s","bedId":"%s","fromDate":"%s","guardianConsent":true}"""
+                                .formatted(student, s.bedA, HostelSchool.TODAY)).andReturn().getResponse();
+                    };
+                    results.add(pool.submit(allot));
+                }
+                start.countDown();
+                String winner = null;
+                int conflicts = 0;
+                for (Future<org.springframework.mock.web.MockHttpServletResponse> f : results) {
+                    org.springframework.mock.web.MockHttpServletResponse response = f.get();
+                    String body = response.getContentAsString();
+                    if (response.getStatus() == 201) {
+                        winner = com.jayway.jsonpath.JsonPath.read(body, "$.id");
+                    } else {
+                        assertThat(response.getStatus()).isEqualTo(409);
+                        assertThat((String) com.jayway.jsonpath.JsonPath.read(body, "$.title")).isEqualTo("Bed taken");
+                        assertThat((String) com.jayway.jsonpath.JsonPath.read(body, "$.detail")).startsWith("Bed ");
+                        conflicts++;
+                    }
+                }
+                assertThat(winner).isNotNull();
+                assertThat(conflicts).isEqualTo(1);
+                api.post("/api/hostel/allotments/" + winner + "/vacate", s.admin.accessToken(), """
+                        {"reason":"Next round"}""").andExpect(status().isOk());
+            }
+        } finally {
+            pool.shutdownNow();
+        }
+    }
+
+    @Test
     void anApprovedPassCannotBeRefusedAndAResolvedComplaintStaysResolved() throws Exception {
         HostelSchool s = new HostelSchool(api);
         s.allot(s.asha, s.bedA);

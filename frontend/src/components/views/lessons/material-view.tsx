@@ -12,7 +12,7 @@ import { YearSelect } from "@/components/views/exams/exams-shared";
 import { AttachmentList, FilePicker } from "@/components/views/files/attachments";
 import { toApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { errorMessage } from "@/lib/error-message";
+import { errorMessage, fieldErrorMessage } from "@/lib/error-message";
 import { formatPlainDate, todayInIndia } from "@/lib/format";
 import { localeFor, useI18n } from "@/lib/i18n";
 import { lessonsApi } from "@/lib/lessons-api";
@@ -305,7 +305,7 @@ function MaterialDialog({
       } catch (caught) {
         const error = toApiError(caught);
         setFiles(files.slice(i));
-        setFileError(t("lessons.material.uploadFailed", { name: files[i].name, reason: error.errors?.file ?? errorMessage(error, t) }));
+        setFileError(t("lessons.material.uploadFailed", { name: files[i].name, reason: error.errors?.file ? fieldErrorMessage(error.errors.file, t) : errorMessage(error, t) }));
         return;
       }
     }

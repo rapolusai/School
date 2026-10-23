@@ -1,4 +1,4 @@
-import { apiFetch } from "./api";
+import { apiFetch, pathSegment } from "./api";
 import { reportQuery, type ReportParams } from "./reports-api";
 import type {
   BorrowingRule,
@@ -45,7 +45,7 @@ import type {
 
 /* Endpoint helpers for docs/api/phase-2-library.md. */
 
-const id = (value: string) => encodeURIComponent(value);
+const id = pathSegment;
 
 export type TitleQuery = { q?: string; subject?: string; page?: number; size?: number };
 export type LoanQuery = {

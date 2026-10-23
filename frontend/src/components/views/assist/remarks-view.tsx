@@ -7,6 +7,7 @@ import { ErrorState, FormAlert, LoadingRows, PageHead } from "@/components/ui/st
 import { useToast } from "@/components/ui/toast";
 import { api, toApiError } from "@/lib/api";
 import { assistApi } from "@/lib/assist-api";
+import { fieldErrorMessage } from "@/lib/error-message";
 import { examsApi } from "@/lib/exams-api";
 import { plural, translateOr, useI18n } from "@/lib/i18n";
 import { REMARK_TONES, type RemarkDraft, type RemarkSheet, type RemarkStudent, type RemarkTone } from "@/lib/types";
@@ -181,19 +182,25 @@ function RemarkRow({
   const [text, setText] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  const [textError, setTextError] = useState<string | null>(null);
   const value = text ?? draft?.acceptedText ?? draft?.draftText ?? "";
+  const textErrorId = `remark-${student.studentId}-error`;
   const accepted = draft?.status === "ACCEPTED";
 
   const run = async (work: () => Promise<unknown>, done?: string) => {
     setBusy(true);
     setProblem(null);
+    setTextError(null);
     try {
       await work();
       setText(null);
       if (done) toast(done);
       onChanged();
     } catch (error) {
-      setProblem(assistError(toApiError(error), t));
+      const apiError = toApiError(error);
+      // The remark itself was refused (too long, blank): show it on the box, not as a vague form alert.
+      if (apiError.errors?.text) setTextError(fieldErrorMessage(apiError.errors.text, t));
+      else setProblem(assistError(apiError, t));
     } finally {
       setBusy(false);
     }
@@ -231,8 +238,18 @@ function RemarkRow({
               name={`remark-${student.studentId}`}
               value={value}
               readOnly={accepted}
-              onChange={(e) => setText(e.target.value)}
+              aria-invalid={textError ? true : undefined}
+              aria-describedby={textError ? textErrorId : undefined}
+              onChange={(e) => {
+                setText(e.target.value);
+                setTextError(null);
+              }}
             />
+            {textError ? (
+              <p id={textErrorId} className="field-error">
+                {textError}
+              </p>
+            ) : null}
           </label>
           <UsedInputs draft={draft} />
           <FormAlert message={problem} />

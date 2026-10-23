@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog } from "@/components/ui/dialog";
-import { ErrorState, FormAlert, LoadingRows, PageHead } from "@/components/ui/states";
+import { ErrorState, FormAlert, LoadingRows, PageHead, pendingTitle } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
 import { toApiError } from "@/lib/api";
 import { errorMessage } from "@/lib/error-message";
@@ -45,7 +45,7 @@ export function TitleDetailView({ id }: { id: string }) {
     <>
       <PageHead
         eyebrow={data?.authors ?? t("nav.library")}
-        title={data?.title ?? t("common.loading")}
+        title={data?.title ?? pendingTitle(t, title.error)}
         actions={
           <>
             <Link href="/app/library" className="btn">

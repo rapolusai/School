@@ -1,4 +1,4 @@
-import { apiFetch } from "./api";
+import { apiFetch, pathSegment } from "./api";
 import type { MessageDetail, MessagePage, MessageQuery, NotificationSettings } from "./types";
 
 /* Endpoint helpers for docs/api/phase-1-attendance.md (message log and alert settings). */
@@ -16,7 +16,7 @@ export function messageQueryString(query: MessageQuery): string {
 
 export const notificationsApi = {
   listMessages: (query: MessageQuery = {}) => apiFetch<MessagePage>(`/api/messages${messageQueryString(query)}`),
-  getMessage: (messageId: string) => apiFetch<MessageDetail>(`/api/messages/${encodeURIComponent(messageId)}`),
+  getMessage: (messageId: string) => apiFetch<MessageDetail>(`/api/messages/${pathSegment(messageId)}`),
   getSettings: () => apiFetch<NotificationSettings>("/api/notifications/settings"),
   updateSettings: (body: NotificationSettings) =>
     apiFetch<NotificationSettings>("/api/notifications/settings", { method: "PUT", body }),

@@ -1,4 +1,4 @@
-import { apiFetch } from "./api";
+import { apiFetch, pathSegment } from "./api";
 import { sendForm } from "./files-api";
 import type {
   FileRef,
@@ -17,7 +17,7 @@ import type {
 
 /* Endpoint helpers for docs/api/phase-1-timetable-homework.md (homework). */
 
-const id = (value: string) => encodeURIComponent(value);
+const id = pathSegment;
 
 /** "?when=open&page=0…" from the set filters only. Exported for tests. */
 export function homeworkQueryString(query: HomeworkQuery): string {

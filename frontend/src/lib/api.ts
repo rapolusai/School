@@ -188,9 +188,40 @@ type RequestOptions = {
   signal?: AbortSignal;
 };
 
+/**
+ * One path segment for an API address. Route params can arrive still percent-encoded (an id typed in the address
+ * bar as `a%3Bb`), so the value is decoded once before it is encoded; a plain id passes through unchanged.
+ */
+export function pathSegment(value: string): string {
+  let raw = value;
+  if (/%[0-9A-Fa-f]{2}/.test(value)) {
+    try {
+      raw = decodeURIComponent(value);
+    } catch {
+      raw = value;
+    }
+  }
+  return encodeURIComponent(raw);
+}
+
+/**
+ * Encoded characters the API's request firewall refuses in a path (";", "%", "/", "\\" and control characters).
+ * Such an address can name no record, so it is answered here as not found instead of being sent.
+ */
+const REFUSED_IN_PATH = /%(?:3B|25|2F|5C|0[0-9A-F]|1[0-9A-F]|7F)/i;
+
+/** True when the path part of an API address holds an id the API cannot look up. Exported for tests. */
+export function isUnreachablePath(path: string): boolean {
+  const question = path.indexOf("?");
+  return REFUSED_IN_PATH.test(question === -1 ? path : path.slice(0, question));
+}
+
 /** Low-level fetch wrapper used by every endpoint helper. */
 export async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, auth = true, signal } = options;
+  if (isUnreachablePath(path)) {
+    throw new ApiError({ status: 404, title: "Not found", detail: "There is nothing at this address." });
+  }
 
   const send = (token: string | null) => {
     const headers: Record<string, string> = { Accept: "application/json" };
@@ -230,7 +261,7 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
 /* Endpoint helpers (docs/api/phase-0.md, docs/api/phase-1.md)         */
 /* ------------------------------------------------------------------ */
 
-const id = (value: string) => encodeURIComponent(value);
+const id = pathSegment;
 
 /** "?yearId=…&q=…" from the set filters only. Exported for tests. */
 export function studentQueryString(query: StudentQuery): string {
@@ -257,7 +288,7 @@ export const api = {
   saveMyPreferences: (body: { language: string }) =>
     apiFetch<{ language: string | null }>("/api/me/preferences", { method: "PUT", body }),
   listUsers: () => apiFetch<UserSummary[]>("/api/users"),
-  getUser: (id: string) => apiFetch<UserSummary>(`/api/users/${encodeURIComponent(id)}`),
+  getUser: (userId: string) => apiFetch<UserSummary>(`/api/users/${id(userId)}`),
   createUser: (body: CreateUserRequest) =>
     apiFetch<UserSummary>("/api/users", { method: "POST", body }),
   listRoles: () => apiFetch<Role[]>("/api/roles"),

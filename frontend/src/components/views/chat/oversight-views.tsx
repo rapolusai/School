@@ -6,7 +6,7 @@ import { useId, useState } from "react";
 import { Dialog } from "@/components/ui/dialog";
 import { TextAreaField } from "@/components/ui/field";
 import { Pill } from "@/components/ui/pill";
-import { ErrorState, FormAlert, LoadingRows, PageHead } from "@/components/ui/states";
+import { ErrorState, FormAlert, LoadFailure, LoadingRows, PageHead, pendingTitle } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
 import { AttachmentList } from "@/components/views/files/attachments";
 import { toApiError } from "@/lib/api";
@@ -394,7 +394,7 @@ export function OversightDetailView({ id }: { id: string }) {
     <>
       <PageHead
         eyebrow={t("chat.oversight.title")}
-        title={data ? `${data.student.name ?? "—"} · ${data.parentName ?? "—"} · ${data.staffName ?? "—"}` : t("common.loading")}
+        title={data ? `${data.student.name ?? "—"} · ${data.parentName ?? "—"} · ${data.staffName ?? "—"}` : pendingTitle(t, loaded.error)}
         actions={
           <>
             <Link href="/app/chat/oversight" className="btn">
@@ -418,7 +418,7 @@ export function OversightDetailView({ id }: { id: string }) {
       />
       <FormAlert message={error} />
       {loaded.error && !data ? (
-        <ErrorState error={loaded.error} onRetry={loaded.reload} />
+        <LoadFailure error={loaded.error} onRetry={loaded.reload} />
       ) : !data ? (
         <LoadingRows rows={6} />
       ) : (

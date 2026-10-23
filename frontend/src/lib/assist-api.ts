@@ -1,4 +1,4 @@
-import { apiFetch } from "./api";
+import { apiFetch, pathSegment } from "./api";
 import type {
   AcceptedReport,
   AssistSettings,
@@ -21,7 +21,7 @@ import type {
 
 /* Endpoint helpers for docs/api/phase-3-assist.md. */
 
-const id = (value: string) => encodeURIComponent(value);
+const id = pathSegment;
 
 /** "?a=1&b=x" from the set values only. Exported for tests. */
 export function assistQuery(params: Record<string, string | null | undefined>): string {

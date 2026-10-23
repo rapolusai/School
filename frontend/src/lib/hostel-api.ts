@@ -1,4 +1,4 @@
-import { apiFetch } from "./api";
+import { apiFetch, pathSegment } from "./api";
 import { reportQuery, type ReportParams } from "./reports-api";
 import type {
   AllotmentView,
@@ -46,7 +46,7 @@ import type {
 
 /* Endpoint helpers for docs/api/phase-3-hostel.md. */
 
-const id = (value: string) => encodeURIComponent(value);
+const id = pathSegment;
 const base = "/api/hostel";
 
 export type HostelRangeParams = { from?: string; to?: string };

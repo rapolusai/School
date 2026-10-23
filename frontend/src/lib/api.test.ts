@@ -5,8 +5,10 @@ import {
   api,
   apiFetch,
   getAccessToken,
+  isUnreachablePath,
   onSessionChange,
   parseErrorResponse,
+  pathSegment,
   refreshSession,
   setAccessToken,
 } from "./api";
@@ -191,5 +193,39 @@ describe("refreshSession", () => {
     release(problem(401, { title: "Unauthorized" }));
     await expect(pending).resolves.toBeNull();
     expect(getAccessToken()).toBe("signed-in-meanwhile");
+  });
+});
+
+describe("ids in API paths", () => {
+  it("encodes an id once, even when the route param is still percent-encoded", () => {
+    expect(pathSegment("0f8c1c1e-7d0b-4b8f-9d2a-1b2c3d4e5f60")).toBe("0f8c1c1e-7d0b-4b8f-9d2a-1b2c3d4e5f60");
+    expect(pathSegment("a;b")).toBe("a%3Bb");
+    expect(pathSegment("a%3Bb")).toBe("a%3Bb");
+    expect(pathSegment("zzz%27%22%3Cb%3E")).toBe("zzz'%22%3Cb%3E");
+    expect(pathSegment("2025-26")).toBe("2025-26");
+    // Not valid percent-encoding: encoded as typed.
+    expect(pathSegment("%E0%A4")).toBe("%25E0%25A4");
+  });
+
+  it("answers a malformed id as not found without calling the API or touching the session", async () => {
+    setAccessToken("t1");
+    const listener = vi.fn();
+    const off = onSessionChange(listener);
+    try {
+      await expect(api.getStudent("a%3Bb")).rejects.toMatchObject({ status: 404 });
+      await expect(api.getStudent("%E0%A4")).rejects.toMatchObject({ status: 404 });
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(listener).not.toHaveBeenCalled();
+      expect(getAccessToken()).toBe("t1");
+    } finally {
+      off();
+    }
+  });
+
+  it("only looks at the path, not the query", () => {
+    expect(isUnreachablePath("/api/staff/a%3Bb")).toBe(true);
+    expect(isUnreachablePath("/api/staff/a%2Fb/payslips")).toBe(true);
+    expect(isUnreachablePath("/api/students?q=1%2F2")).toBe(false);
+    expect(isUnreachablePath("/api/staff/abc")).toBe(false);
   });
 });

@@ -1,4 +1,4 @@
-import { apiFetch } from "./api";
+import { apiFetch, pathSegment } from "./api";
 import { reportQuery, type ReportParams } from "./reports-api";
 import type {
   AllergiesReport,
@@ -45,7 +45,7 @@ import type {
 
 /* Endpoint helpers for docs/api/phase-3-health.md. */
 
-const id = (value: string) => encodeURIComponent(value);
+const id = pathSegment;
 const base = "/api/health";
 
 export type RangeParams = { from?: string; to?: string };

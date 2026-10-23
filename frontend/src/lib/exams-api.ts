@@ -1,4 +1,4 @@
-import { apiFetch } from "./api";
+import { apiFetch, pathSegment } from "./api";
 import type {
   CardPeriod,
   ClassSchemeRequest,
@@ -27,7 +27,7 @@ import type {
 
 /* Endpoint helpers for docs/api/phase-2-exams.md. */
 
-const id = (value: string) => encodeURIComponent(value);
+const id = pathSegment;
 
 /** "?yearId=…" when a year is chosen, otherwise "" (the API uses the current year). Exported for tests. */
 export function yearQuery(yearId: string | null | undefined): string {

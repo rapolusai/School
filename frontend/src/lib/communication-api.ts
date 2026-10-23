@@ -1,4 +1,4 @@
-import { apiFetch, getAccessToken, parseErrorResponse, refreshSession, toApiError } from "./api";
+import { apiFetch, getAccessToken, parseErrorResponse, refreshSession, toApiError, pathSegment } from "./api";
 import type {
   AudienceOptions,
   BoardItem,
@@ -18,7 +18,7 @@ import type {
 
 /* Endpoint helpers for docs/api/phase-1-communication.md (circulars, notice board, calendar). */
 
-const id = (value: string) => encodeURIComponent(value);
+const id = pathSegment;
 
 /** "?a=…&b=…" from the set values only. Exported for tests. */
 export function communicationQuery(params: Record<string, string | number | boolean | undefined | null>): string {

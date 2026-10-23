@@ -1,9 +1,9 @@
-import { apiFetch } from "./api";
+import { apiFetch, pathSegment } from "./api";
 import type { ChildAttendance, ChildLeave, ChildLeaveApplication, FamilyLeave, LeaveInbox } from "./types";
 
 /* Endpoint helpers for docs/api/phase-1-portal.md (the parent and student app). */
 
-const id = (value: string) => encodeURIComponent(value);
+const id = pathSegment;
 
 export const portalApi = {
   /** A parent's child's leave requests (child.view). */
