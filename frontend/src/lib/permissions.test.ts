@@ -588,3 +588,16 @@ describe("safeNextPath", () => {
     expect(safeNextPath(null)).toBeNull();
   });
 });
+
+describe("navFor: assistance", () => {
+  it("gives Assistance under School to holders of assist.use and adds its reports (docs/api/phase-3-assist.md)", () => {
+    const teacher = user(["TEACHER"], [...TEACHER.permissions, "assist.use"]);
+    expect(keys(teacher)).toEqual(["dashboard", "attendance", "exams", "assist", "students", "setup", "notices", "reports"]);
+    expect(navFor(teacher).find((item) => item.key === "assist")).toMatchObject({ href: "/app/assist", group: "academics" });
+    expect(keys(user(["CUSTOM"], ["dashboard.view", "assist.use"]))).toEqual(["dashboard", "assist", "reports"]);
+    expect(keys(user(["CUSTOM"], ["dashboard.view", "assist.manage"]))).toEqual(["dashboard"]);
+    expect(keys(TEACHER)).not.toContain("assist");
+    expect(navItemForPath("/app/assist/papers/p1")?.key).toBe("assist");
+    expect(navItemForPath("/app/reports/assist-at-risk")?.key).toBe("reports");
+  });
+});

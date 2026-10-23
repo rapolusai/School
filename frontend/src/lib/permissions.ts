@@ -35,6 +35,7 @@ import {
   School,
   ScrollText,
   ShieldCheck,
+  Sparkles,
   UserCheck,
   UserLock,
   Users,
@@ -110,6 +111,8 @@ export const PERMISSIONS = {
   accountsRead: "accounts.read",
   accountsManage: "accounts.manage",
   accountsApprove: "accounts.approve",
+  assistUse: "assist.use",
+  assistManage: "assist.manage",
 } as const;
 
 export type NavGroup = "overview" | "academics" | "finance" | "staff" | "communication" | "administration" | "platform";
@@ -146,6 +149,7 @@ export const REPORT_PERMISSIONS: readonly string[] = [
   PERMISSIONS.certificatesRead,
   PERMISSIONS.frontofficeRead,
   PERMISSIONS.accountsRead,
+  PERMISSIONS.assistUse,
 ];
 
 /** Every navigation item, in display order. */
@@ -206,6 +210,16 @@ export const NAV_ITEMS: readonly NavItem[] = [
     permission: PERMISSIONS.lessonsManage,
     // Teachers plan lessons with lessons.manage; readers and approvers open it too (docs/api/phase-2-lessons.md).
     anyOf: [PERMISSIONS.lessonsRead, PERMISSIONS.lessonsApprove],
+    group: "academics",
+  },
+  {
+    key: "assist",
+    href: "/app/assist",
+    labelKey: "nav.assist",
+    shortLabelKey: "nav.assist.short",
+    icon: Sparkles,
+    permission: PERMISSIONS.assistUse,
+    // Simulated drafts, the early warning watch list and draft papers (docs/api/phase-3-assist.md).
     group: "academics",
   },
   {

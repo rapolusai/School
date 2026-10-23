@@ -275,6 +275,8 @@ public class RemarkService {
         }
         draft.edit(clean(text));
         drafts.flush();
+        audit.record(actor, "assist_remark.edited", "assist_remark", draft.getId(),
+                Map.of("student", draft.getStudentName(), "provider", draft.getProvider()));
         return view(draft);
     }
 

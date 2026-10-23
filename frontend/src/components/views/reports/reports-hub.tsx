@@ -38,6 +38,8 @@ import {
   type LucideIcon,
   BadgeCheck,
   IdCard,
+  ShieldAlert,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { AccessDenied } from "@/components/access";
@@ -48,7 +50,7 @@ import { hasAnyPermission, hasPermission, PERMISSIONS, REPORT_PERMISSIONS } from
 
 type PermissionSubject = Parameters<typeof hasPermission>[0];
 
-export const REPORT_GROUPS = ["attendance", "fees", "accounts", "admissions", "staff", "academics", "library", "transport", "frontoffice", "administration"] as const;
+export const REPORT_GROUPS = ["attendance", "fees", "accounts", "admissions", "staff", "academics", "library", "transport", "frontoffice", "assistance", "administration"] as const;
 export type ReportGroup = (typeof REPORT_GROUPS)[number];
 
 export type ReportLink = {
@@ -74,10 +76,29 @@ const GROUP_LABELS: Record<ReportGroup, MessageKey> = {
   transport: "reports.group.transport",
   administration: "reports.group.administration",
   frontoffice: "reports.group.frontoffice",
+  assistance: "reports.group.assistance",
 };
 
 /** Every report, new and existing, with the permission that opens it. */
 export const REPORT_LINKS: readonly ReportLink[] = [
+  {
+    key: "assistAtRisk",
+    group: "assistance",
+    href: "/app/reports/assist-at-risk",
+    title: "assist.report.atRisk.title",
+    description: "assist.report.atRisk.description",
+    permission: PERMISSIONS.assistUse,
+    icon: ShieldAlert,
+  },
+  {
+    key: "assistDraftsAccepted",
+    group: "assistance",
+    href: "/app/reports/assist-drafts",
+    title: "assist.report.accepted.title",
+    description: "assist.report.accepted.description",
+    permission: PERMISSIONS.assistUse,
+    icon: Sparkles,
+  },
   {
     key: "absentees",
     group: "attendance",
