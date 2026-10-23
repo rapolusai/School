@@ -547,7 +547,7 @@ public class ProcurementService {
         VendorView vendor = setup.vendor(form.vendorId(), "vendorId");
         Requisition req = approvedRequisition(form.requisitionId(), "requisitionId");
         Rfq rfq = rfq(form.rfqId(), "rfqId");
-        StockService.notFuture(form.orderedOn(), "orderedOn");
+        orderDates(form);
         FinancialYear year = FinancialYear.of(form.orderedOn());
         PurchaseOrder o = new PurchaseOrder(setup.nextNumber("PO", year.label()), year.label(),
                 PurchaseOrderStatus.DRAFT, vendor.id(), vendor.name(), req == null ? null : req.getId(),
@@ -573,7 +573,7 @@ public class ProcurementService {
         VendorView vendor = setup.vendor(form.vendorId(), "vendorId");
         Requisition req = approvedRequisition(form.requisitionId(), "requisitionId");
         Rfq rfq = rfq(form.rfqId(), "rfqId");
-        StockService.notFuture(form.orderedOn(), "orderedOn");
+        orderDates(form);
         o.setVendorId(vendor.id());
         o.setVendorName(vendor.name());
         o.setRequisitionId(req == null ? null : req.getId());
@@ -587,6 +587,14 @@ public class ProcurementService {
         orders.flush();
         audit.record(actor, "purchase_order.updated", "purchase_order", id, details(o));
         return view(o, actor.id(), false);
+    }
+
+    /** The order date (not in the future, at most five years back) and the expected date (not before it). */
+    private static void orderDates(PurchaseOrderForm form) {
+        StockService.movementDate(form.orderedOn(), "orderedOn");
+        if (form.expectedOn() != null && form.expectedOn().isBefore(form.orderedOn())) {
+            throw ApiException.badRequest("The expected date cannot be before the order date.", "expectedOn");
+        }
     }
 
     private Rfq rfq(UUID id, String field) {
