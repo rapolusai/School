@@ -118,13 +118,16 @@ class DemoDataSeederIT extends IntegrationTest {
     @Autowired
     DemoAccountsData accountsData;
 
+    @Autowired
+    DemoAssistData assistData;
+
     @Test
     void seedsADemoSchoolWithClassesAndStudentsOnce() throws Exception {
         DemoDataSeeder seeder = new DemoDataSeeder(provisioning, tenants, users, passwordEncoder, DEMO_PASSWORD,
                 academics, students, transactionManager, admissions, attendanceData, demoFees, staffData,
                 communicationData, timetableHomeworkData, demoBilling, demoPrivacy, portalData, libraryData,
                 payrollData, examsData, chatData, lessonsData, transportData, certificatesData, frontOfficeData,
-                accountsData);
+                accountsData, assistData);
         seeder.run(null);
         // A second start leaves the existing demo school alone.
         seeder.run(null);
@@ -608,5 +611,16 @@ class DemoDataSeederIT extends IntegrationTest {
                 .andExpect(jsonPath("$.banks.length()").value(2));
         api.get("/api/dashboard", principal.accessToken())
                 .andExpect(jsonPath("$.accounts.awaitingApproval").value(greaterThan(2)));
+        // Assistance: switched on, the watch list computed, three accepted remarks and one saved draft paper.
+        Session teacher = api.login(code, "teacher" + DemoDataSeeder.DEMO_DOMAIN, DEMO_PASSWORD);
+        api.get("/api/assist/settings", teacher.accessToken())
+                .andExpect(jsonPath("$.enabled").value(true))
+                .andExpect(jsonPath("$.simulated").value(true));
+        api.get("/api/assist/watch-list", principal.accessToken())
+                .andExpect(jsonPath("$.lastRunAt").exists());
+        api.get("/api/assist/reports/drafts-accepted", principal.accessToken())
+                .andExpect(jsonPath("$.accepted").value(3));
+        api.get("/api/assist/papers", teacher.accessToken())
+                .andExpect(jsonPath("$.length()").value(1));
     }
 }

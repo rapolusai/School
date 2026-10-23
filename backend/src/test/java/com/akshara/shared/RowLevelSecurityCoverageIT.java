@@ -105,7 +105,9 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
             "accounts.bank_account", "accounts.opening_balance", "accounts.number_counter",
             "accounts.recurring_expense", "accounts.expense", "accounts.expense_approval",
             "accounts.petty_cash_entry", "accounts.income_receipt", "accounts.fee_income_day",
-            "accounts.payroll_cost", "accounts.budget", "accounts.budget_month", "accounts.bank_statement_line");
+            "accounts.payroll_cost", "accounts.budget", "accounts.budget_month", "accounts.bank_statement_line",
+            "assist.settings", "assist.usage", "assist.remark_draft", "assist.watch_entry", "assist.watch_note",
+            "assist.paper_draft");
 
     @Autowired
     HomeworkService homework;
@@ -241,6 +243,7 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         certificateRecords(admin, student, section);
         frontOfficeRecords(admin, lata, student);
         accountsRecords(school, admin);
+        assistRecords(admin, classId, section, subject, student);
         School other = api.signup();
 
         try (Connection app = appConnection(); Connection owner = ownerConnection()) {
@@ -703,6 +706,36 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         new AccountsFixtures(api).everything(admin, adminId);
         AccountsFixtures.payrollApproved(events, school.tenantId(), YearMonth.now(ZoneId.of("Asia/Kolkata")),
                 6_000_000, 720_000, UUID.fromString(adminId));
+    }
+
+    /**
+     * Assistance: the settings switched on, an accepted remark draft for the student, the watch list with a note,
+     * a saved draft paper from the question bank and the usage log those wrote.
+     */
+    private void assistRecords(Session admin, String classId, String section, String subject, String student)
+            throws Exception {
+        api.put("/api/assist/settings", admin.accessToken(), """
+                {"enabled":true,"remarksEnabled":true,"earlyWarningEnabled":true,"papersEnabled":true,
+                 "writingEnabled":true,"monthlyLimit":500,"language":"en",
+                 "weights":{"attendance30":25,"attendance90":15,"marksTrend":25,"feeDues":10,"homework":25,
+                 "threshold":10}}""").andExpect(status().isOk());
+        String term = TestApi.read(api.get("/api/exams/structure", admin.accessToken()), "$.terms[0].id");
+        String draft = TestApi.read(api.post("/api/assist/remarks/drafts", admin.accessToken(), """
+                {"termId":"%s","sectionId":"%s","tone":"FORMAL","studentIds":["%s"]}"""
+                .formatted(term, section, student)).andExpect(status().isOk()), "$[0].id");
+        api.post("/api/assist/remarks/" + draft + "/accept", admin.accessToken(), """
+                {"text":"Reads well and works steadily."}""").andExpect(status().isOk());
+        api.post("/api/assist/watch-list/run", admin.accessToken(), null).andExpect(status().isOk());
+        String entry = TestApi.read(api.get("/api/assist/watch-list", admin.accessToken()), "$.entries[0].id");
+        api.post("/api/assist/watch-list/" + entry + "/notes", admin.accessToken(), """
+                {"body":"Call the family."}""").andExpect(status().isCreated());
+        String paper = api.post("/api/assist/papers/draft", admin.accessToken(), """
+                {"classId":"%s","subjectId":"%s","title":"Quiz","durationMinutes":30,
+                 "blueprint":{"sections":[{"name":"A","questions":1,"marksEach":1}],"easyPercent":100,
+                 "mediumPercent":0,"hardPercent":0,"bloomLevels":[],"topicIds":[]}}""".formatted(classId, subject))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        // The draft carries everything the save needs; it has no id yet.
+        api.post("/api/assist/papers", admin.accessToken(), paper).andExpect(status().isCreated());
     }
 
     /** The student's mother asks for a day of leave for her child. */
