@@ -42,9 +42,11 @@ export type ScanFieldProps = {
   hint?: string;
   autoFocus?: boolean;
   testId?: string;
+  /** What to say when nothing was scanned (the accession number message unless given; the asset screens name tags). */
+  requiredMessage?: string;
 };
 
-export function ScanField({ label, name, action, onScan, hint, autoFocus = true, testId }: ScanFieldProps) {
+export function ScanField({ label, name, action, onScan, hint, autoFocus = true, testId, requiredMessage }: ScanFieldProps) {
   const { t } = useI18n();
   const id = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -66,7 +68,7 @@ export function ScanField({ label, name, action, onScan, hint, autoFocus = true,
     if (busyRef.current) return;
     const value = normalizeAccession(raw);
     if (!value) {
-      setError(t("library.scan.v.required"));
+      setError(requiredMessage ?? t("library.scan.v.required"));
       focus();
       return;
     }

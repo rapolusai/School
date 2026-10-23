@@ -4,6 +4,7 @@ import type { FrontOfficeCard } from "./frontoffice";
 
 import type { FinanceCard } from "./accounts";
 import type { HealthCard } from "./health";
+import type { InventoryCard } from "./inventory";
 import type { ApplicationSource, ApplicationStage } from "./admissions";
 import type { AttendanceCounts, AttendanceStatus } from "./attendance";
 import type { CollectionTotal } from "./fees";
@@ -146,6 +147,8 @@ export type DashboardSummary = {
   accounts?: FinanceCard | null;
   /** The infirmary today, verifications and trainings due, the next drill (health.*, safety.manage). */
   health?: HealthCard | null;
+  /** Low stock, purchases waiting for approval and assets due for verification (inventory.manage). */
+  inventory?: InventoryCard | null;
 };
 
 /* ------------------------------------------------------------------ reports */

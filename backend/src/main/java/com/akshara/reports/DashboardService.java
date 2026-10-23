@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 import com.akshara.academics.AcademicsDirectory;
 import com.akshara.accounts.AccountsInsights;
 import com.akshara.accounts.AccountsViews.FinanceCard;
+import com.akshara.inventory.InventoryInsights;
+import com.akshara.inventory.InventoryViews.InventoryCard;
 import com.akshara.academics.AcademicsDirectory.YearInfo;
 import com.akshara.admissions.AdmissionsInsights;
 import com.akshara.admissions.AdmissionsInsights.FollowUps;
@@ -117,7 +119,8 @@ public class DashboardService {
             FeesCard fees, AdmissionsCard admissions, TodaySummary staff, LeaveCard leave, CircularsCard circulars,
             HomeworkCard homework, TimetableCard timetable, MyDayCard myDay, ExamsCard exams, LessonsCard lessons,
             FrontOfficeInsights.Card frontOffice,
-            FinanceCard accounts, HealthInsights.Card health) {
+            FinanceCard accounts, HealthInsights.Card health,
+            InventoryCard inventory) {
     }
 
     private final AcademicsDirectory academics;
@@ -138,6 +141,7 @@ public class DashboardService {
     private final FrontOfficeInsights frontOffice;
     private final AccountsInsights accounts;
     private final HealthInsights health;
+    private final InventoryInsights inventory;
 
     DashboardService(AcademicsDirectory academics, StudentInsights students, AttendanceInsights attendance,
             FeeReportService feeReports, FeeInsights fees, AdmissionsService admissionsService,
@@ -145,7 +149,8 @@ public class DashboardService {
             CircularService circulars, HomeworkInsights homework, TimetableService timetable,
             SubstitutionService substitutions, ExamInsights exams, LessonsInsights lessons,
             FrontOfficeInsights frontOffice,
-            AccountsInsights accounts, HealthInsights health) {
+            AccountsInsights accounts, HealthInsights health,
+            InventoryInsights inventory) {
         this.academics = academics;
         this.students = students;
         this.attendance = attendance;
@@ -164,6 +169,7 @@ public class DashboardService {
         this.frontOffice = frontOffice;
         this.accounts = accounts;
         this.health = health;
+        this.inventory = inventory;
     }
 
     public Summary summary() {
@@ -191,7 +197,8 @@ public class DashboardService {
                 CurrentUser.id().map(id -> frontOffice.card(id, can, today)).orElse(null),
                 can.contains(Permissions.ACCOUNTS_READ) ? accounts.financeCard() : null,
                 // The health card decides itself what the person may see (health.read, safety.manage).
-                health.card(can, today));
+                health.card(can, today),
+                can.contains(Permissions.INVENTORY_MANAGE) ? inventory.card() : null);
     }
 
     private StudentsCard students(Optional<YearInfo> year, LocalDate today) {

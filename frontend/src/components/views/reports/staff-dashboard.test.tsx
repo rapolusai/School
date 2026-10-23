@@ -317,6 +317,18 @@ describe("tilesFor", () => {
     expect(tilesFor(SUMMARY, "leadership", t, all(true)).map((tile) => tile.key)).not.toContain("passesToApprove");
   });
 
+  it("adds the stores tiles for the storekeeper and leadership when the summary has the inventory card", () => {
+    const bare: DashboardSummary = { date: "2026-10-09", academicYearName: "2026-27", students: null, attendance: null, fees: null, admissions: null, staff: null, leave: null, circulars: null, homework: null, timetable: null, myDay: null };
+    const inventory = { lowStockItems: 3, requisitionsWaiting: 2, ordersWaiting: 1, openVerificationRounds: 1, assetsVerificationDue: 7 };
+    const keeper = tilesFor({ ...bare, inventory }, "staff", t, all(false));
+    expect(keeper.map((tile) => tile.key)).toEqual(["lowStock", "purchasesWaiting", "assetsToVerify"]);
+    expect(keeper[0]).toMatchObject({ label: "Low stock", value: "3", href: "/app/inventory/items?filter=low", attention: true });
+    expect(keeper[1]).toMatchObject({ value: "3", sub: "1 orders · 2 requisitions", href: "/app/inventory/purchase-orders?status=SUBMITTED" });
+    expect(keeper[2]).toMatchObject({ value: "7", sub: "1 open rounds", href: "/app/inventory/verification", attention: true });
+    expect(tilesFor({ ...bare, inventory }, "leadership", t, all(true)).map((tile) => tile.key)).toEqual(["lowStock", "purchasesWaiting", "assetsToVerify"]);
+    expect(tilesFor(SUMMARY, "leadership", t, all(true)).map((tile) => tile.key)).not.toContain("lowStock");
+  });
+
   it("adds plans to submit, answers to mark and plans to approve when the summary has lessons", () => {
     const lessons = { plansToSubmit: 2, answersToMark: 5, plansToApprove: 3 };
     const teacher = tilesFor({ ...TEACHER_SUMMARY, lessons }, "teacher", t, (p) => p !== "lessons.approve" && p !== "leave.approve");

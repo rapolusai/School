@@ -80,6 +80,16 @@ describe("reportGroupsFor", () => {
   });
 });
 
+describe("reportGroupsFor: inventory", () => {
+  it("adds an Inventory group after Accounts for inventory.read (docs/api/phase-3-inventory.md)", () => {
+    const inventory = ["inventoryStockOnHand", "inventoryLowStock", "inventoryAssetRegister", "inventoryAssetsByCustodian", "inventoryOrders", "inventoryConsumption"];
+    expect(keys(["dashboard.view", "inventory.read", "inventory.manage"])).toEqual([["inventory", inventory]]);
+    expect(keys([...PRINCIPAL, "accounts.read", "inventory.read"]).map(([group]) => group).slice(0, 4)).toEqual(["attendance", "fees", "accounts", "inventory"]);
+    // Approving purchases alone opens no report.
+    expect(keys(["dashboard.view", "purchase.approve"])).toEqual([]);
+  });
+});
+
 describe("ReportsHubView", () => {
   it("lists the principal's reports by area, linking new and existing screens", () => {
     renderAs(PRINCIPAL, <ReportsHubView />, ["PRINCIPAL"]);

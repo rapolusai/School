@@ -161,6 +161,19 @@ public final class Permissions {
      */
     public static final String HOSTEL_WARDEN = "hostel.warden";
 
+    /**
+     * Items, stock, the asset register, purchase orders and the inventory reports; raising a purchase requisition
+     * for one's own department (every member of staff who has it).
+     */
+    public static final String INVENTORY_READ = "inventory.read";
+    /**
+     * The storekeeper's work: items, locations, goods receipts, issues, returns, write-offs, stock takes, assets,
+     * transfers, verification rounds, RFQs and purchase orders.
+     */
+    public static final String INVENTORY_MANAGE = "inventory.manage";
+    /** Approving or rejecting requisitions and purchase orders, within the approver's limit. */
+    public static final String PURCHASE_APPROVE = "purchase.approve";
+
     public static final String PLATFORM_ADMIN = "platform.admin";
 
     public static final List<String> ALL_SCHOOL = List.of(
@@ -176,7 +189,8 @@ public final class Permissions {
             TRANSPORT_MANAGE, TRANSPORT_TRIP, CERTIFICATES_READ, CERTIFICATES_ISSUE, CERTIFICATES_SIGN, FRONTOFFICE_READ,
             FRONTOFFICE_MANAGE, GATE_PASS, ACCOUNTS_READ, ACCOUNTS_MANAGE,
             ACCOUNTS_APPROVE, HEALTH_READ, HEALTH_MANAGE, SAFETY_MANAGE,
-            HOSTEL_READ, HOSTEL_MANAGE, HOSTEL_WARDEN);
+            HOSTEL_READ, HOSTEL_MANAGE, HOSTEL_WARDEN,
+            INVENTORY_READ, INVENTORY_MANAGE, PURCHASE_APPROVE);
 
     private Permissions() {
     }

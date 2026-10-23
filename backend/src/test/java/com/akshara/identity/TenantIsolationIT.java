@@ -111,7 +111,7 @@ class TenantIsolationIT extends IntegrationTest {
         try (Connection app = appConnection()) {
             select(app, schoolA.tenantId());
             assertThat(count(app, "identity.user_account")).isEqualTo(2);
-            assertThat(count(app, "identity.role")).isEqualTo(13);
+            assertThat(count(app, "identity.role")).isEqualTo(14);
             assertThat(distinctTenants(app, "identity.user_account")).containsExactly(schoolA.tenantId());
             assertThat(distinctTenants(app, "audit.audit_event")).containsExactly(schoolA.tenantId());
 

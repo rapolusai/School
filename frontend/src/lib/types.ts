@@ -129,3 +129,4 @@ export * from "./types/frontoffice";
 export * from "./types/hostel";
 export * from "./types/accounts";
 export * from "./types/health";
+export * from "./types/inventory";

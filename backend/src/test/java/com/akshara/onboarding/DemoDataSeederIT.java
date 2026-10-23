@@ -124,6 +124,9 @@ class DemoDataSeederIT extends IntegrationTest {
     @Autowired
     DemoHostelData hostelData;
 
+    @Autowired
+    DemoInventoryData inventoryData;
+
     @Test
     void seedsADemoSchoolWithClassesAndStudentsOnce() throws Exception {
         DemoDataSeeder seeder = new DemoDataSeeder(provisioning, tenants, users, passwordEncoder, DEMO_PASSWORD,
@@ -131,7 +134,8 @@ class DemoDataSeederIT extends IntegrationTest {
                 communicationData, timetableHomeworkData, demoBilling, demoPrivacy, portalData, libraryData,
                 payrollData, examsData, chatData, lessonsData, transportData, certificatesData, frontOfficeData,
                 accountsData, healthData,
-                hostelData);
+                hostelData,
+                inventoryData);
         seeder.run(null);
         // A second start leaves the existing demo school alone.
         seeder.run(null);
@@ -275,9 +279,10 @@ class DemoDataSeederIT extends IntegrationTest {
         assertThat(JsonPath.<Integer>read(overview, "$.overdueStudents")).isBetween(5, 15);
 
         // Staff records: every demo staff member has a profile, plus the extra teachers, the timetable's subject
-        // teachers, the librarian and the bus drivers and attendants, the security guard, the nurse and the hostel warden.
+        // teachers, the librarian, the bus drivers and attendants, the security guard, the nurse, the hostel warden
+        // and the storekeeper.
         int staffCount = DemoDataSeeder.PEOPLE.size() - 2 + 1 + DemoStaffData.EXTRA_TEACHERS
-                + DemoTimetableHomeworkData.TEACHERS.size() + 1 + DemoTransportData.CREW.size() + 1 + 1 + 1;
+                + DemoTimetableHomeworkData.TEACHERS.size() + 1 + DemoTransportData.CREW.size() + 1 + 1 + 1 + 1;
         api.get("/api/staff?size=100", admin.accessToken())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(staffCount))

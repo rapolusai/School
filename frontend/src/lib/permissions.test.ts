@@ -529,6 +529,22 @@ describe("navFor: accounts", () => {
   });
 });
 
+describe("navFor: inventory", () => {
+  it("gives Inventory under Finance to readers, managers and purchase approvers (docs/api/phase-3-inventory.md)", () => {
+    // Seeded: the storekeeper holds read and manage, the principal read and purchase.approve, teachers read only.
+    const keeper = user(["STOREKEEPER"], ["dashboard.view", "leave.request", "notices.read", "inventory.read", "inventory.manage"]);
+    expect(keys(keeper)).toEqual(["dashboard", "inventory", "leave", "myPayslips", "board", "calendar", "reports"]);
+    const principal = user(["PRINCIPAL"], ["dashboard.view", "leave.request", "inventory.read", "purchase.approve"]);
+    expect(keys(principal)).toEqual(["dashboard", "inventory", "leave", "myPayslips", "reports"]);
+    expect(keys(user(["PRINCIPAL"], ["dashboard.view", "purchase.approve"]))).toEqual(["dashboard", "inventory"]);
+    expect(keys(user(["TEACHER"], [...TEACHER.permissions, "inventory.read"]))).toContain("inventory");
+    expect(keys(TEACHER)).not.toContain("inventory");
+    expect(navFor(keeper).find((item) => item.key === "inventory")).toMatchObject({ href: "/app/inventory", group: "finance", labelKey: "nav.inventory" });
+    expect(navItemForPath("/app/inventory/purchase-orders/p1")?.key).toBe("inventory");
+    expect(navItemForPath("/app/reports/inventory-low-stock")?.key).toBe("reports");
+  });
+});
+
 describe("hasPermission", () => {
   it("treats platformAdmin as platform.admin even without the permission string", () => {
     expect(hasPermission(user([], [], true), "platform.admin")).toBe(true);

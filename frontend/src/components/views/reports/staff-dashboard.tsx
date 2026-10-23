@@ -63,7 +63,10 @@ export type TileKey =
   | "foFollowUps"
   | "visitorsInside"
   | "inInfirmary"
-  | "staffChecks";
+  | "staffChecks"
+  | "lowStock"
+  | "purchasesWaiting"
+  | "assetsToVerify";
 
 const EVERY_TILE: TileKey[] = [
   "sectionsToMark",
@@ -94,6 +97,9 @@ const EVERY_TILE: TileKey[] = [
   "visitorsInside",
   "inInfirmary",
   "staffChecks",
+  "lowStock",
+  "purchasesWaiting",
+  "assetsToVerify",
 ];
 
 /** The tiles of each layout, in order. A tile shows only when its card came back (the person holds its permission). */
@@ -117,6 +123,9 @@ export const LAYOUT_TILES: Record<DashboardLayout, TileKey[]> = {
     "visitorsInside",
     "inInfirmary",
     "staffChecks",
+    "lowStock",
+    "purchasesWaiting",
+    "assetsToVerify",
   ],
   teacher: [
     "sectionsToMark",
@@ -372,6 +381,7 @@ export function tilesFor(
     ...lessonTiles(summary, t, can),
     ...frontOfficeTiles(summary, t),
     ...healthTiles(summary, t),
+    ...inventoryTiles(summary, t),
   };
 
   return LAYOUT_TILES[layout].map((key) => build[key]()).filter((tile): tile is Tile => tile !== null);
@@ -552,6 +562,46 @@ function healthTiles(summary: DashboardSummary, t: Translate): Record<"inInfirma
 }
 
 /** Which chart cards to show: the layout's, in order, when their data came back. Pure; exported for tests. */
+/** The storekeeper's and School Admin's stores tiles (inventory.manage; docs/api/phase-3-inventory.md). */
+function inventoryTiles(summary: DashboardSummary, t: Translate): Record<"lowStock" | "purchasesWaiting" | "assetsToVerify", () => Tile | null> {
+  const inv = summary.inventory;
+  return {
+    lowStock: () =>
+      inv
+        ? {
+            key: "lowStock",
+            label: t("inventory.tile.lowStock"),
+            value: String(inv.lowStockItems),
+            sub: t("inventory.tile.lowStockSub"),
+            href: "/app/inventory/items?filter=low",
+            attention: inv.lowStockItems > 0,
+          }
+        : null,
+    purchasesWaiting: () =>
+      inv
+        ? {
+            key: "purchasesWaiting",
+            label: t("inventory.tile.purchasesWaiting"),
+            value: String(inv.ordersWaiting + inv.requisitionsWaiting),
+            sub: t("inventory.tile.purchasesWaitingSub", { orders: inv.ordersWaiting, requisitions: inv.requisitionsWaiting }),
+            href: "/app/inventory/purchase-orders?status=SUBMITTED",
+            attention: inv.ordersWaiting + inv.requisitionsWaiting > 0,
+          }
+        : null,
+    assetsToVerify: () =>
+      inv
+        ? {
+            key: "assetsToVerify",
+            label: t("inventory.tile.assetsToVerify"),
+            value: String(inv.assetsVerificationDue),
+            sub: t("inventory.tile.assetsToVerifySub", { rounds: inv.openVerificationRounds }),
+            href: "/app/inventory/verification",
+            attention: inv.assetsVerificationDue > 0,
+          }
+        : null,
+  };
+}
+
 export function chartsFor(summary: DashboardSummary, layout: DashboardLayout): ChartKey[] {
   const a = summary.attendance;
   const present: Record<ChartKey, boolean> = {

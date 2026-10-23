@@ -31,6 +31,7 @@ import {
   MessagesSquare,
   Navigation,
   Newspaper,
+  Package,
   NotebookPen,
   ReceiptIndianRupee,
   ReceiptText,
@@ -119,6 +120,9 @@ export const PERMISSIONS = {
   hostelRead: "hostel.read",
   hostelManage: "hostel.manage",
   hostelWarden: "hostel.warden",
+  inventoryRead: "inventory.read",
+  inventoryManage: "inventory.manage",
+  purchaseApprove: "purchase.approve",
 } as const;
 
 export type NavGroup = "overview" | "academics" | "finance" | "staff" | "communication" | "administration" | "platform";
@@ -158,6 +162,7 @@ export const REPORT_PERMISSIONS: readonly string[] = [
   PERMISSIONS.healthRead,
   PERMISSIONS.safetyManage,
   PERMISSIONS.hostelRead,
+  PERMISSIONS.inventoryRead,
 ];
 
 /** Every navigation item, in display order. */
@@ -301,6 +306,18 @@ export const NAV_ITEMS: readonly NavItem[] = [
     permission: PERMISSIONS.accountsRead,
     // Readers, approvers and managers all open it (docs/api/phase-2-accounts.md).
     anyOf: [PERMISSIONS.accountsManage, PERMISSIONS.accountsApprove],
+    group: "finance",
+  },
+  {
+    // Assets, stock, requisitions and purchase orders (docs/api/phase-3-inventory.md): every staff reader raises
+    // requisitions; the storekeeper manages; approvers reach the queue.
+    key: "inventory",
+    href: "/app/inventory",
+    labelKey: "nav.inventory",
+    shortLabelKey: "nav.inventory.short",
+    icon: Package,
+    permission: PERMISSIONS.inventoryRead,
+    anyOf: [PERMISSIONS.inventoryManage, PERMISSIONS.purchaseApprove],
     group: "finance",
   },
   {

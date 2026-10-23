@@ -37,6 +37,7 @@ import com.akshara.homework.HomeworkService.HomeworkInput;
 import com.akshara.homework.HomeworkViews.HomeworkDetail;
 import com.akshara.homework.StudentHomeworkService;
 import com.akshara.support.AccountsFixtures;
+import com.akshara.support.InventoryFixtures;
 import com.akshara.support.BillingFixtures;
 import com.akshara.support.FeeFixtures;
 import com.akshara.support.FeeFixtures.Heads;
@@ -112,7 +113,13 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
             "health.pocso_meeting", "health.pocso_complaint", "health.staff_verification", "health.staff_training",
             "hostel.hostel", "hostel.block", "hostel.room", "hostel.bed", "hostel.allotment", "hostel.menu_item",
             "hostel.mess_attendance", "hostel.pass", "hostel.roll_call", "hostel.roll_call_entry", "hostel.alert",
-            "hostel.complaint");
+            "hostel.complaint",
+            "inventory.purchase_approver", "inventory.category", "inventory.location", "inventory.item",
+            "inventory.number_counter", "inventory.requisition", "inventory.requisition_line",
+            "inventory.purchase_approval", "inventory.rfq", "inventory.quote", "inventory.purchase_order",
+            "inventory.purchase_order_line", "inventory.goods_receipt", "inventory.goods_receipt_line",
+            "inventory.stock_take", "inventory.stock_take_line", "inventory.stock_movement", "inventory.asset",
+            "inventory.asset_transfer", "inventory.verification_round", "inventory.verification_item");
 
     @Autowired
     HomeworkService homework;
@@ -250,6 +257,7 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         accountsRecords(school, admin);
         healthRecords(school, admin, lata, student, tara);
         hostelRecords(admin, lata, student, tara);
+        inventoryRecords(admin, tara);
         School other = api.signup();
 
         try (Connection app = appConnection(); Connection owner = ownerConnection()) {
@@ -795,6 +803,12 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         api.post("/api/health/staff/trainings", token, """
                 {"userId":"%s","kind":"POCSO","trainedOn":"2026-06-01"}""".formatted(tara))
                 .andExpect(status().isCreated());
+    }
+
+    /** Inventory records: one row in every inventory table through the API, with the accounts vendor above. */
+    private void inventoryRecords(Session admin, String tara) throws Exception {
+        String adminId = TestApi.read(api.get("/api/me", admin.accessToken()), "$.id");
+        new InventoryFixtures(api).everything(admin, adminId, tara);
     }
 
     /** The student's mother asks for a day of leave for her child. */
