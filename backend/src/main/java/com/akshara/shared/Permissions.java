@@ -180,6 +180,11 @@ public final class Permissions {
     /** Editing the profile, fields and code lists, importing fields, running the RTE lottery, schemes. */
     public static final String GOVREPORT_MANAGE = "govreport.manage";
 
+    /** AI assistance: remark drafts, the early warning watch list, draft papers and the writing helper. */
+    public static final String ASSIST_USE = "assist.use";
+    /** The assistance settings (on/off, features, limit, language, risk weights) and the usage log. */
+    public static final String ASSIST_MANAGE = "assist.manage";
+
     public static final String PLATFORM_ADMIN = "platform.admin";
 
     public static final List<String> ALL_SCHOOL = List.of(
@@ -197,7 +202,8 @@ public final class Permissions {
             ACCOUNTS_APPROVE, HEALTH_READ, HEALTH_MANAGE, SAFETY_MANAGE,
             HOSTEL_READ, HOSTEL_MANAGE, HOSTEL_WARDEN,
             INVENTORY_READ, INVENTORY_MANAGE, PURCHASE_APPROVE,
-            GOVREPORT_READ, GOVREPORT_MANAGE);
+            GOVREPORT_READ, GOVREPORT_MANAGE,
+            ASSIST_USE, ASSIST_MANAGE);
 
     private Permissions() {
     }

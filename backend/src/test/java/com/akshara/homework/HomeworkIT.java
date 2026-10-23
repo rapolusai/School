@@ -52,6 +52,9 @@ class HomeworkIT extends IntegrationTest {
     @Autowired
     HomeworkService homeworkService;
 
+    @Autowired
+    HomeworkInsights insights;
+
     private final LocalDate today = LocalDate.now(INDIA);
     private School school;
     private Session admin;
@@ -274,6 +277,35 @@ class HomeworkIT extends IntegrationTest {
         api.get("/api/audit-events?limit=50", admin.accessToken())
                 .andExpect(jsonPath("$[*].action", hasItems("homework.submitted", "homework.reviewed",
                         "homework.attachment_added")));
+    }
+
+    @Test
+    void submissionRatePerStudentCountsOnlineHomeworkOfTheStudentsSection() throws Exception {
+        Session raviSession = login("ravi");
+        String fractions = create(raviSession, List.of(class5A), maths, "Fractions", today.plusDays(3), true);
+        create(raviSession, List.of(class5A), maths, "Tables", today.plusDays(1), true);
+        create(raviSession, List.of(class5A), maths, "On paper", today.plusDays(2), false);
+        create(login("kavitha"), List.of(class5B), english, "Not for 5 A", today.plusDays(2), true);
+        UUID ashaUser = UUID.fromString(TestApi.read(api.get("/api/me", login("asha").accessToken()), "$.id"));
+        TenantContext.runAs(school.tenantId(), () -> learners.submit(ashaUser, UUID.fromString(fractions), "Done",
+                List.of(), List.of(), new Actor(ashaUser, "Asha Rao"), Instant.now()));
+        List<Object> currentYears = com.jayway.jsonpath.JsonPath.read(api.get("/api/academics/years",
+                admin.accessToken()).andReturn().getResponse().getContentAsString(), "$[?(@.current == true)].id");
+        UUID yearId = UUID.fromString(currentYears.getFirst().toString());
+        var rates = TenantContext.runAs(school.tenantId(), () -> insights.submissionRatePerStudent(yearId,
+                java.util.Map.of(UUID.fromString(asha), UUID.fromString(class5A),
+                        UUID.fromString(bala), UUID.fromString(class5A),
+                        UUID.fromString(dev), UUID.fromString(class5B)),
+                today, today.plusDays(30)));
+        // Only online homework counts, and only the homework of the student's own section.
+        assertThat(rates.get(UUID.fromString(asha))).isEqualTo(new HomeworkInsights.SubmissionRate(2, 1));
+        assertThat(rates.get(UUID.fromString(asha)).percent()).isEqualTo(50.0);
+        assertThat(rates.get(UUID.fromString(bala))).isEqualTo(new HomeworkInsights.SubmissionRate(2, 0));
+        assertThat(rates.get(UUID.fromString(dev))).isEqualTo(new HomeworkInsights.SubmissionRate(1, 0));
+        // Outside the period nothing is expected, so the student is missing.
+        assertThat(TenantContext.runAs(school.tenantId(), () -> insights.submissionRatePerStudent(yearId,
+                java.util.Map.of(UUID.fromString(asha), UUID.fromString(class5A)), today.minusDays(30),
+                today.minusDays(1)))).isEmpty();
     }
 
     @Test

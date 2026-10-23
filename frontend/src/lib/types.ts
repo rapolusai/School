@@ -131,3 +131,4 @@ export * from "./types/accounts";
 export * from "./types/health";
 export * from "./types/inventory";
 export * from "./types/govreport";
+export * from "./types/assist";
