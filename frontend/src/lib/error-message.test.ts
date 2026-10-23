@@ -46,23 +46,27 @@ describe("errorMessage", () => {
     }
   });
 
-  it("falls back to a translated sentence for the status, never the English detail", () => {
+  it("falls back to a translated sentence for the status, keeping a module's own reason in brackets", () => {
     const cases: [number, string, string][] = [
       [400, "Check the form", "There are no working days in these dates; pick other dates."],
       [409, "Conflict", "Aman Tiwari already has 2 books, the most allowed."],
       [409, "Lottery done", "The intake cannot change after its lottery has run."],
       [404, "Gone", "No copy has the accession number NOPE99999."],
       [422, "Unprocessable", "Something module-specific."],
-      [502, "Bad gateway", "Upstream said no."],
     ];
     for (const [status, title, detail] of cases) {
       for (const t of [hi, te]) {
         const message = errorMessage(problem({ status, title, detail }), t);
-        expect(hasEnglish(message), `${status} ${detail}: ${message}`).toBe(false);
+        const before = message.slice(0, message.indexOf(" ("));
+        expect(hasEnglish(before), `${status} ${detail}: ${message}`).toBe(false);
+        expect(message.endsWith(`(${detail})`), message).toBe(true);
       }
     }
+    for (const t of [hi, te]) {
+      expect(hasEnglish(errorMessage(problem({ status: 502, title: "Bad gateway", detail: "Upstream said no." }), t))).toBe(false);
+    }
     expect(errorMessage(problem({ status: 409, title: "Conflict", detail: "x" }), hi)).toBe(
-      translate("hi", "common.error.conflict"),
+      `${translate("hi", "common.error.conflict")} (x)`,
     );
   });
 
@@ -133,7 +137,7 @@ describe("field messages", () => {
       "No copy has the accession number NOPE99999.",
     );
     expect(fieldErrorMessage("No copy has the accession number NOPE99999.", hi)).toBe(
-      translate("hi", "validation.server.invalid"),
+      `${translate("hi", "validation.server.invalid")} (No copy has the accession number NOPE99999.)`,
     );
     expect(fieldErrorMessage("must not be blank", en)).toBe("Fill in this field.");
   });

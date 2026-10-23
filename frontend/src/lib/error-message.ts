@@ -4,8 +4,9 @@ import { translate, type MessageKey, type Translate, type TranslateVars } from "
 /*
  * The API writes its problem details in English. In English the server's own sentence is shown (it is the most
  * specific). In Hindi and Telugu the sentences the API uses everywhere (the shared handlers and bean validation)
- * are mapped to dictionary keys; anything else falls back to a translated message for the status, so no English
- * sentence appears in a Hindi or Telugu page.
+ * are mapped to dictionary keys. A module's own sentence (for example "No copy has the accession number X.") has no
+ * translation yet, so it follows a translated message for the status in brackets: the page still says in the
+ * user's language what kind of problem it is, and the specific reason is not lost.
  */
 
 type Mapped = { key: MessageKey; vars?: TranslateVars };
@@ -45,6 +46,12 @@ function statusKey(status: number): MessageKey {
   if (status === 409) return "common.error.conflict";
   if (status === 413) return "common.error.fileTooLarge";
   return "common.error.generic";
+}
+
+/** A translated sentence followed by the API's own English reason, in brackets. */
+function withReason(translated: string, reason: string | undefined): string {
+  const text = reason?.trim();
+  return text ? `${translated} (${text})` : translated;
 }
 
 /** True when `t` writes English, where the server's own sentence is the best one to show. */
@@ -100,7 +107,7 @@ export function mapFieldMessage(message: string): Mapped | null {
 export function fieldErrorMessage(message: string, t: Translate): string {
   const mapped = mapFieldMessage(message);
   if (mapped) return t(mapped.key, mapped.vars);
-  return isEnglish(t) ? message : t("validation.server.invalid");
+  return isEnglish(t) ? message : withReason(t("validation.server.invalid"), message);
 }
 
 /** The API's `errors` map with every message in the user's language. */
@@ -133,6 +140,8 @@ export function errorMessage(error: ApiError, t: Translate): string {
   const mapped = error.detail ? mapDetail(error.detail) : null;
   if (mapped) return t(mapped.key, mapped.vars);
   const byTitle = error.title ? TITLES[error.title] : undefined;
+  // A one-field "Check the form" carries the module's own reason, which the translated title alone would lose.
+  if (byTitle === "validation.fixErrors") return withReason(t(byTitle), error.detail);
   if (byTitle) return t(byTitle);
-  return t(statusKey(error.status));
+  return withReason(t(statusKey(error.status)), error.detail);
 }
