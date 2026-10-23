@@ -124,7 +124,7 @@ hostel).
 | GET | `/api/me/children/{studentId}/hostel` | `child.view` | `200 FamilyHostel` (`boarder: false` for a day scholar) |
 | GET | `/api/me/children/{studentId}/hostel-passes` | `child.view` | `200 PassView[]` |
 | POST | `/api/me/children/{studentId}/hostel-passes` | `child.view` | `201 PassView`; body `{kind, fromDate, toDate?, reason}` (source `PARENT_APP`); `409` when the child is not a boarder |
-| POST | `/api/me/children/{studentId}/hostel-passes/{id}/cancel` | `child.view` | `200 PassView`; `409` unless REQUESTED |
+| POST | `/api/me/children/{studentId}/hostel-passes/{id}/cancel` | `child.view` | `200 PassView`; `409` unless REQUESTED or APPROVED (the boarder has not left yet) |
 
 ```ts
 type PassView = { id, studentId, studentName, admissionNo, className, hostelId, hostelName,
