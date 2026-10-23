@@ -29,6 +29,7 @@ import {
   MessagesSquare,
   Navigation,
   Newspaper,
+  Package,
   NotebookPen,
   ReceiptIndianRupee,
   ReceiptText,
@@ -47,7 +48,7 @@ import type { Me } from "./types";
 
 /** Permission codes from docs/api/phase-0.md, phase-1.md, phase-1-attendance.md, phase-1-staff.md,
  * phase-1-communication.md, phase-1-timetable-homework.md, phase-1-billing.md, phase-2-library.md,
- * phase-2-payroll.md, phase-2-exams.md, phase-2-chat.md, phase-2-lessons.md phase-2-transport.md, phase-2-certificates.md and phase-2-frontoffice.md. */
+ * phase-2-payroll.md, phase-2-exams.md, phase-2-chat.md, phase-2-lessons.md phase-2-transport.md, phase-2-certificates.md, phase-2-frontoffice.md and phase-3-inventory.md. */
 export const PERMISSIONS = {
   dashboardView: "dashboard.view",
   usersRead: "users.read",
@@ -110,6 +111,9 @@ export const PERMISSIONS = {
   accountsRead: "accounts.read",
   accountsManage: "accounts.manage",
   accountsApprove: "accounts.approve",
+  inventoryRead: "inventory.read",
+  inventoryManage: "inventory.manage",
+  purchaseApprove: "purchase.approve",
 } as const;
 
 export type NavGroup = "overview" | "academics" | "finance" | "staff" | "communication" | "administration" | "platform";
@@ -146,6 +150,7 @@ export const REPORT_PERMISSIONS: readonly string[] = [
   PERMISSIONS.certificatesRead,
   PERMISSIONS.frontofficeRead,
   PERMISSIONS.accountsRead,
+  PERMISSIONS.inventoryRead,
 ];
 
 /** Every navigation item, in display order. */
@@ -289,6 +294,18 @@ export const NAV_ITEMS: readonly NavItem[] = [
     permission: PERMISSIONS.accountsRead,
     // Readers, approvers and managers all open it (docs/api/phase-2-accounts.md).
     anyOf: [PERMISSIONS.accountsManage, PERMISSIONS.accountsApprove],
+    group: "finance",
+  },
+  {
+    // Assets, stock, requisitions and purchase orders (docs/api/phase-3-inventory.md): every staff reader raises
+    // requisitions; the storekeeper manages; approvers reach the queue.
+    key: "inventory",
+    href: "/app/inventory",
+    labelKey: "nav.inventory",
+    shortLabelKey: "nav.inventory.short",
+    icon: Package,
+    permission: PERMISSIONS.inventoryRead,
+    anyOf: [PERMISSIONS.inventoryManage, PERMISSIONS.purchaseApprove],
     group: "finance",
   },
   {
