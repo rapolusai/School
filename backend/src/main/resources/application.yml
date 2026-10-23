@@ -24,6 +24,10 @@ spring:
       hibernate:
         jdbc:
           time_zone: UTC
+  jackson:
+    deserialization:
+      # 100.5 sent to a whole-number field (amounts in paise, quantities) is a 400, never silently truncated to 100.
+      accept-float-as-int: false
   threads:
     virtual:
       enabled: true

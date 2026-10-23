@@ -3,6 +3,18 @@
 All endpoints live under `/api` and speak JSON. Errors use RFC 9457 problem details:
 `{ "type", "title", "status", "detail", "errors"?: { field: message } }`.
 
+Common client mistakes, on any endpoint:
+
+- `400` — a missing required query parameter (`errors.<param>: "This is required."`), a query or path value of the
+  wrong type (`errors.<param>`), or a body that is not JSON or does not fit the form. A JSON number with a fraction
+  sent to a whole-number field (amounts in paise, quantities, counts) is refused, never truncated:
+  `errors.<field>: "Enter a whole number."` (nested fields as `lines[0].quantity`).
+- `405` — the path exists but not for this method; the `Allow` header lists the methods it takes.
+- `415` — the body's `Content-Type` is not one the endpoint accepts (JSON endpoints take `application/json`, uploads
+  `multipart/form-data`); the `Accept` header lists them.
+- `409` with title `Changed by someone else` — another request changed the same record at the same moment (a stale
+  version, a lock or serialization failure). Nothing was saved; reload and try again.
+
 Authenticated calls send `Authorization: Bearer <accessToken>`. Access tokens last 15 minutes.
 The refresh token is an httpOnly, `SameSite=Strict` cookie named `refresh_token`, scoped to `/api/auth`.
 
