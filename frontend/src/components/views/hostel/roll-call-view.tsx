@@ -41,6 +41,7 @@ export function RollCallView() {
   const { t } = useI18n();
   const { hostels, list, hostel, choose } = useChosenHostel();
   const [night, setNight] = useState(() => todayInIndia());
+  const [saves, setSaves] = useState(0);
   return (
     <>
       <PageHead eyebrow={t("nav.hostel")} title={t("hostel.rollCall.title")} />
@@ -60,20 +61,29 @@ export function RollCallView() {
               <input type="date" className="input" name="night" value={night} max={todayInIndia()} onChange={(e) => setNight(e.target.value)} data-testid="roll-call-night" />
             </label>
           </div>
-          <Sheet key={`${hostel.id}:${night}`} hostelId={hostel.id} night={night} />
-          <Register key={`register:${hostel.id}`} hostelId={hostel.id} />
+          <Sheet key={`${hostel.id}:${night}`} hostelId={hostel.id} night={night} onSaved={() => setSaves((n) => n + 1)} />
+          <Register key={`register:${hostel.id}:${saves}`} hostelId={hostel.id} />
         </>
       )}
     </>
   );
 }
 
-function Sheet({ hostelId, night }: { hostelId: string; night: string }) {
+function Sheet({ hostelId, night, onSaved }: { hostelId: string; night: string; onSaved: () => void }) {
   const sheet = useApiData(`hostel:rollcall:${hostelId}:${night}`, () => hostelApi.rollCall(hostelId, night));
   const data = sheet.data;
   if (sheet.error && !data) return <ErrorState error={sheet.error} onRetry={sheet.reload} />;
   if (!data) return <LoadingRows rows={4} />;
-  return <SheetForm key={`${data.takenAt ?? ""}:${data.rows.length}`} sheet={data} onSaved={sheet.reload} />;
+  return (
+    <SheetForm
+      key={`${data.takenAt ?? ""}:${data.rows.length}`}
+      sheet={data}
+      onSaved={() => {
+        sheet.reload();
+        onSaved();
+      }}
+    />
+  );
 }
 
 function SheetForm({ sheet, onSaved }: { sheet: RollCallSheet; onSaved: () => void }) {
