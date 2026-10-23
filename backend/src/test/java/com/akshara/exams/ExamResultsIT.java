@@ -39,7 +39,7 @@ class ExamResultsIT extends IntegrationTest {
         s = new ExamsSchool(api);
         term = s.term("Term 1");
         exam = s.exam(term, "Unit Test 1");
-        s.papers(exam, s.schoolDay(-6), s.schoolDay(-5));
+        s.papers(exam, s.schoolDay(-7), s.schoolDay(-5));
         String detail = api.get("/api/exams/" + exam + "/classes/" + s.class5, s.admin.accessToken())
                 .andReturn().getResponse().getContentAsString();
         maths = ExamsSchool.firstIn(detail, "$.papers[?(@.subjectName == 'Mathematics')].id");

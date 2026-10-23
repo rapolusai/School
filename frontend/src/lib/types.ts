@@ -127,3 +127,4 @@ export * from "./types/lessons";
 export * from "./types/transport";
 export * from "./types/frontoffice";
 export * from "./types/accounts";
+export * from "./types/health";

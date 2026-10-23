@@ -105,7 +105,11 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
             "accounts.bank_account", "accounts.opening_balance", "accounts.number_counter",
             "accounts.recurring_expense", "accounts.expense", "accounts.expense_approval",
             "accounts.petty_cash_entry", "accounts.income_receipt", "accounts.fee_income_day",
-            "accounts.payroll_cost", "accounts.budget", "accounts.budget_month", "accounts.bank_statement_line");
+            "accounts.payroll_cost", "accounts.budget", "accounts.budget_month", "accounts.bank_statement_line",
+            "health.medical_record", "health.growth_measurement", "health.record_item", "health.medicine",
+            "health.infirmary_visit", "health.medicine_given", "health.fire_drill", "health.safety_audit",
+            "health.incident", "health.first_aid_kit", "health.pocso_committee", "health.pocso_member",
+            "health.pocso_meeting", "health.pocso_complaint", "health.staff_verification", "health.staff_training");
 
     @Autowired
     HomeworkService homework;
@@ -241,6 +245,7 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         certificateRecords(admin, student, section);
         frontOfficeRecords(admin, lata, student);
         accountsRecords(school, admin);
+        healthRecords(school, admin, lata, student, tara);
         School other = api.signup();
 
         try (Connection app = appConnection(); Connection owner = ownerConnection()) {
@@ -703,6 +708,51 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         new AccountsFixtures(api).everything(admin, adminId);
         AccountsFixtures.payrollApproved(events, school.tenantId(), YearMonth.now(ZoneId.of("Asia/Kolkata")),
                 6_000_000, 720_000, UUID.fromString(adminId));
+    }
+
+    /** Health and safety records: one row in every health table through the API. */
+    private void healthRecords(School school, Session admin, Session lata, String student, String tara)
+            throws Exception {
+        String token = admin.accessToken();
+        api.put("/api/health/students/" + student + "/record", token, """
+                {"bloodGroup":"O+","doctorName":"Dr Rao","insurancePolicyNo":"POL-778812"}""")
+                .andExpect(status().isOk());
+        api.post("/api/health/students/" + student + "/record/growth", token, """
+                {"measuredOn":"2026-06-10","heightCm":112.5,"weightKg":19.0}""").andExpect(status().isCreated());
+        api.post("/api/me/children/" + student + "/health/items", lata.accessToken(), """
+                {"kind":"ALLERGY","name":"Peanuts","severity":"SEVERE"}""").andExpect(status().isCreated());
+        String medicine = TestApi.read(api.post("/api/health/infirmary/medicines", token, """
+                {"name":"Paracetamol","unit":"tablet","quantity":10,"reorderLevel":2}""")
+                .andExpect(status().isCreated()), "$.id");
+        api.post("/api/health/infirmary/visits", token, """
+                {"personKind":"STUDENT","studentId":"%s","complaint":"Fever","temperatureC":38.2,
+                 "medicines":[{"medicineId":"%s","quantity":1}]}""".formatted(student, medicine))
+                .andExpect(status().isCreated());
+        api.post("/api/health/safety/drills", token, """
+                {"drillDate":"%s","kind":"FIRE","block":"Main","timeToClearSeconds":200,"attendance":300}"""
+                .formatted(LocalDate.now(ZoneId.of("Asia/Kolkata")))).andExpect(status().isCreated());
+        api.post("/api/health/safety/audits", token, """
+                {"area":"ELECTRICAL","auditDate":"2026-06-10","finding":"Loose wire","severity":"HIGH"}""")
+                .andExpect(status().isCreated());
+        api.post("/api/health/safety/incidents", token, """
+                {"kind":"INJURY","severity":"MINOR","description":"Scraped knee"}""").andExpect(status().isCreated());
+        api.post("/api/health/safety/kits", token, """
+                {"location":"Office"}""").andExpect(status().isCreated());
+        api.put("/api/health/pocso/committee", token, """
+                {"formedOn":"2026-06-01"}""").andExpect(status().isOk());
+        api.post("/api/health/pocso/committee/members", token, """
+                {"userId":"%s","role":"MEMBER"}""".formatted(tara)).andExpect(status().isCreated());
+        api.post("/api/health/pocso/committee/meetings", token, """
+                {"meetingDate":"2026-06-15","minutes":"Formed."}""").andExpect(status().isCreated());
+        Session taraSession = api.login(school.code(), "tara@" + school.code() + ".akshara.test", TestApi.PASSWORD);
+        api.post("/api/health/pocso/complaints", taraSession.accessToken(), """
+                {"complaintDate":"2026-06-20","category":"OTHER","description":"A concern."}""")
+                .andExpect(status().isCreated());
+        api.put("/api/health/staff/" + tara + "/verification", token, """
+                {"status":"REQUESTED","requestedOn":"2026-06-01"}""").andExpect(status().isOk());
+        api.post("/api/health/staff/trainings", token, """
+                {"userId":"%s","kind":"POCSO","trainedOn":"2026-06-01"}""".formatted(tara))
+                .andExpect(status().isCreated());
     }
 
     /** The student's mother asks for a day of leave for her child. */

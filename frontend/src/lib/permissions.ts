@@ -16,6 +16,7 @@ import {
   DoorOpen,
   GraduationCap,
   Handshake,
+  HeartPulse,
   House,
   IdCard,
   KeyRound,
@@ -47,7 +48,7 @@ import type { Me } from "./types";
 
 /** Permission codes from docs/api/phase-0.md, phase-1.md, phase-1-attendance.md, phase-1-staff.md,
  * phase-1-communication.md, phase-1-timetable-homework.md, phase-1-billing.md, phase-2-library.md,
- * phase-2-payroll.md, phase-2-exams.md, phase-2-chat.md, phase-2-lessons.md phase-2-transport.md, phase-2-certificates.md and phase-2-frontoffice.md. */
+ * phase-2-payroll.md, phase-2-exams.md, phase-2-chat.md, phase-2-lessons.md phase-2-transport.md, phase-2-certificates.md, phase-2-frontoffice.md and phase-3-health.md. */
 export const PERMISSIONS = {
   dashboardView: "dashboard.view",
   usersRead: "users.read",
@@ -110,6 +111,10 @@ export const PERMISSIONS = {
   accountsRead: "accounts.read",
   accountsManage: "accounts.manage",
   accountsApprove: "accounts.approve",
+  healthRead: "health.read",
+  healthManage: "health.manage",
+  safetyManage: "safety.manage",
+  pocsoCommittee: "pocso.committee",
 } as const;
 
 export type NavGroup = "overview" | "academics" | "finance" | "staff" | "communication" | "administration" | "platform";
@@ -146,6 +151,8 @@ export const REPORT_PERMISSIONS: readonly string[] = [
   PERMISSIONS.certificatesRead,
   PERMISSIONS.frontofficeRead,
   PERMISSIONS.accountsRead,
+  PERMISSIONS.healthRead,
+  PERMISSIONS.safetyManage,
 ];
 
 /** Every navigation item, in display order. */
@@ -359,6 +366,18 @@ export const NAV_ITEMS: readonly NavItem[] = [
     shortLabelKey: "nav.gate.short",
     icon: KeyRound,
     permission: PERMISSIONS.gatePass,
+    group: "administration",
+  },
+  {
+    // The infirmary, medical records, safety registers, the POCSO committee and staff checks
+    // (docs/api/phase-3-health.md).
+    key: "health",
+    href: "/app/health",
+    labelKey: "nav.health",
+    shortLabelKey: "nav.health.short",
+    icon: HeartPulse,
+    permission: PERMISSIONS.healthRead,
+    anyOf: [PERMISSIONS.healthManage, PERMISSIONS.safetyManage],
     group: "administration",
   },
   {
@@ -640,6 +659,17 @@ export const FAMILY_NAV_ITEMS: readonly NavItem[] = [
     icon: BadgeCheck,
     permission: PERMISSIONS.childView,
     group: "academics",
+  },
+  {
+    // Allergies, conditions, consent and the infirmary's visits for a parent's own child (docs/api/phase-3-health.md).
+    key: "family-health",
+    href: "/app/family/health",
+    labelKey: "nav.health",
+    shortLabelKey: "nav.health.short",
+    icon: HeartPulse,
+    permission: PERMISSIONS.childView,
+    group: "academics",
+    parentOnly: true,
   },
   {
     key: "myPrivacy",

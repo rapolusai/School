@@ -85,6 +85,12 @@ public final class MessageTemplates {
     /** The one-time password of an approved early pickup pass, sent to the student's primary contact. */
     public static final String GATE_PASS_OTP = "frontoffice.gate_pass_otp";
 
+    /** Sent to a student's primary contact when the infirmary sends the student home. */
+    public static final String INFIRMARY_SENT_HOME = "health.sent_home";
+
+    /** Sent to a student's primary contact when the infirmary sends the student to hospital. */
+    public static final String INFIRMARY_HOSPITAL = "health.hospital";
+
     private static final Map<String, Map<String, String>> TEMPLATES = Map.ofEntries(
             Map.entry(ABSENCE_ALERT, Map.of(
                     ENGLISH, "Dear {guardian}, {student} ({class}) was marked absent at {school} on {date}. "
@@ -188,7 +194,17 @@ public final class MessageTemplates {
                     ENGLISH, "Dear {guardian}, the {school} bus ({route}) for {student} is running about {minutes} "
                             + "minutes late: {reason}.",
                     HINDI, "प्रिय {guardian}, {student} की {school} बस ({route}) लगभग {minutes} मिनट देर से चल रही है: "
-                            + "{reason}।")));
+                            + "{reason}।")),
+            Map.entry(INFIRMARY_SENT_HOME, Map.of(
+                    ENGLISH, "Dear {guardian}, {student} ({class}) visited the {school} infirmary at {time} "
+                            + "({complaint}) and is being sent home. Please collect {student} or call the school.",
+                    HINDI, "प्रिय {guardian}, {student} ({class}) {time} बजे {school} के चिकित्सा कक्ष में आए "
+                            + "({complaint}) और उन्हें घर भेजा जा रहा है। कृपया {student} को लेने आएँ या विद्यालय को फ़ोन करें।")),
+            Map.entry(INFIRMARY_HOSPITAL, Map.of(
+                    ENGLISH, "Dear {guardian}, {student} ({class}) was taken from the {school} infirmary to hospital "
+                            + "at {time} ({complaint}). Please call the school at once.",
+                    HINDI, "प्रिय {guardian}, {student} ({class}) को {time} बजे {school} के चिकित्सा कक्ष से अस्पताल "
+                            + "ले जाया गया ({complaint})। कृपया तुरंत विद्यालय को फ़ोन करें।")));
 
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{(\\w+)}");
     private static final DateTimeFormatter ENGLISH_DATE = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH);

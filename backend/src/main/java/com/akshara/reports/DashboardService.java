@@ -37,6 +37,7 @@ import com.akshara.fees.FeeInsights.DayTotal;
 import com.akshara.fees.FeeReportService;
 import com.akshara.fees.FeeViews.CollectionTotal;
 import com.akshara.frontoffice.FrontOfficeInsights;
+import com.akshara.health.HealthInsights;
 import com.akshara.homework.HomeworkInsights;
 import com.akshara.shared.CurrentUser;
 import com.akshara.shared.Permissions;
@@ -116,7 +117,7 @@ public class DashboardService {
             FeesCard fees, AdmissionsCard admissions, TodaySummary staff, LeaveCard leave, CircularsCard circulars,
             HomeworkCard homework, TimetableCard timetable, MyDayCard myDay, ExamsCard exams, LessonsCard lessons,
             FrontOfficeInsights.Card frontOffice,
-            FinanceCard accounts) {
+            FinanceCard accounts, HealthInsights.Card health) {
     }
 
     private final AcademicsDirectory academics;
@@ -136,6 +137,7 @@ public class DashboardService {
     private final LessonsInsights lessons;
     private final FrontOfficeInsights frontOffice;
     private final AccountsInsights accounts;
+    private final HealthInsights health;
 
     DashboardService(AcademicsDirectory academics, StudentInsights students, AttendanceInsights attendance,
             FeeReportService feeReports, FeeInsights fees, AdmissionsService admissionsService,
@@ -143,7 +145,7 @@ public class DashboardService {
             CircularService circulars, HomeworkInsights homework, TimetableService timetable,
             SubstitutionService substitutions, ExamInsights exams, LessonsInsights lessons,
             FrontOfficeInsights frontOffice,
-            AccountsInsights accounts) {
+            AccountsInsights accounts, HealthInsights health) {
         this.academics = academics;
         this.students = students;
         this.attendance = attendance;
@@ -161,6 +163,7 @@ public class DashboardService {
         this.lessons = lessons;
         this.frontOffice = frontOffice;
         this.accounts = accounts;
+        this.health = health;
     }
 
     public Summary summary() {
@@ -186,7 +189,9 @@ public class DashboardService {
                         ? lessons(today) : null,
                 // The front office card decides itself what the person may see (also class teachers' pickups).
                 CurrentUser.id().map(id -> frontOffice.card(id, can, today)).orElse(null),
-                can.contains(Permissions.ACCOUNTS_READ) ? accounts.financeCard() : null);
+                can.contains(Permissions.ACCOUNTS_READ) ? accounts.financeCard() : null,
+                // The health card decides itself what the person may see (health.read, safety.manage).
+                health.card(can, today));
     }
 
     private StudentsCard students(Optional<YearInfo> year, LocalDate today) {

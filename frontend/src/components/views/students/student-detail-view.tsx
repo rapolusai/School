@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, KeyRound, LogOut, Mail, Pencil, Phone, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, HeartPulse, KeyRound, LogOut, Mail, Pencil, Phone, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -33,6 +33,7 @@ export function StudentDetailView({ id }: { id: string }) {
   const { toast } = useToast();
   const locale = localeFor(lang);
   const canManage = hasPermission(me, PERMISSIONS.studentsManage);
+  const canReadHealth = hasPermission(me, PERMISSIONS.healthRead) || hasPermission(me, PERMISSIONS.healthManage);
   const student = useApiData(`student:${id}`, () => api.getStudent(id));
   const [open, setOpen] = useState<Open>(null);
 
@@ -109,24 +110,32 @@ export function StudentDetailView({ id }: { id: string }) {
             </p>
           </div>
         </div>
-        {canManage ? (
+        {canManage || canReadHealth ? (
           <div className="flex flex-wrap gap-2">
-            {!s.hasSignIn ? (
+            {canReadHealth ? (
+              <Link href={`/app/health/students/${id}`} className="btn" data-testid="student-medical-record">
+                <HeartPulse size={18} aria-hidden="true" />
+                {t("health.record.link")}
+              </Link>
+            ) : null}
+            {canManage && !s.hasSignIn ? (
               <button type="button" className="btn" onClick={() => setOpen({ kind: "studentSignIn" })}>
                 <KeyRound size={18} aria-hidden="true" />
                 {t("student.signIn.forStudent")}
               </button>
             ) : null}
-            {active ? (
+            {canManage && active ? (
               <button type="button" className="btn" onClick={() => setOpen({ kind: "leave" })}>
                 <LogOut size={18} aria-hidden="true" />
                 {t("student.leave.button")}
               </button>
             ) : null}
-            <button type="button" className="btn btn-primary" onClick={() => setOpen({ kind: "edit" })}>
-              <Pencil size={18} aria-hidden="true" />
-              {t("student.edit.button")}
-            </button>
+            {canManage ? (
+              <button type="button" className="btn btn-primary" onClick={() => setOpen({ kind: "edit" })}>
+                <Pencil size={18} aria-hidden="true" />
+                {t("student.edit.button")}
+              </button>
+            ) : null}
           </div>
         ) : null}
       </div>

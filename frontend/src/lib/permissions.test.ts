@@ -170,6 +170,7 @@ describe("navFor", () => {
       "family-study",
       "family-bus",
       "family-certificates",
+      "family-health",
       "myPrivacy",
       "family-chat",
       "family-ptm",
@@ -193,6 +194,7 @@ describe("navFor", () => {
       "family-study",
       "family-bus",
       "family-certificates",
+      "family-health",
       "myPrivacy",
       "family-chat",
       "family-ptm",
@@ -586,5 +588,21 @@ describe("safeNextPath", () => {
     expect(safeNextPath("//evil.example")).toBeNull();
     expect(safeNextPath("/app\\..\\evil")).toBeNull();
     expect(safeNextPath(null)).toBeNull();
+  });
+});
+
+describe("navFor: health and safety", () => {
+  it("opens Health to health.read, health.manage or safety.manage, and the family page to parents (docs/api/phase-3-health.md)", () => {
+    const nurse = user(["NURSE"], ["dashboard.view", "students.read", "academics.read", "leave.request", "notices.read", "timetable.read", "health.read", "health.manage"]);
+    expect(keys(nurse)).toEqual(["dashboard", "timetable", "students", "setup", "leave", "myPayslips", "health", "board", "calendar", "reports"]);
+    expect(navFor(nurse).find((item) => item.key === "health")).toMatchObject({ href: "/app/health", labelKey: "nav.health" });
+    // A principal with safety.manage alone still reaches the safety registers through the same item.
+    expect(keys(user(["PRINCIPAL"], ["dashboard.view", "safety.manage"]))).toEqual(["dashboard", "health", "reports"]);
+    expect(keys(user(["TEACHER"], TEACHER.permissions))).not.toContain("health");
+    expect(navFor(PARENT).find((item) => item.key === "family-health")).toMatchObject({ href: "/app/family/health", labelKey: "nav.health" });
+    expect(keys(user(["STUDENT"], ["dashboard.view", "notices.read"]))).not.toContain("family-health");
+    expect(navItemForPath("/app/health/students/s1")?.key).toBe("health");
+    expect(navItemForPath("/app/family/health")?.key).toBe("family-health");
+    expect(navItemForPath("/app/reports/health-drills")?.key).toBe("reports");
   });
 });

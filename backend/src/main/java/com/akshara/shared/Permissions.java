@@ -133,6 +133,24 @@ public final class Permissions {
     /** Approving or rejecting submitted expenses, within the approver's limit. */
     public static final String ACCOUNTS_APPROVE = "accounts.approve";
 
+    /**
+     * Students' medical records (class teachers only for the sections they lead), the infirmary log, allergy badges
+     * and the health reports. Every read of a record is audited.
+     */
+    public static final String HEALTH_READ = "health.read";
+    /** Editing medical records, the infirmary log (visits, sending a student home) and the medicine stock (Nurse). */
+    public static final String HEALTH_MANAGE = "health.manage";
+    /**
+     * Fire drills, safety audits, the incident register, first-aid kit checks, the POCSO committee's members and
+     * minutes, staff police verification and training records.
+     */
+    public static final String SAFETY_MANAGE = "safety.manage";
+    /**
+     * The POCSO complaints register. Given to the Principal only by default; the committee's named members
+     * (health.pocso_member) have the same access without a role change. Never part of {@link #ALL_SCHOOL}.
+     */
+    public static final String POCSO_COMMITTEE = "pocso.committee";
+
     public static final String PLATFORM_ADMIN = "platform.admin";
 
     public static final List<String> ALL_SCHOOL = List.of(
@@ -147,7 +165,7 @@ public final class Permissions {
             CHAT_USE, CHAT_OVERSEE, PTM_MANAGE, LESSONS_READ, LESSONS_MANAGE, LESSONS_APPROVE, TRANSPORT_READ,
             TRANSPORT_MANAGE, TRANSPORT_TRIP, CERTIFICATES_READ, CERTIFICATES_ISSUE, CERTIFICATES_SIGN, FRONTOFFICE_READ,
             FRONTOFFICE_MANAGE, GATE_PASS, ACCOUNTS_READ, ACCOUNTS_MANAGE,
-            ACCOUNTS_APPROVE);
+            ACCOUNTS_APPROVE, HEALTH_READ, HEALTH_MANAGE, SAFETY_MANAGE);
 
     private Permissions() {
     }

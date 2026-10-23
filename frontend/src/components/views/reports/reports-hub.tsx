@@ -18,6 +18,7 @@ import {
   Filter,
   Handshake,
   HandCoins,
+  HeartPulse,
   History,
   KeyRound,
   Landmark,
@@ -30,6 +31,9 @@ import {
   ReceiptIndianRupee,
   ScanBarcode,
   Scale,
+  ShieldCheck,
+  Siren,
+  Stethoscope,
   Store,
   TrendingUp,
   TriangleAlert,
@@ -48,7 +52,7 @@ import { hasAnyPermission, hasPermission, PERMISSIONS, REPORT_PERMISSIONS } from
 
 type PermissionSubject = Parameters<typeof hasPermission>[0];
 
-export const REPORT_GROUPS = ["attendance", "fees", "accounts", "admissions", "staff", "academics", "library", "transport", "frontoffice", "administration"] as const;
+export const REPORT_GROUPS = ["attendance", "fees", "accounts", "admissions", "staff", "academics", "library", "transport", "frontoffice", "health", "administration"] as const;
 export type ReportGroup = (typeof REPORT_GROUPS)[number];
 
 export type ReportLink = {
@@ -74,6 +78,7 @@ const GROUP_LABELS: Record<ReportGroup, MessageKey> = {
   transport: "reports.group.transport",
   administration: "reports.group.administration",
   frontoffice: "reports.group.frontoffice",
+  health: "reports.group.health",
 };
 
 /** Every report, new and existing, with the permission that opens it. */
@@ -467,6 +472,46 @@ export const REPORT_LINKS: readonly ReportLink[] = [
     description: "transport.report.boarding.description",
     permission: PERMISSIONS.transportRead,
     icon: ClipboardCheck,
+    excel: true,
+  },
+  {
+    key: "healthInfirmary",
+    group: "health",
+    href: "/app/reports/health-infirmary",
+    title: "health.report.infirmary.title",
+    description: "health.report.infirmary.description",
+    permission: PERMISSIONS.healthRead,
+    icon: Stethoscope,
+    excel: true,
+  },
+  {
+    key: "healthAllergies",
+    group: "health",
+    href: "/app/reports/health-allergies",
+    title: "health.report.allergies.title",
+    description: "health.report.allergies.description",
+    permission: PERMISSIONS.healthRead,
+    icon: HeartPulse,
+    excel: true,
+  },
+  {
+    key: "healthDrills",
+    group: "health",
+    href: "/app/reports/health-drills",
+    title: "health.report.drills.title",
+    description: "health.report.drills.description",
+    permission: PERMISSIONS.safetyManage,
+    icon: Siren,
+    excel: true,
+  },
+  {
+    key: "healthVerifications",
+    group: "health",
+    href: "/app/reports/health-verifications",
+    title: "health.report.verifications.title",
+    description: "health.report.verifications.description",
+    permission: PERMISSIONS.safetyManage,
+    icon: ShieldCheck,
     excel: true,
   },
   {
