@@ -22,9 +22,9 @@ import java.util.zip.ZipOutputStream;
  * formulas, so a cell such as "=1+1" from a name field stays text. Only what the reports need: several sheets, bold
  * and title rows, whole and decimal numbers, dates shown as DD MMM YYYY, and column widths fitted to the content.
  */
-final class Xlsx {
+public final class Xlsx {
 
-    static final String CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    public static final String CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
     /** Excel's day zero for the 1900 date system (the serial numbers it shows for dates). */
     private static final LocalDate EPOCH = LocalDate.of(1899, 12, 30);
@@ -45,12 +45,12 @@ final class Xlsx {
     }
 
     /** One worksheet, built row by row. A cell is a String, a Number, a LocalDate or null (empty). */
-    static final class Sheet {
+    public static final class Sheet {
 
         private final String name;
         private final List<Row> rows = new ArrayList<>();
 
-        Sheet(String name) {
+        public Sheet(String name) {
             this.name = name;
         }
 
@@ -58,42 +58,42 @@ final class Xlsx {
             return name;
         }
 
-        Sheet title(String text) {
+        public Sheet title(String text) {
             rows.add(new Row(Style.TITLE, List.of(text)));
             return this;
         }
 
-        Sheet line(String text) {
+        public Sheet line(String text) {
             rows.add(new Row(Style.NORMAL, List.of(text)));
             return this;
         }
 
-        Sheet blank() {
+        public Sheet blank() {
             rows.add(new Row(Style.NORMAL, List.of()));
             return this;
         }
 
-        Sheet header(String... names) {
+        public Sheet header(String... names) {
             rows.add(new Row(Style.BOLD, Arrays.asList((Object[]) names)));
             return this;
         }
 
-        Sheet row(Object... cells) {
+        public Sheet row(Object... cells) {
             return row(Arrays.asList(cells));
         }
 
-        Sheet row(List<?> cells) {
+        public Sheet row(List<?> cells) {
             rows.add(new Row(Style.NORMAL, new ArrayList<>(cells)));
             return this;
         }
 
         /** A totals row, in bold. */
-        Sheet total(List<?> cells) {
+        public Sheet total(List<?> cells) {
             rows.add(new Row(Style.BOLD, new ArrayList<>(cells)));
             return this;
         }
 
-        Sheet total(Object... cells) {
+        public Sheet total(Object... cells) {
             return total(Arrays.asList(cells));
         }
 
@@ -106,7 +106,7 @@ final class Xlsx {
     }
 
     /** The workbook as the bytes of an .xlsx file. */
-    static byte[] write(List<Sheet> sheets) {
+    public static byte[] write(List<Sheet> sheets) {
         if (sheets.isEmpty()) {
             throw new IllegalArgumentException("A workbook needs at least one sheet");
         }

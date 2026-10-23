@@ -105,7 +105,10 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
             "accounts.bank_account", "accounts.opening_balance", "accounts.number_counter",
             "accounts.recurring_expense", "accounts.expense", "accounts.expense_approval",
             "accounts.petty_cash_entry", "accounts.income_receipt", "accounts.fee_income_day",
-            "accounts.payroll_cost", "accounts.budget", "accounts.budget_month", "accounts.bank_statement_line");
+            "accounts.payroll_cost", "accounts.budget", "accounts.budget_month", "accounts.bank_statement_line",
+            "govreport.code_list", "govreport.school_profile", "govreport.student_record", "govreport.rte_intake",
+            "govreport.rte_application", "govreport.rte_lottery_run", "govreport.rte_allotment",
+            "govreport.scheme_enrolment");
 
     @Autowired
     HomeworkService homework;
@@ -241,6 +244,7 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         certificateRecords(admin, student, section);
         frontOfficeRecords(admin, lata, student);
         accountsRecords(school, admin);
+        govReportRecords(admin, yearId, classId, application, student);
         School other = api.signup();
 
         try (Connection app = appConnection(); Connection owner = ownerConnection()) {
@@ -706,6 +710,28 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
     }
 
     /** The student's mother asks for a day of leave for her child. */
+    private void govReportRecords(Session admin, String yearId, String classId, String application, String student)
+            throws Exception {
+        api.put("/api/govreport/profile", admin.accessToken(), """
+                {"udiseCode":"36011200912"}""").andExpect(status().isOk());
+        api.put("/api/govreport/students", admin.accessToken(), """
+                {"entries":[{"studentId":"%s","socialCategory":"SC"}]}""".formatted(student))
+                .andExpect(status().isOk());
+        api.post("/api/govreport/schemes", admin.accessToken(), """
+                {"studentId":"%s","academicYearId":"%s","schemeCode":"NMMS","status":"APPLIED"}"""
+                .formatted(student, yearId)).andExpect(status().isCreated());
+        String intake = TestApi.read(api.post("/api/govreport/rte/intakes", admin.accessToken(), """
+                {"academicYearId":"%s","entryClassId":"%s","totalSeats":10,"stateCode":"TS"}"""
+                .formatted(yearId, classId)).andExpect(status().isCreated()), "$.id");
+        String rte = TestApi.read(api.post("/api/govreport/rte/intakes/" + intake + "/applications",
+                admin.accessToken(), """
+                {"applicationId":"%s"}""".formatted(application)).andExpect(status().isCreated()), "$.id");
+        api.put("/api/govreport/rte/applications/" + rte, admin.accessToken(), """
+                {"incomeDeclared":true,"distanceKm":1,"eligibility":"ELIGIBLE"}""").andExpect(status().isOk());
+        api.post("/api/govreport/rte/intakes/" + intake + "/lottery", admin.accessToken(), """
+                {"witnessName":"SMC member"}""").andExpect(status().isCreated());
+    }
+
     private void childLeave(School school, Session lata, String student, LocalDate day) throws Exception {
         UUID parent = UUID.fromString(TestApi.read(api.get("/api/me", lata.accessToken()), "$.id"));
         LocalDate leaveDay = day.getDayOfWeek() == DayOfWeek.SUNDAY ? day.minusDays(1) : day;

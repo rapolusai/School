@@ -80,6 +80,7 @@ public class DemoDataSeeder implements ApplicationRunner {
     private final DemoCertificatesData certificatesData;
     private final DemoFrontOfficeData frontOfficeData;
     private final DemoAccountsData accountsData;
+    private final DemoGovReportData govReportData;
 
     public DemoDataSeeder(SchoolProvisioning provisioning, TenantDirectory tenants, UserService users,
             PasswordEncoder passwordEncoder, @Value("${akshara.demo.password:}") String password,
@@ -90,7 +91,7 @@ public class DemoDataSeeder implements ApplicationRunner {
             DemoPortalData portalData, DemoLibraryData libraryData, DemoPayrollData payrollData,
             DemoExamsData examsData, DemoChatData chatData, DemoLessonsData lessonsData,
             DemoTransportData transportData, DemoCertificatesData certificatesData, DemoFrontOfficeData frontOfficeData,
-            DemoAccountsData accountsData) {
+            DemoAccountsData accountsData, DemoGovReportData govReportData) {
         this.provisioning = provisioning;
         this.tenants = tenants;
         this.users = users;
@@ -117,6 +118,7 @@ public class DemoDataSeeder implements ApplicationRunner {
         this.certificatesData = certificatesData;
         this.frontOfficeData = frontOfficeData;
         this.accountsData = accountsData;
+        this.govReportData = govReportData;
     }
 
     @Override
@@ -171,5 +173,6 @@ public class DemoDataSeeder implements ApplicationRunner {
                 frontOfficeData.seed(school.tenant().id(), userIds, school.adminUserId(), hash));
         log.info("Seeded demo accounts with {} expenses",
                 accountsData.seed(school.tenant().id(), userIds, school.adminUserId()));
+        log.info("Seeded government fields for {} demo students", govReportData.seed(school.tenant().id(), userIds));
     }
 }
