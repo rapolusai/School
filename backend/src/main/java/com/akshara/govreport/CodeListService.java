@@ -10,6 +10,9 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -128,6 +131,9 @@ public class CodeListService {
     private final CodeListRepository codes;
     private final AuditService audit;
 
+    @PersistenceContext
+    private EntityManager em;
+
     CodeListService(CodeListRepository codes, AuditService audit) {
         this.codes = codes;
         this.audit = audit;
@@ -135,7 +141,14 @@ public class CodeListService {
 
     /** Seeds the defaults the first time a school opens the module. Idempotent. */
     void ensureDefaults() {
-        TenantContext.require();
+        UUID tenant = TenantContext.require();
+        if (codes.count() > 0) {
+            return;
+        }
+        // Two requests of a new school can arrive together (the profile form loads two lists):
+        // serialise the seeding per school so the second finds the codes the first wrote.
+        em.createNativeQuery("select pg_advisory_xact_lock(hashtext(:k))")
+                .setParameter("k", "govreport-codes:" + tenant).getSingleResult();
         if (codes.count() > 0) {
             return;
         }

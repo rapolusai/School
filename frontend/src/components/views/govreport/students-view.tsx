@@ -349,6 +349,7 @@ function GridRow({
         </span>
         <select
           className="input"
+          aria-label={fieldLabel(t, field)}
           name={`${id}.${field}`}
           value={values[field]}
           onChange={(e) => onChange(id, field, e.target.value)}
