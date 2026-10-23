@@ -12,7 +12,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import jakarta.persistence.LockModeType;
+
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
 interface MedicalRecordRepository extends JpaRepository<MedicalRecord, UUID> {
@@ -42,6 +45,11 @@ interface RecordItemRepository extends JpaRepository<RecordItem, UUID> {
 interface MedicineRepository extends JpaRepository<Medicine, UUID> {
 
     List<Medicine> findAllByOrderByNameAsc();
+
+    /** The medicine row locked for taking from the stock, so parallel visits queue instead of failing. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select m from Medicine m where m.id = ?1")
+    Optional<Medicine> lock(UUID id);
 }
 
 interface InfirmaryVisitRepository extends JpaRepository<InfirmaryVisit, UUID> {

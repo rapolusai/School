@@ -256,9 +256,12 @@ public class InfirmaryService {
         if (forms == null || forms.isEmpty()) {
             return List.of();
         }
+        // Lock the medicines in one order (by id) so two visits taking the same ones cannot deadlock.
+        forms.stream().map(GivenForm::medicineId).filter(id -> id != null).distinct().sorted()
+                .forEach(medicines::lock);
         List<MedicineGiven> result = new ArrayList<>();
         for (GivenForm g : forms) {
-            Medicine m = medicines.findById(g.medicineId())
+            Medicine m = medicines.lock(g.medicineId())
                     .orElseThrow(() -> ApiException.badRequest("Pick a medicine from the stock.", "medicines"));
             if (!m.take(g.quantity())) {
                 throw ApiException.badRequest("Only " + m.getQuantity() + " " + m.getUnit() + " of " + m.getName()

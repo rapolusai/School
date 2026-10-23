@@ -112,6 +112,15 @@ class StudentImportIT extends IntegrationTest {
     }
 
     @Test
+    void anAbsurdlyOldDateOfBirthIsARowError() throws Exception {
+        String csv = HEADER + "\n"
+                + "OLD/1,Asha,Rao,1850-01-01,F,Class 5,A,Lata Rao,MOTHER,9876501001,\n";
+        api.post("/api/students/import?dryRun=true", admin.accessToken(), body(csv))
+                .andExpect(jsonPath("$.validRows").value(0))
+                .andExpect(jsonPath("$.errors[0].column").value("date_of_birth"));
+    }
+
+    @Test
     void theFileItselfMustBeUsable() throws Exception {
         api.post("/api/students/import", admin.accessToken(), body(""))
                 .andExpect(status().isBadRequest())

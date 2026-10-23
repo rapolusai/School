@@ -253,6 +253,9 @@ public class StudentImportService {
             if (dob != null && admissionDate != null && !dob.isBefore(admissionDate)) {
                 rowErrors.add(new RowError(line, "date_of_birth",
                         "The date of birth must be before the admission date."));
+            } else if (dob != null && admissionDate != null && StudentService.implausiblyOld(dob, admissionDate)) {
+                rowErrors.add(new RowError(line, "date_of_birth", "Check the date of birth: at most "
+                        + StudentService.MAX_AGE_AT_ADMISSION + " years before the admission date."));
             }
 
             Gender gender = parseGender(cell(row, columns, "gender"));

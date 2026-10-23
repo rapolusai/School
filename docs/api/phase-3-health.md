@@ -70,8 +70,8 @@ school and appends the permissions to the matching roles (idempotent). Twelve st
 type RecordForm = { bloodGroup?: "A+"|"A-"|"B+"|"B-"|"AB+"|"AB-"|"O+"|"O-"; doctorName?; doctorPhone?;
   insuranceProvider?; insurancePolicyNo?; notes? };
 type ItemForm = { kind: "ALLERGY"|"CONDITION"|"MEDICATION"|"VACCINATION"; name; detail?;
-  severity?: "MILD"|"MODERATE"|"SEVERE" /* required for an allergy */; itemDate? /* required for a vaccination */ };
-type GrowthForm = { measuredOn /* not in the future */; heightCm?: 30..250; weightKg?: 1..250 /* at least one */ };
+  severity?: "MILD"|"MODERATE"|"SEVERE" /* required for an allergy */; itemDate? /* required for a vaccination, not in the future for one; never before the student's date of birth */ };
+type GrowthForm = { measuredOn /* not in the future, not before the student's date of birth */; heightCm?: 30..250; weightKg?: 1..250 /* at least one */ };
 type MedicalRecordView = { studentId, studentName, admissionNo, className, dateOfBirth, exists, bloodGroup, doctorName,
   doctorPhone, insuranceProvider, insurancePolicyNoMasked, notes, consent: {firstAid, hospital, byName, at},
   emergencyContact: {guardianId, name, phone, phoneMasked, email} | null /* the primary guardian */,
@@ -98,7 +98,7 @@ type ItemView = { id, kind, name, detail, severity, itemDate, source: "PARENT"|"
 | GET | `/api/health/infirmary/visits?date=` | read | `200 {date, visits: VisitView[], open, medicinesLow}` for the day (default today) |
 | GET | `/api/health/infirmary/visits/{id}` | read | `200 VisitView` |
 | GET | `/api/health/infirmary/people?q=` | `health.manage` | `200 PersonRef[]`: active students and staff (`kind: "STUDENT"|"STAFF"`) |
-| POST | `/api/health/infirmary/visits` | `health.manage` | `201 VisitView`; body `VisitForm`; takes the medicine from the stock (`400 errors.medicines` when short) |
+| POST | `/api/health/infirmary/visits` | `health.manage` | `201 VisitView`; body `VisitForm`; takes the medicine from the stock (`400 errors.medicines` when short); visits taking the same medicine at the same moment queue on its stock row, so each succeeds while the stock lasts |
 | PUT | `/api/health/infirmary/visits/{id}` | `health.manage` | `200 VisitView`; `409` once closed |
 | POST | `/api/health/infirmary/visits/{id}/close` | `health.manage` | `200 VisitView`; body `CloseForm`; `409` once closed; `400 errors.timeOut` in the future |
 | GET | `/api/health/infirmary/medicines` | read | `200 MedicineView[]` |
@@ -140,7 +140,7 @@ All under `/api/health/safety`, permission `safety.manage`.
 
 ```ts
 type DrillForm = { drillDate; kind: "FIRE"|"EVACUATION"|"EARTHQUAKE"; block; timeToClearSeconds: 1..7200; attendance; issues?; nextDue? /* after drillDate */ };
-type AuditForm = { area: "ELECTRICAL"|"PLAYGROUND"|"LABS"|"TRANSPORT"|"BUILDING"|"WATER"; auditDate; finding; severity: "LOW"|"MEDIUM"|"HIGH"; dueOn? };
+type AuditForm = { area: "ELECTRICAL"|"PLAYGROUND"|"LABS"|"TRANSPORT"|"BUILDING"|"WATER"; auditDate /* not in the future, not before 1900 */; finding; severity: "LOW"|"MEDIUM"|"HIGH"; dueOn? };
 type IncidentForm = { incidentAt?; kind: "INJURY"|"BULLYING"|"OTHER"; severity: "MINOR"|"MODERATE"|"SERIOUS"; studentId?; personName?; place?; description; actions?; parentInformed? };
 type Due = "OK" | "DUE_SOON" /* within 30 days */ | "OVERDUE" | "MISSING";
 ```
@@ -179,7 +179,7 @@ All under `/api/health/staff`, permission `safety.manage`.
 | --- | --- | --- |
 | GET | `/checks` | `200 {asOf, rows: VerificationView[] /* every active member of staff, a MISSING row when none yet */, verificationsDue, verificationsMissing, trainingsDue}` |
 | GET | `/checks/due` | the same, rows limited to those needing attention |
-| PUT | `/{userId}/verification` | `200 VerificationView`; body `{status: "PENDING"|"REQUESTED"|"CLEARED"|"FLAGGED", requestedOn?, clearedOn? /* required when CLEARED */, referenceNo? /* blank keeps */, expiresOn?, note?}`; `404` for a user who is not staff here |
+| PUT | `/{userId}/verification` | `200 VerificationView`; body `{status: "PENDING"|"REQUESTED"|"CLEARED"|"FLAGGED", requestedOn? /* not in the future */, clearedOn? /* required when CLEARED; not in the future */, referenceNo? /* blank keeps */, expiresOn?, note?}`; `404` for a user who is not staff here |
 | POST | `/trainings` | `201 TrainingView`; body `{userId, kind: "POCSO"|"FIRST_AID", trainedOn, expiresOn? /* after trainedOn */, provider?}` |
 | DELETE | `/trainings/{id}` | `204` |
 

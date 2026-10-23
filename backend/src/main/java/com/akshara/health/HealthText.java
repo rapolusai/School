@@ -61,6 +61,9 @@ public final class HealthText {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
+    /** No health, safety or staff-check date is earlier than this. */
+    public static final LocalDate EARLIEST = LocalDate.of(1900, 1, 1);
+
     public static LocalDate today() {
         return LocalDate.now(INDIA);
     }
