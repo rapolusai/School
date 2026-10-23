@@ -110,6 +110,8 @@ export const PERMISSIONS = {
   accountsRead: "accounts.read",
   accountsManage: "accounts.manage",
   accountsApprove: "accounts.approve",
+  govreportRead: "govreport.read",
+  govreportManage: "govreport.manage",
 } as const;
 
 export type NavGroup = "overview" | "academics" | "finance" | "staff" | "communication" | "administration" | "platform";
@@ -146,6 +148,7 @@ export const REPORT_PERMISSIONS: readonly string[] = [
   PERMISSIONS.certificatesRead,
   PERMISSIONS.frontofficeRead,
   PERMISSIONS.accountsRead,
+  PERMISSIONS.govreportRead,
 ];
 
 /** Every navigation item, in display order. */
@@ -457,6 +460,16 @@ export const NAV_ITEMS: readonly NavItem[] = [
     group: "administration",
   },
   {
+    // Government reporting (docs/api/phase-3-govreport.md): UDISE+, CBSE OASIS, RTE 25% and schemes.
+    key: "govreport",
+    href: "/app/govreport",
+    labelKey: "nav.govreport",
+    shortLabelKey: "nav.govreport.short",
+    icon: Landmark,
+    permission: PERMISSIONS.govreportRead,
+    group: "administration",
+  },
+  {
     key: "privacy",
     href: "/app/privacy",
     labelKey: "nav.privacy",
@@ -669,6 +682,16 @@ export const FAMILY_NAV_ITEMS: readonly NavItem[] = [
     icon: Handshake,
     permission: PERMISSIONS.childView,
     group: "communication",
+  },
+  {
+    // The government details a parent may fill: mother tongue and the APAAR ID (docs/api/phase-3-govreport.md).
+    key: "family-govreport",
+    href: "/app/family/govreport",
+    labelKey: "nav.familyGovreport",
+    shortLabelKey: "nav.familyGovreport.short",
+    icon: Landmark,
+    permission: PERMISSIONS.childView,
+    group: "overview",
   },
 ];
 
