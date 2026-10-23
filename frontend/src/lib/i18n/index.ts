@@ -1,17 +1,19 @@
 import { useCallback, useSyncExternalStore } from "react";
 import { en, type MessageKey } from "./en";
 import { hi } from "./hi";
+import { te } from "./te";
 
 export type { MessageKey } from "./en";
 
 export const LANGUAGES = [
   { code: "en", label: "EN", htmlLang: "en" },
   { code: "hi", label: "हिन्दी", htmlLang: "hi" },
+  { code: "te", label: "తెలుగు", htmlLang: "te" },
 ] as const;
 
 export type Lang = (typeof LANGUAGES)[number]["code"];
 
-export const dictionaries: Record<Lang, Record<MessageKey, string>> = { en, hi };
+export const dictionaries: Record<Lang, Record<MessageKey, string>> = { en, hi, te };
 
 export const LANG_STORAGE_KEY = "akshara.lang";
 
@@ -26,7 +28,7 @@ export function translate(lang: Lang, key: MessageKey, vars?: TranslateVars): st
   );
 }
 
-function isLang(value: unknown): value is Lang {
+export function isLang(value: unknown): value is Lang {
   return LANGUAGES.some((l) => l.code === value);
 }
 
@@ -58,6 +60,23 @@ export function setLang(lang: Lang): void {
   for (const listener of listeners) listener();
 }
 
+/** True once someone picked a language on this device (that choice wins over the account's saved language). */
+export function hasDeviceLang(): boolean {
+  try {
+    return isLang(window.localStorage.getItem(LANG_STORAGE_KEY));
+  } catch {
+    return false;
+  }
+}
+
+/** Shows the app in the account's saved language without remembering it as this device's own choice. */
+export function applyAccountLang(lang: Lang): void {
+  if (hasDeviceLang() || current === lang) return;
+  current = lang;
+  document.documentElement.lang = lang;
+  for (const listener of listeners) listener();
+}
+
 function subscribe(listener: () => void) {
   listeners.add(listener);
   return () => {
@@ -81,7 +100,7 @@ export function useI18n(): { lang: Lang; t: Translate; setLang: (lang: Lang) => 
 
 /** BCP 47 locale for Intl formatting in the current language. */
 export function localeFor(lang: Lang): string {
-  return lang === "hi" ? "hi-IN" : "en-IN";
+  return lang === "hi" ? "hi-IN" : lang === "te" ? "te-IN" : "en-IN";
 }
 
 export function isMessageKey(key: string): key is MessageKey {

@@ -34,7 +34,7 @@ public class NotificationSettingsService {
     public MessageSettings update(MessageSettings values, Actor actor) {
         TenantContext.require();
         if (values.alertLanguage() == null || !MessageTemplates.LANGUAGES.contains(values.alertLanguage())) {
-            throw ApiException.badRequest("Choose English or Hindi.", "alertLanguage");
+            throw ApiException.badRequest("Choose English, Hindi or Telugu.", "alertLanguage");
         }
         if (values.quietHoursEnabled() && values.quietHoursStart().equals(values.quietHoursEnd())) {
             throw ApiException.badRequest("Quiet hours must end at a different time than they start.",

@@ -29,7 +29,7 @@ export type MessageRow = {
 };
 
 export type MessageDetail = MessageRow & {
-  language: "en" | "hi";
+  language: "en" | "hi" | "te";
   body: string;
   fallbackChannel: MessageChannel | null;
 };
@@ -50,7 +50,12 @@ export type MessageQuery = {
 export const ALERT_CHANNELS = ["WHATSAPP_SMS", "SMS"] as const;
 export type AlertChannel = (typeof ALERT_CHANNELS)[number];
 
-export type AlertLanguage = "en" | "hi";
+export type AlertLanguage = "en" | "hi" | "te";
+
+/** A select's value as an alert language (English for anything unknown). */
+export function alertLanguageOf(value: string): AlertLanguage {
+  return value === "hi" || value === "te" ? value : "en";
+}
 
 export type NotificationSettings = {
   absenceAlertsEnabled: boolean;

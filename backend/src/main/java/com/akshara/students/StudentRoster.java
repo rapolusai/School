@@ -137,6 +137,18 @@ public class StudentRoster {
         return result;
     }
 
+    /** The sign-ins of the parents and guardians whose mobile number is {@code phone} (for their message language). */
+    public Set<UUID> guardianAccountsByPhone(String phone) {
+        TenantContext.require();
+        if (phone == null || phone.isBlank()) {
+            return Set.of();
+        }
+        return guardians.findByPhoneIn(List.of(phone.trim())).stream()
+                .map(Guardian::getUserAccountId)
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
     /** The students linked to the guardian record of a parent's sign-in. Empty for anyone else. */
     public Set<UUID> childIdsOf(UUID userId) {
         TenantContext.require();

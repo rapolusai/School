@@ -253,6 +253,9 @@ export const api = {
   logout: () => apiFetch<void>("/api/auth/logout", { method: "POST", auth: false }),
 
   me: () => apiFetch<Me>("/api/me"),
+  myPreferences: () => apiFetch<{ language: string | null }>("/api/me/preferences"),
+  saveMyPreferences: (body: { language: string }) =>
+    apiFetch<{ language: string | null }>("/api/me/preferences", { method: "PUT", body }),
   listUsers: () => apiFetch<UserSummary[]>("/api/users"),
   getUser: (id: string) => apiFetch<UserSummary>(`/api/users/${encodeURIComponent(id)}`),
   createUser: (body: CreateUserRequest) =>

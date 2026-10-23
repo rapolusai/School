@@ -9,6 +9,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,9 @@ import tools.jackson.databind.json.JsonMapper;
  *
  * <p>A dedupe key makes queuing idempotent: a second message with the same key in the same school is not created.
  * A message that was skipped (see {@link #skip}) is queued again when its key comes back.
+ *
+ * <p>The language passed in is the school's; a recipient who chose their own language (see
+ * {@link RecipientLanguages}) gets the message in that language instead.
  */
 @Service
 public class NotificationQueue {
@@ -60,10 +64,24 @@ public class NotificationQueue {
 
     private final MessageRepository messages;
     private final JsonMapper json;
+    private final ObjectProvider<RecipientLanguages> recipientLanguages;
 
-    public NotificationQueue(MessageRepository messages, JsonMapper json) {
+    public NotificationQueue(MessageRepository messages, JsonMapper json,
+            ObjectProvider<RecipientLanguages> recipientLanguages) {
         this.messages = messages;
         this.json = json;
+        this.recipientLanguages = recipientLanguages;
+    }
+
+    /** The recipient's own language when they chose one, otherwise the language the caller asked for. */
+    private String languageFor(Recipient r, String fallback) {
+        RecipientLanguages resolver = recipientLanguages.getIfAvailable();
+        if (resolver == null || r.address() == null) {
+            return fallback;
+        }
+        return resolver.preferredLanguage(r.channel(), r.address().trim())
+                .filter(MessageTemplates.LANGUAGES::contains)
+                .orElse(fallback);
     }
 
     /** Queues one message per recipient, to be sent as soon as the dispatcher next runs (outside quiet hours). */
@@ -78,10 +96,11 @@ public class NotificationQueue {
     public List<Queued> enqueue(String templateKey, String language, Map<String, String> params, Related related,
             List<Recipient> recipients, Instant at) {
         TenantContext.require();
-        String lang = MessageTemplates.language(language);
+        String schoolLang = MessageTemplates.language(language);
         List<Queued> result = new ArrayList<>();
         for (Recipient r : recipients) {
             checkAddress(r.channel(), r.address());
+            String lang = languageFor(r, schoolLang);
             Map<String, String> merged = new LinkedHashMap<>(params);
             if (r.params() != null) {
                 merged.putAll(r.params());

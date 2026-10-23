@@ -119,7 +119,8 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
             "inventory.purchase_approval", "inventory.rfq", "inventory.quote", "inventory.purchase_order",
             "inventory.purchase_order_line", "inventory.goods_receipt", "inventory.goods_receipt_line",
             "inventory.stock_take", "inventory.stock_take_line", "inventory.stock_movement", "inventory.asset",
-            "inventory.asset_transfer", "inventory.verification_round", "inventory.verification_item");
+            "inventory.asset_transfer", "inventory.verification_round", "inventory.verification_item",
+            "preferences.user_language");
 
     @Autowired
     HomeworkService homework;
@@ -258,6 +259,7 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         healthRecords(school, admin, lata, student, tara);
         hostelRecords(admin, lata, student, tara);
         inventoryRecords(admin, tara);
+        languageRecords(admin);
         School other = api.signup();
 
         try (Connection app = appConnection(); Connection owner = ownerConnection()) {
@@ -809,6 +811,12 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
     private void inventoryRecords(Session admin, String tara) throws Exception {
         String adminId = TestApi.read(api.get("/api/me", admin.accessToken()), "$.id");
         new InventoryFixtures(api).everything(admin, adminId, tara);
+    }
+
+    /** The admin chooses Telugu for themselves. */
+    private void languageRecords(Session admin) throws Exception {
+        api.put("/api/me/preferences", admin.accessToken(), "{\"language\":\"te\"}")
+                .andExpect(status().isOk());
     }
 
     /** The student's mother asks for a day of leave for her child. */

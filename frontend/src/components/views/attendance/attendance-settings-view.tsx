@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { notificationsApi } from "@/lib/notifications-api";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { alertLanguageOf } from "@/lib/types/notifications";
 import { ALERT_CHANNELS, type NotificationSettings } from "@/lib/types";
 import { useApiData } from "@/lib/use-api-data";
 import { useForm, type Problems } from "@/lib/use-form";
@@ -94,10 +95,11 @@ function SettingsForm({ settings, onSaved }: { settings: NotificationSettings; o
           name="alertLanguage"
           className="sm:max-w-xs"
           value={v.alertLanguage}
-          onChange={(e) => form.set("alertLanguage", e.target.value === "hi" ? "hi" : "en")}
+          onChange={(e) => form.set("alertLanguage", alertLanguageOf(e.target.value))}
           options={[
             { value: "en", label: t("alerts.language.en") },
             { value: "hi", label: t("alerts.language.hi") },
+            { value: "te", label: t("alerts.language.te") },
           ]}
           error={form.errors.alertLanguage}
         />

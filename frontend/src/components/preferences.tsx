@@ -3,9 +3,10 @@
 import { Globe, Moon, Sun } from "lucide-react";
 import { useId } from "react";
 import { LANGUAGES, useI18n, type Lang } from "@/lib/i18n";
+import { saveAccountLanguage } from "@/lib/auth/session-store";
 import { toggleTheme, useTheme } from "@/lib/theme";
 
-/** EN / हिन्दी selector. The choice is stored in localStorage (when available). */
+/** EN / हिन्दी / తెలుగు selector. The choice is stored in localStorage (when available). */
 export function LanguageSelect() {
   const { lang, setLang, t } = useI18n();
   const id = useId();
@@ -15,7 +16,15 @@ export function LanguageSelect() {
       <label htmlFor={id} className="sr-only">
         {t("shell.language")}
       </label>
-      <select id={id} value={lang} onChange={(event) => setLang(event.target.value as Lang)}>
+      <select
+        id={id}
+        value={lang}
+        onChange={(event) => {
+          const next = event.target.value as Lang;
+          setLang(next);
+          void saveAccountLanguage(next);
+        }}
+      >
         {LANGUAGES.map((language) => (
           <option key={language.code} value={language.code} lang={language.htmlLang}>
             {language.label}

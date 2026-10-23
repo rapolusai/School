@@ -83,7 +83,7 @@ export const en = {
     "Every school gets its own private space, roles and settings, on desktop, tablet or phone.",
   "login.stat.trial.value": "14 days",
   "login.stat.trial.label": "free trial",
-  "login.stat.languages.value": "2",
+  "login.stat.languages.value": "3",
   "login.stat.languages.label": "languages",
   "login.stat.roles.value": "7",
   "login.stat.roles.label": "built-in roles",
@@ -8789,6 +8789,10 @@ export const en = {
   "inventory.v.limit": "Limits must be amounts above zero.",
   "inventory.v.tag": "Scan or type the asset tag.",
   "inventory.v.transferSame": "Choose a different location or custodian.",
+  // ---- languages ----
+  "alerts.language.te": "Telugu",
+  "audit.action.user_language.updated": "Language preference changed",
+  "audit.entity.user_language": "Language preference",
 } satisfies Record<string, string>;
 
 export type MessageKey = keyof typeof en;

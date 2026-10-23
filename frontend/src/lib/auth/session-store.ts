@@ -1,4 +1,5 @@
 import { api, onSessionChange, refreshSession, setAccessToken } from "../api";
+import { applyAccountLang, hasDeviceLang, isLang, type Lang } from "../i18n";
 import type { AuthResponse, Me } from "../types";
 
 export type SessionState =
@@ -34,8 +35,34 @@ export function subscribeSession(listener: () => void): () => void {
 }
 
 function applyAuth(auth: AuthResponse) {
+  const signingIn = state.status !== "authenticated" || state.me.id !== auth.user.id;
   setAccessToken(auth.accessToken);
   setState({ status: "authenticated", me: auth.user, accessToken: auth.accessToken });
+  if (signingIn) void loadAccountLanguage(auth.user);
+}
+
+/**
+ * On sign-in, show the app in the language the person saved on their account, unless they already picked one on
+ * this device (the device's choice wins). Failures are ignored: the app simply stays in the current language.
+ */
+async function loadAccountLanguage(me: Me): Promise<void> {
+  if (me.platformAdmin || !me.tenant || hasDeviceLang()) return;
+  try {
+    const { language } = await api.myPreferences();
+    if (isLang(language)) applyAccountLang(language);
+  } catch {
+    // Offline or not available: keep the current language.
+  }
+}
+
+/** Saves a language the signed-in school user picked, so their other devices and messages follow it. */
+export async function saveAccountLanguage(lang: Lang): Promise<void> {
+  if (state.status !== "authenticated" || state.me.platformAdmin || !state.me.tenant) return;
+  try {
+    await api.saveMyPreferences({ language: lang });
+  } catch {
+    // The device keeps the choice; the account copy is a convenience.
+  }
 }
 
 function clearAuth() {
