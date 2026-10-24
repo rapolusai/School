@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, LogOut, Pencil, UserRoundPen } from "lucide-react";
+import { ArrowLeft, KeyRound, LogOut, Pencil, UserRoundPen } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { Pill } from "@/components/ui/pill";
@@ -15,7 +15,7 @@ import type { LeaveBalance, StaffDetail, StaffLeaveRequest, StaffPersonMonth } f
 import { useApiData } from "@/lib/use-api-data";
 import { BalanceDialog, LeaveActionDialog } from "./leave-dialogs";
 import { BalanceGrid, RequestList } from "./leave-parts";
-import { LeavingDialog, ProfileDialog } from "./staff-form";
+import { LeavingDialog, ProfileDialog, SetPasswordDialog } from "./staff-form";
 import {
   employmentLabel,
   formatClock,
@@ -29,7 +29,7 @@ import {
 
 const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
 
-type Open = "profile" | "leaving" | null;
+type Open = "profile" | "leaving" | "password" | null;
 
 /** One staff member: profile, this month's attendance and leave. */
 export function StaffDetailView({ id }: { id: string }) {
@@ -108,6 +108,12 @@ export function StaffDetailView({ id }: { id: string }) {
         </div>
         {canManage && active ? (
           <div className="flex flex-wrap gap-2">
+            {!s.signInReady ? (
+              <button type="button" className="btn" onClick={() => setOpen("password")}>
+                <KeyRound size={18} aria-hidden="true" />
+                {t("staff.password.button")}
+              </button>
+            ) : null}
             {p ? (
               <button type="button" className="btn" onClick={() => setOpen("leaving")}>
                 <LogOut size={18} aria-hidden="true" />
@@ -132,6 +138,11 @@ export function StaffDetailView({ id }: { id: string }) {
       ) : !p ? (
         <section className="alert alert-info" role="status" data-testid="staff-incomplete">
           {canManage ? t("staff.detail.incomplete.manage") : t("staff.detail.incomplete")}
+        </section>
+      ) : null}
+      {active && !s.signInReady ? (
+        <section className="alert alert-info" role="status" data-testid="staff-no-sign-in">
+          {canManage ? t("staff.signIn.noneManage") : t("staff.signIn.none", { name: s.name })}
         </section>
       ) : null}
 
@@ -195,6 +206,14 @@ export function StaffDetailView({ id }: { id: string }) {
           staff={s}
           onClose={() => setOpen(null)}
           onSaved={(next) => saved(t("staff.profile.saved", { name: next.name }))}
+        />
+      ) : null}
+      {canManage && open === "password" ? (
+        <SetPasswordDialog
+          open
+          staff={s}
+          onClose={() => setOpen(null)}
+          onSaved={(next) => saved(t("staff.password.saved", { name: next.name }))}
         />
       ) : null}
       {canManage && open === "leaving" ? (

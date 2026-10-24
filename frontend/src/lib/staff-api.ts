@@ -52,6 +52,8 @@ export const staffApi = {
   create: (body: CreateStaffRequest) => apiFetch<StaffDetail>("/api/staff", { method: "POST", body }),
   saveProfile: (userId: string, body: StaffProfileRequest) =>
     apiFetch<StaffDetail>(`/api/staff/${id(userId)}/profile`, { method: "PUT", body }),
+  setPassword: (userId: string, password: string) =>
+    apiFetch<StaffDetail>(`/api/staff/${id(userId)}/password`, { method: "PUT", body: { password } }),
   recordLeaving: (userId: string, body: StaffLeavingRequest) =>
     apiFetch<StaffDetail>(`/api/staff/${id(userId)}/leaving`, { method: "POST", body }),
   leaveOf: (userId: string, yearId?: string) =>

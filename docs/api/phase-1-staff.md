@@ -72,8 +72,13 @@ type StaffDetail = { userId: string; name: string; email: string; roles: string[
   accountActive: boolean; lastLoginAt: string | null; profileComplete: boolean;
   profile: (Omit<ProfileFields, "departmentId"> & { department: { id: string; name: string } | null;
     dateOfLeaving: string | null; leavingReason: string | null }) | null;   // full mobile numbers
-  leaveApprover: { routing: "DEPARTMENT_HEAD" | "SCHOOL"; departmentHead: { id: string; name: string } | null } };
+  leaveApprover: { routing: "DEPARTMENT_HEAD" | "SCHOOL"; departmentHead: { id: string; name: string } | null };
+  signInReady: boolean };   // false while the account has no password (staff added by the school import)
 ```
+
+Staff added by the school import (`docs/api/phase-3-bulk-import.md`) have no password until `staff.manage` sets one
+with `PUT /api/staff/{userId}/password` `{ password }` (10 to 200 characters; `404` for someone who is not staff of
+this school, `409` for someone who has left; ends their open sessions; audited as `user.password_set`).
 
 Adding staff: a taken email is `409 errors.email`, a taken employee code `409 errors.employeeCode`; either way
 nothing is saved (the sign-in created first is rolled back). The password is hashed before the transaction starts.

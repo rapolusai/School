@@ -97,6 +97,8 @@ export type StaffDetail = {
   profileComplete: boolean;
   profile: StaffProfile | null;
   leaveApprover: StaffLeaveApprover;
+  /** False while they have no password yet (added by the school import); they cannot sign in until one is set. */
+  signInReady: boolean;
 };
 
 export type StaffProfileRequest = {

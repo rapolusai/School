@@ -1,15 +1,21 @@
 import { screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api";
 import type { StaffDetail, StaffLeave, StaffPersonMonth } from "@/lib/types";
 import { renderAs } from "@/test/render";
 import { calendarWeeks, StaffDetailView } from "./staff-detail-view";
 
-const { get, attendanceOf, leaveOf } = vi.hoisted(() => ({ get: vi.fn(), attendanceOf: vi.fn(), leaveOf: vi.fn() }));
+const { get, attendanceOf, leaveOf, setPassword } = vi.hoisted(() => ({
+  get: vi.fn(),
+  attendanceOf: vi.fn(),
+  leaveOf: vi.fn(),
+  setPassword: vi.fn(),
+}));
 
 vi.mock("@/lib/staff-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/staff-api")>();
-  return { ...actual, staffApi: { ...actual.staffApi, get, attendanceOf, leaveOf } };
+  return { ...actual, staffApi: { ...actual.staffApi, get, attendanceOf, leaveOf, setPassword } };
 });
 
 vi.mock("next/navigation", () => ({
@@ -45,6 +51,7 @@ const RAVI: StaffDetail = {
     emergencyContactMobile: "9848000003",
   },
   leaveApprover: { routing: "SCHOOL", departmentHead: null },
+  signInReady: true,
 };
 
 const MONTH: StaffPersonMonth = {
@@ -99,6 +106,40 @@ describe("calendarWeeks", () => {
 });
 
 describe("StaffDetailView", () => {
+  it("lets staff.manage set a password for someone imported without one", async () => {
+    const user = userEvent.setup();
+    get.mockResolvedValueOnce({ ...RAVI, signInReady: false });
+    setPassword.mockResolvedValue(RAVI);
+    renderAs(MANAGE, <StaffDetailView id="u1" />);
+    expect(await screen.findByTestId("staff-no-sign-in")).toHaveTextContent("No sign-in yet");
+    await user.click(screen.getByRole("button", { name: "Set password" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent("teacher@demo.akshara.test");
+    await user.type(within(dialog).getByLabelText(/New password/), "short");
+    await user.click(within(dialog).getByRole("button", { name: "Set password" }));
+    expect(within(dialog).getByText("Use at least 10 characters.")).toBeInTheDocument();
+    expect(setPassword).not.toHaveBeenCalled();
+
+    await user.type(within(dialog).getByLabelText(/New password/), "-and-longer");
+    await user.click(within(dialog).getByRole("button", { name: "Set password" }));
+    expect(setPassword).toHaveBeenCalledWith("u1", "short-and-longer");
+    expect(await screen.findByText("Ravi Kumar can now sign in.")).toBeInTheDocument();
+  });
+
+  it("tells a reader that someone without a password cannot sign in, with no button", async () => {
+    get.mockResolvedValueOnce({ ...RAVI, signInReady: false });
+    renderAs(READ, <StaffDetailView id="u1" />, ["PRINCIPAL"]);
+    expect(await screen.findByTestId("staff-no-sign-in")).toHaveTextContent("Ravi Kumar cannot sign in yet");
+    expect(screen.queryByRole("button", { name: "Set password" })).not.toBeInTheDocument();
+  });
+
+  it("offers no password button when the person can already sign in", async () => {
+    renderAs(MANAGE, <StaffDetailView id="u1" />);
+    expect(await screen.findByRole("button", { name: "Edit profile" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Set password" })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("staff-no-sign-in")).not.toBeInTheDocument();
+  });
+
   it("shows the profile with the full mobile, attendance and leave", async () => {
     renderAs(READ, <StaffDetailView id="u1" />, ["PRINCIPAL"]);
     expect(await screen.findByTestId("staff-name")).toHaveTextContent("Ravi Kumar");

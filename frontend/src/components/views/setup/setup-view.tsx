@@ -9,6 +9,7 @@ import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { useApiData } from "@/lib/use-api-data";
 import { ClassesPanel } from "./classes-panel";
 import { ProfilePanel } from "./profile-panel";
+import { canImportSchool, SchoolImportCard } from "./school-import-view";
 import { SubjectsPanel } from "./subjects-panel";
 import { YearsPanel } from "./years-panel";
 
@@ -62,6 +63,8 @@ export function SetupView({ initialTab = "years" }: { initialTab?: SetupTab }) {
         }
         title={t("setup.title")}
       />
+
+      {canImportSchool(me) ? <SchoolImportCard /> : null}
 
       <div role="tablist" aria-label={t("setup.title")} className="tabs" onKeyDown={onKeyDown}>
         {SETUP_TABS.map((key) => (
