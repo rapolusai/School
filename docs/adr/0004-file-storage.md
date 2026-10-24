@@ -59,7 +59,7 @@ A module that accepts files:
 
 - `akshara.files.store=s3` (`FILES_STORE`, set by Terraform in AWS) keeps each file's bytes in the environment's
   private S3 bucket under `<tenant id>/<file id>` (`storage.tf`: its own KMS key, versioning, TLS only). The row in
-  `files.stored_file` stays the file's record, with `storage` = `S3` and no `bytes` (migration V30), so row-level
+  `files.stored_file` stays the file's record, with `storage` = `S3` and no `bytes` (migration V31), so row-level
   security, `FileAccessPolicy`, `GET /api/files/{id}` and its headers are unchanged. The default stays `database`.
 - The same `DatabaseFileStore` does both: it uploads before the row commits and deletes the object again if the
   change rolls back; a deleted file's object is deleted after the deletion commits (the bucket keeps old versions
