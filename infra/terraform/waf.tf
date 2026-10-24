@@ -1,14 +1,28 @@
 locals {
-  # AWS managed rule group => rule priority (lower runs first). Priorities 1 and 2 are the rate limits.
+  # AWS managed rule group => rule priority (lower runs first). 0 allows waf_trusted_ips (load tests), 1 and 2 are
+  # the rate limits.
   waf_managed_rule_groups = {
-    AWSManagedRulesAmazonIpReputationList = 0
+    AWSManagedRulesAmazonIpReputationList = 6
     AWSManagedRulesCommonRuleSet          = 3
     AWSManagedRulesKnownBadInputsRuleSet  = 4
     AWSManagedRulesSQLiRuleSet            = 5
   }
 
-  # Credential and signup endpoints get the stricter per-IP limit.
-  waf_login_paths = ["/api/auth/login", "/api/platform/auth/login", "/api/public/signup"]
+  # Managed rules that only count (and so still show in metrics and sampled requests) instead of blocking.
+  # SizeRestrictions_BODY blocks every body over 8 KB, which would block file uploads, the Excel school import
+  # and large forms (mark sheets, registers). The API caps request bodies itself (RequestSizeLimitFilter:
+  # 8 MB for JSON, 26 MB for uploads) and checks every uploaded file, so WAF only reports large bodies.
+  waf_count_rules = {
+    AWSManagedRulesCommonRuleSet = ["SizeRestrictions_BODY"]
+  }
+
+  # Credential, signup and password-reset endpoints get the stricter per-IP limit.
+  waf_login_paths = [
+    "/api/auth/login",
+    "/api/auth/password-reset",
+    "/api/platform/auth/login",
+    "/api/public/signup",
+  ]
 }
 
 resource "aws_wafv2_web_acl" "main" {
@@ -18,6 +32,33 @@ resource "aws_wafv2_web_acl" "main" {
 
   default_action {
     allow {}
+  }
+
+  # Load generators (loadtest/, docs/runbooks/load-testing.md) send far more than one client would: let their
+  # addresses past the rate limits for the length of a test, then empty the list again.
+  dynamic "rule" {
+    for_each = length(var.waf_trusted_ips) > 0 ? [1] : []
+
+    content {
+      name     = "allow-trusted-ips"
+      priority = 0
+
+      action {
+        allow {}
+      }
+
+      statement {
+        ip_set_reference_statement {
+          arn = aws_wafv2_ip_set.trusted[0].arn
+        }
+      }
+
+      visibility_config {
+        cloudwatch_metrics_enabled = true
+        metric_name                = "${local.name}-allow-trusted-ips"
+        sampled_requests_enabled   = true
+      }
+    }
   }
 
   dynamic "rule" {
@@ -35,6 +76,18 @@ resource "aws_wafv2_web_acl" "main" {
         managed_rule_group_statement {
           name        = rule.key
           vendor_name = "AWS"
+
+          dynamic "rule_action_override" {
+            for_each = lookup(local.waf_count_rules, rule.key, [])
+
+            content {
+              name = rule_action_override.value
+
+              action_to_use {
+                count {}
+              }
+            }
+          }
         }
       }
 
@@ -128,6 +181,16 @@ resource "aws_wafv2_web_acl" "main" {
     metric_name                = local.name
     sampled_requests_enabled   = true
   }
+}
+
+resource "aws_wafv2_ip_set" "trusted" {
+  count = length(var.waf_trusted_ips) > 0 ? 1 : 0
+
+  name               = "${local.name}-trusted"
+  description        = "Load generators allowed past the rate limits during a test"
+  scope              = "REGIONAL"
+  ip_address_version = "IPV4"
+  addresses          = var.waf_trusted_ips
 }
 
 resource "aws_wafv2_web_acl_association" "alb" {

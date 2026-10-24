@@ -1,6 +1,7 @@
 "use client";
 
-import { LogOut } from "lucide-react";
+import { KeyRound, LogOut } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { initials } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
@@ -105,6 +106,18 @@ export function UserMenu({
               </p>
             ) : null}
           </div>
+          {me.tenant ? (
+            <Link
+              href="/app/account/password"
+              role="menuitem"
+              className="menu-item"
+              tabIndex={-1}
+              onClick={() => setOpen(false)}
+            >
+              <KeyRound size={18} aria-hidden="true" />
+              {t("shell.changePassword")}
+            </Link>
+          ) : null}
           <button
             type="button"
             role="menuitem"

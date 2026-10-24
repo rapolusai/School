@@ -84,12 +84,14 @@ public class AuthService {
     private final AuditService audit;
     private final TransactionTemplate tx;
     private final AksharaProperties properties;
+    private final UserService userService;
     private final SecureRandom random = new SecureRandom();
     private final String dummyHash;
 
     public AuthService(TenantDirectory tenants, UserRepository users, RefreshTokenRepository tokens,
             PasswordEncoder passwordEncoder, JwtService jwt, LoginRateLimiter rateLimiter, AuditService audit,
-            PlatformTransactionManager transactionManager, AksharaProperties properties) {
+            PlatformTransactionManager transactionManager, AksharaProperties properties, UserService userService) {
+        this.userService = userService;
         this.tenants = tenants;
         this.users = users;
         this.tokens = tokens;
@@ -209,6 +211,43 @@ public class AuthService {
             throw rejected;
         }
         return (Session) outcome;
+    }
+
+    /**
+     * A signed-in person changes their own password. The current password must be right (wrong guesses count towards
+     * the same limit as sign-ins). Every open session of the person ends, including other devices, and a fresh one is
+     * returned so this device stays signed in.
+     */
+    public Session changePassword(UUID userId, String currentPassword, String newPassword) {
+        UUID tenantId = TenantContext.require();
+        TenantView tenant = tenants.findById(tenantId).orElseThrow(() -> ApiException.notFound("School"));
+        String key = "change|" + userId;
+        rateLimiter.check(key);
+
+        TransactionTemplate readOnly = new TransactionTemplate(tx.getTransactionManager());
+        readOnly.setReadOnly(true);
+        String currentHash = readOnly.execute(status -> users.findById(userId)
+                .filter(UserAccount::isActive).map(UserAccount::getPasswordHash).orElse(null));
+        if (currentHash == null) {
+            throw ApiException.notFound("User");
+        }
+        boolean usable = UserAccount.hasPassword(currentHash);
+        if (!passwordEncoder.matches(currentPassword, usable ? currentHash : dummyHash) || !usable) {
+            rateLimiter.recordFailure(key);
+            throw ApiException.badRequest("That is not your current password.", "currentPassword");
+        }
+        if (passwordEncoder.matches(newPassword, currentHash)) {
+            throw ApiException.badRequest("Choose a password different from the current one.", "newPassword");
+        }
+        rateLimiter.reset(key);
+
+        String newHash = passwordEncoder.encode(newPassword);
+        userService.setPassword(userId, newHash, Map.of("via", "self"),
+                new Actor(userId, readOnly.execute(s -> users.findById(userId).map(UserAccount::getName).orElse(null))));
+        return tx.execute(status -> {
+            UserAccount user = users.findByIdWithRoles(userId).orElseThrow(() -> ApiException.notFound("User"));
+            return session(user, tenant, issueRefreshToken(user.getId(), Ids.newId(), tenantId).raw());
+        });
     }
 
     /** Ends the session chain the cookie belongs to. Unknown or malformed cookies are ignored. */

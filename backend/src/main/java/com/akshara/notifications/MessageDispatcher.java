@@ -100,7 +100,7 @@ public class MessageDispatcher {
         if (message == null) {
             return false;
         }
-        if (holdUntil != null) {
+        if (holdUntil != null && !MessageTemplates.ignoresQuietHours(message.getTemplateKey())) {
             message.holdUntil(holdUntil);
             return false;
         }

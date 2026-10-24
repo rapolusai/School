@@ -75,6 +75,7 @@ export const en = {
   "shell.theme.toLight": "Switch to light theme",
   "shell.accountMenu": "Account menu",
   "shell.signOut": "Sign out",
+  "shell.changePassword": "Change password",
   "shell.more": "More",
   "shell.allSections": "All sections",
   "shell.platformOwner": "Platform owner",
@@ -130,6 +131,37 @@ export const en = {
   "login.error.invalidPlatform": "Those details don't match. Check the email and password.",
   "login.error.tooMany": "Too many attempts. Wait a minute and try again.",
   "login.signupDone": "Your school is ready. Sign in to continue.",
+  "login.forgot": "Forgot password?",
+
+  "reset.eyebrow": "Password",
+  "reset.title": "Set a new password",
+  "reset.subtitle":
+    "Enter your school code and the email you sign in with. We'll email you a 6-digit code. New staff use this to set their first password.",
+  "reset.send": "Email me a code",
+  "reset.sending": "Sending…",
+  "reset.sent":
+    "If the school code and email are right, a 6-digit code is on its way to {email}. It works for 15 minutes.",
+  "reset.code": "6-digit code",
+  "reset.newPassword": "New password",
+  "reset.repeat": "Type the new password again",
+  "reset.save": "Set password",
+  "reset.again": "Didn't get it? Ask for a new code",
+  "reset.backToSignIn": "Back to sign in",
+  "reset.done.title": "Password set",
+  "reset.done.body": "Your new password works now. For your safety, every device that was signed in has been signed out.",
+  "reset.error.code": "That code is wrong or has expired. Check the latest email, or ask for a new code.",
+  "reset.v.code": "Enter the 6 digits from the email.",
+  "reset.v.repeat": "The two passwords don't match.",
+
+  "account.password.title": "Change password",
+  "account.password.subtitle":
+    "You'll stay signed in here. Every other device where you're signed in will be signed out.",
+  "account.password.current": "Current password",
+  "account.password.save": "Change password",
+  "account.password.done": "Password changed. Other devices have been signed out.",
+  "account.password.wrongCurrent": "That isn't your current password.",
+  "account.password.sameAsCurrent": "Choose a password different from your current one.",
+  "account.password.schoolOnly": "Super Admin passwords are changed by the platform team, not here.",
 
   "signup.art.title": "Start your free trial in three steps.",
   "signup.art.body":
@@ -1444,6 +1476,9 @@ export const en = {
   "fees.child.next": "Next: {label}, {amount} due {date}",
   "fees.child.allPaid": "All fees are paid.",
   "fees.child.payLink": "Pay fees",
+  "fees.child.payCancelled": "The payment window was closed before paying. Nothing was charged; you can try again.",
+  "fees.child.payUnavailable":
+    "The payment window couldn't open. Check your connection and try again, or pay at the school office.",
   "fees.child.viewLink": "Fees and receipts",
   "fees.child.back": "Dashboard",
   "fees.child.backToFees": "Fees",

@@ -14,8 +14,8 @@ import com.akshara.shared.AssignedIdEntity;
 import com.akshara.shared.Ids;
 
 /**
- * One uploaded file and its bytes. Loaded as an entity only to download it; lists use {@link StoredFileInfo}
- * projections so the bytes stay in the database.
+ * One uploaded file: its record, and its bytes unless they are in object storage. Loaded as an entity only to
+ * download it; lists use {@link StoredFileInfo} projections so the bytes stay where they are.
  */
 @Entity
 @Table(schema = "files", name = "stored_file")
@@ -49,8 +49,12 @@ class StoredFile extends AssignedIdEntity {
     @Column(nullable = false, updatable = false)
     private String sha256;
 
-    @Column(nullable = false, updatable = false)
+    /** Null when the bytes are in object storage ({@link #storage} S3). */
     private byte[] bytes;
+
+    /** Where the bytes are: {@value #DATABASE} (in {@link #bytes}) or {@value #S3}. */
+    @Column(nullable = false)
+    private String storage;
 
     @Column(updatable = false)
     private UUID uploadedBy;
@@ -61,7 +65,11 @@ class StoredFile extends AssignedIdEntity {
     protected StoredFile() {
     }
 
-    StoredFile(FileOwner owner, IncomingFile file, UUID uploadedBy) {
+    static final String DATABASE = "DATABASE";
+    static final String S3 = "S3";
+
+    /** {@code inDatabase}: keep the bytes in this row; otherwise the caller writes them to object storage. */
+    StoredFile(FileOwner owner, IncomingFile file, UUID uploadedBy, boolean inDatabase) {
         this.id = Ids.newId();
         this.ownerModule = owner.module();
         this.ownerType = owner.type();
@@ -70,7 +78,8 @@ class StoredFile extends AssignedIdEntity {
         this.contentType = file.type().mediaType();
         this.sizeBytes = file.size();
         this.sha256 = file.sha256();
-        this.bytes = file.bytes();
+        this.bytes = inDatabase ? file.bytes() : null;
+        this.storage = inDatabase ? DATABASE : S3;
         this.uploadedBy = uploadedBy;
         this.createdAt = Instant.now();
     }
@@ -82,6 +91,20 @@ class StoredFile extends AssignedIdEntity {
 
     byte[] getBytes() {
         return bytes;
+    }
+
+    boolean inObjectStorage() {
+        return S3.equals(storage);
+    }
+
+    UUID getTenantId() {
+        return tenantId;
+    }
+
+    /** After the bytes were copied to object storage: the row keeps only the record. */
+    void movedToObjectStorage() {
+        this.bytes = null;
+        this.storage = S3;
     }
 
     StoredFileInfo info() {

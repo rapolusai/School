@@ -6,6 +6,7 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -95,6 +96,18 @@ public final class MessageTemplates {
 
     /** Sent to a student's primary contact when the infirmary sends the student to hospital. */
     public static final String INFIRMARY_HOSPITAL = "health.hospital";
+
+    /** The one-time code of "Forgot password", sent to the person's own email. */
+    public static final String PASSWORD_RESET = "identity.password_reset";
+
+    /**
+     * Templates whose text is a secret for its recipient alone (a sign-in code): the message log never shows their
+     * text, and it is wiped once a provider has delivered it.
+     */
+    private static final Set<String> SECRET = Set.of(PASSWORD_RESET);
+
+    /** Templates the person is waiting for right now, sent even during the school's quiet hours. */
+    private static final Set<String> IMMEDIATE = Set.of(PASSWORD_RESET);
 
     private static final Map<String, Map<String, String>> TEMPLATES = Map.ofEntries(
             Map.entry(ABSENCE_ALERT, Map.of(
@@ -244,7 +257,14 @@ public final class MessageTemplates {
                             + "call on {date}. Please contact the warden at once.",
                     HINDI, "प्रिय {guardian}, {date} की रात की हाज़िरी में {student} {hostel} ({school}) में नहीं मिले। "
                             + "कृपया तुरंत वार्डन से संपर्क करें।",
-                    TELUGU, "ప్రియమైన {guardian}, {date} రాత్రి హాజరులో {student} {hostel} ({school}) లో కనిపించలేదు. దయచేసి వెంటనే వార్డెన్‌ను సంప్రదించండి.")));
+                    TELUGU, "ప్రియమైన {guardian}, {date} రాత్రి హాజరులో {student} {hostel} ({school}) లో కనిపించలేదు. దయచేసి వెంటనే వార్డెన్‌ను సంప్రదించండి.")),
+            Map.entry(PASSWORD_RESET, Map.of(
+                    ENGLISH, "{school}: your Akshara password reset code is {code}. It works for 15 minutes. "
+                            + "Do not share it with anyone, not even school staff. If you did not ask for it, "
+                            + "ignore this message.",
+                    HINDI, "{school}: आपका Akshara पासवर्ड रीसेट कोड {code} है। यह 15 मिनट तक मान्य है। इसे किसी को "
+                            + "न बताएँ, विद्यालय के कर्मचारियों को भी नहीं। यदि आपने यह नहीं माँगा है, तो इस संदेश को अनदेखा करें।",
+                    TELUGU, "{school}: మీ Akshara పాస్‌వర్డ్ రీసెట్ కోడ్ {code}. ఇది 15 నిమిషాలు చెల్లుతుంది. దీన్ని ఎవరికీ, పాఠశాల సిబ్బందికి కూడా చెప్పవద్దు. మీరు దీన్ని అడగకపోతే ఈ సందేశాన్ని పట్టించుకోకండి.")));
 
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{(\\w+)}");
     private static final DateTimeFormatter ENGLISH_DATE = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH);
@@ -263,6 +283,16 @@ public final class MessageTemplates {
 
     public static boolean exists(String templateKey) {
         return TEMPLATES.containsKey(templateKey);
+    }
+
+    /** True for a template whose text only its recipient may see (see {@link #SECRET}). */
+    public static boolean isSecret(String templateKey) {
+        return SECRET.contains(templateKey);
+    }
+
+    /** True for a template that is sent even during quiet hours (see {@link #IMMEDIATE}). */
+    public static boolean ignoresQuietHours(String templateKey) {
+        return IMMEDIATE.contains(templateKey);
     }
 
     /** English unless the language is one the template has. */

@@ -24,7 +24,18 @@ locals {
     DB_APP_USER     = local.db_app_user
     COOKIE_SECURE   = "true"
     ALLOWED_ORIGINS = "https://${var.domain_name}"
+    APP_BASE_URL    = "https://${var.domain_name}"
     DEMO_ENABLED    = tostring(var.demo_enabled)
+    AWS_REGION      = var.aws_region
+
+    FILES_STORE     = "s3"
+    FILES_S3_BUCKET = aws_s3_bucket.files.bucket
+
+    EMAIL_SENDER                = var.email_enabled ? "ses" : "simulated"
+    EMAIL_FROM                  = local.email_from
+    EMAIL_SES_CONFIGURATION_SET = aws_sesv2_configuration_set.main.configuration_set_name
+
+    PAYMENTS_GATEWAY = var.payments_gateway
   }
 
   # Injected by the ECS agent from Secrets Manager; "<arn>:<json-key>::" selects one JSON field.
@@ -34,8 +45,15 @@ locals {
       JWT_SECRET              = aws_secretsmanager_secret.app["jwt"].arn
       PLATFORM_ADMIN_EMAIL    = "${aws_secretsmanager_secret.app["platform-admin"].arn}:email::"
       PLATFORM_ADMIN_PASSWORD = "${aws_secretsmanager_secret.app["platform-admin"].arn}:password::"
+      PAYMENTS_SANDBOX_SECRET = aws_secretsmanager_secret.app["payments-sandbox"].arn
     },
     var.demo_enabled ? { DEMO_PASSWORD = aws_secretsmanager_secret.app["demo"].arn } : {},
+    # Only referenced once switched on: ECS cannot start a task whose secret has no value yet.
+    var.payments_gateway == "razorpay" ? {
+      RAZORPAY_KEY_ID         = "${aws_secretsmanager_secret.external["payments-razorpay"].arn}:key_id::"
+      RAZORPAY_KEY_SECRET     = "${aws_secretsmanager_secret.external["payments-razorpay"].arn}:key_secret::"
+      RAZORPAY_WEBHOOK_SECRET = "${aws_secretsmanager_secret.external["payments-razorpay"].arn}:webhook_secret::"
+    } : {},
   )
 
   log_options = {

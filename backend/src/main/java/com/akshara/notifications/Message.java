@@ -152,7 +152,15 @@ class Message extends AssignedIdEntity {
         this.providerRef = providerRef;
         lastError = null;
         sentAt = at;
+        // A code that really left the system now exists only with its recipient.
+        if (result == MessageStatus.SENT && MessageTemplates.isSecret(templateKey)) {
+            body = HIDDEN;
+            params = "{}";
+        }
     }
+
+    /** What is stored, and shown in the message log, in place of a secret message's text. */
+    static final String HIDDEN = "(hidden: a one-time code for the recipient only)";
 
     /** A failed attempt: tries again at {@code retryAt}, or gives up when that is null. */
     void failed(String error, Instant retryAt) {

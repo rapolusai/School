@@ -101,6 +101,15 @@ export async function platformLogin(email: string, password: string): Promise<Me
   return auth.user;
 }
 
+/**
+ * Changes the signed-in person's own password. The API ends every other session and answers with a fresh one for
+ * this device, which replaces the current token.
+ */
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  const auth = await api.changePassword({ currentPassword, newPassword });
+  applyAuth(auth);
+}
+
 export async function logout(): Promise<void> {
   try {
     await api.logout();

@@ -326,6 +326,8 @@ export type PaymentOrder = {
   instalments: string[];
   receiptId: string | null;
   failureReason: string | null;
+  /** Razorpay's public key id for its checkout; null for the sandbox, whose checkout is a page of this app. */
+  checkoutKey?: string | null;
 };
 
 export type SandboxCheckout = {

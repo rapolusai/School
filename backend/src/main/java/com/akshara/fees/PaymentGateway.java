@@ -7,9 +7,7 @@ import java.util.Map;
  * checkout collects the money and hands back a payment id with a signature, and the gateway also posts signed webhooks.
  * Implementations are Spring beans; the one used for new orders is chosen by {@code akshara.payments.gateway}.
  *
- * <p>Only {@link SandboxPaymentGateway} exists. A Razorpay adapter would implement this interface with key id and
- * secret read from Secrets Manager (injected as environment variables), call {@code POST /v1/orders} in
- * {@link #createOrder}, and check {@code X-Razorpay-Signature} with HMAC-SHA256 of the webhook secret; see
+ * <p>Two exist: {@link SandboxPaymentGateway} (no network, no money) and {@link RazorpayPaymentGateway}; see
  * docs/api/phase-1-fees.md.
  */
 public interface PaymentGateway {
@@ -41,6 +39,14 @@ public interface PaymentGateway {
 
     /** Short lower-case name used in URLs and stored on orders, e.g. "sandbox" or "razorpay". */
     String name();
+
+    /**
+     * The public key the browser's checkout needs (Razorpay's key id), or null for a gateway whose checkout is a
+     * page of this app (the sandbox). Never a secret.
+     */
+    default String checkoutKey() {
+        return null;
+    }
 
     /** Creates an order at the gateway. Must not record anything locally. */
     GatewayOrder createOrder(OrderRequest request);

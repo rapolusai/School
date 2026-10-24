@@ -119,7 +119,7 @@ public final class FeeViews {
 
     public record OrderView(UUID id, String gateway, String gatewayOrderId, long amountPaise, String currency,
             String status, UUID studentId, String studentName, List<String> instalments, UUID receiptId,
-            String failureReason) {
+            String failureReason, String checkoutKey) {
     }
 
     /** What the sandbox checkout page shows. */

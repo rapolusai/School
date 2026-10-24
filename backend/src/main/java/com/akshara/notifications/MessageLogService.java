@@ -12,6 +12,7 @@ import java.util.UUID;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,10 +54,18 @@ public class MessageLogService {
 
     private final EntityManager entityManager;
     private final MessageRepository messages;
+    private final boolean showSimulatedSecrets;
 
-    public MessageLogService(EntityManager entityManager, MessageRepository messages) {
+    /**
+     * {@code akshara.notifications.show-simulated-secrets} (development only, off by default and in AWS) shows the
+     * text of a secret message (a sign-in code) that was only simulated, so someone trying the app on their own
+     * computer, where nothing is really sent, can still finish "Forgot password". A real delivery is never shown.
+     */
+    public MessageLogService(EntityManager entityManager, MessageRepository messages,
+            @Value("${akshara.notifications.show-simulated-secrets:false}") boolean showSimulatedSecrets) {
         this.entityManager = entityManager;
         this.messages = messages;
+        this.showSimulatedSecrets = showSimulatedSecrets;
     }
 
     /** Newest first. */
@@ -111,8 +120,11 @@ public class MessageLogService {
     public MessageDetail detail(UUID id) {
         TenantContext.require();
         Message m = messages.findById(id).orElseThrow(() -> ApiException.notFound("Message"));
+        boolean hide = MessageTemplates.isSecret(m.getTemplateKey())
+                && !(showSimulatedSecrets && m.getStatus() == MessageStatus.SIMULATED);
         return new MessageDetail(m.getId(), m.getCreatedAt(), m.getChannel(), RecipientMask.mask(m.getRecipient()),
-                m.getRecipientName(), m.getTemplateKey(), m.getLanguage(), m.getBody(), m.getStatus(), m.getAttempts(),
+                m.getRecipientName(), m.getTemplateKey(), m.getLanguage(), hide ? Message.HIDDEN : m.getBody(),
+                m.getStatus(), m.getAttempts(),
                 m.getSentAt(), m.getStatus() == MessageStatus.QUEUED ? m.getNextAttemptAt() : null, m.getLastError(),
                 m.getFallbackChannel(), m.getRelatedType(), m.getRelatedId(), m.getRelatedLabel());
     }

@@ -1,0 +1,3 @@
+10049	IGNORE	(Non-storable content) Pages and API answers are deliberately no-store so a shared phone keeps nothing.
+10027	WARN	(Information disclosure: suspicious comments) Next.js bundles contain library comments; review new ones.
+10110	WARN	(Dangerous JS functions) Framework bundles; review if it names our own code.

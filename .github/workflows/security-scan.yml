@@ -1,0 +1,31 @@
+name: Security scan
+
+# OWASP ZAP baseline scan of staging: it browses the site like a visitor and reports missing headers, cookie
+# flags, information leaks and similar passive findings. It never attacks or changes data, and it never signs in.
+# Weekly, and by hand before each production release. Findings are uploaded as a report; known, accepted ones
+# are listed in .zap/rules.tsv (rule id, IGNORE/WARN/FAIL, reason).
+
+on:
+  schedule:
+    - cron: "30 21 * * 0" # Monday 03:00 IST
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  zap:
+    name: ZAP baseline against staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: staging
+    steps:
+      - uses: actions/checkout@v5
+      - name: Scan
+        uses: zaproxy/action-baseline@v0.15.0
+        with:
+          target: https://${{ vars.DOMAIN_NAME }}/login
+          rules_file_name: .zap/rules.tsv
+          cmd_options: -a -j
+          allow_issue_writing: false
+          artifact_name: zap-report

@@ -20,6 +20,18 @@ interface StoredFileRepository extends JpaRepository<StoredFile, UUID> {
     @Query(INFO + "where f.ownerModule = ?1 and f.ownerType = ?2 and f.ownerId in ?3 order by f.createdAt, f.id")
     List<StoredFileInfo> findInfoByOwners(String module, String type, Collection<UUID> ownerIds);
 
+    @Query("select count(f) > 0 from StoredFile f where f.id = ?1 and f.ownerModule = ?2 and f.ownerType = ?3 "
+            + "and f.ownerId = ?4 and f.storage = 'S3'")
+    boolean isInObjectStorage(UUID id, String module, String type, UUID ownerId);
+
+    @Query("select f.id from StoredFile f where f.ownerModule = ?1 and f.ownerType = ?2 and f.ownerId = ?3 "
+            + "and f.storage = 'S3'")
+    List<UUID> idsInObjectStorage(String module, String type, UUID ownerId);
+
+    /** Up to {@code limit} files of the current school whose bytes are still in the database, oldest first. */
+    @Query("select f.id from StoredFile f where f.storage = 'DATABASE' order by f.createdAt, f.id limit ?1")
+    List<UUID> idsInDatabase(int limit);
+
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("delete from StoredFile f where f.id = ?1 and f.ownerModule = ?2 and f.ownerType = ?3 and f.ownerId = ?4")
     int deleteOwned(UUID id, String module, String type, UUID ownerId);

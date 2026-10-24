@@ -138,6 +138,16 @@ export function LoginView({
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           error={fieldErrors.password}
+          labelAction={
+            !platform ? (
+              <Link
+                href={schoolCode.trim() ? `/forgot-password?school=${encodeURIComponent(schoolCode.trim())}` : "/forgot-password"}
+                className="link text-sm"
+              >
+                {t("login.forgot")}
+              </Link>
+            ) : null
+          }
         />
         <button type="submit" className="btn btn-primary btn-lg" disabled={submitting}>
           {submitting ? t("login.submitting") : t("login.submit")}
