@@ -350,6 +350,13 @@ export const api = {
   platformLogin: (body: { email: string; password: string }) =>
     apiFetch<AuthResponse>("/api/platform/auth/login", { method: "POST", body, auth: false }),
   logout: () => apiFetch<void>(LOGOUT_PATH[sessionKind ?? "school"], { method: "POST", auth: false }),
+  /** "Forgot password": always 202, whether or not the school and email exist. */
+  requestPasswordReset: (body: { schoolCode: string; email: string }) =>
+    apiFetch<{ message: string }>("/api/auth/password-reset", { method: "POST", body, auth: false }),
+  confirmPasswordReset: (body: { schoolCode: string; email: string; code: string; newPassword: string }) =>
+    apiFetch<void>("/api/auth/password-reset/confirm", { method: "POST", body, auth: false }),
+  changePassword: (body: { currentPassword: string; newPassword: string }) =>
+    apiFetch<AuthResponse>("/api/auth/password", { method: "POST", body }),
 
   me: () => apiFetch<Me>("/api/me"),
   myPreferences: () => apiFetch<{ language: string | null }>("/api/me/preferences"),

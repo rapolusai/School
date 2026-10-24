@@ -73,6 +73,7 @@ export const hi: Record<MessageKey, string> = {
   "shell.theme.toLight": "लाइट थीम पर जाएँ",
   "shell.accountMenu": "खाता मेनू",
   "shell.signOut": "साइन आउट",
+  "shell.changePassword": "पासवर्ड बदलें",
   "shell.more": "और",
   "shell.allSections": "सभी अनुभाग",
   "shell.platformOwner": "प्लेटफ़ॉर्म संचालक",
@@ -128,6 +129,37 @@ export const hi: Record<MessageKey, string> = {
   "login.error.invalidPlatform": "ये जानकारी मेल नहीं खाती। ईमेल और पासवर्ड जाँचें।",
   "login.error.tooMany": "बहुत ज़्यादा कोशिशें हुईं। एक मिनट रुककर फिर से कोशिश करें।",
   "login.signupDone": "आपका स्कूल तैयार है। आगे बढ़ने के लिए साइन इन करें।",
+  "login.forgot": "पासवर्ड भूल गए?",
+
+  "reset.eyebrow": "पासवर्ड",
+  "reset.title": "नया पासवर्ड सेट करें",
+  "reset.subtitle":
+    "अपना स्कूल कोड और वह ईमेल डालें जिससे आप साइन इन करते हैं। हम आपको 6 अंकों का कोड ईमेल करेंगे। नए कर्मचारी अपना पहला पासवर्ड भी यहीं से सेट करते हैं।",
+  "reset.send": "मुझे कोड ईमेल करें",
+  "reset.sending": "भेजा जा रहा है…",
+  "reset.sent":
+    "यदि स्कूल कोड और ईमेल सही हैं, तो 6 अंकों का कोड {email} पर भेजा जा रहा है। यह 15 मिनट तक मान्य है।",
+  "reset.code": "6 अंकों का कोड",
+  "reset.newPassword": "नया पासवर्ड",
+  "reset.repeat": "नया पासवर्ड फिर से लिखें",
+  "reset.save": "पासवर्ड सेट करें",
+  "reset.again": "कोड नहीं मिला? नया कोड माँगें",
+  "reset.backToSignIn": "साइन इन पर वापस जाएँ",
+  "reset.done.title": "पासवर्ड सेट हो गया",
+  "reset.done.body": "आपका नया पासवर्ड अब काम करता है। सुरक्षा के लिए, जिन भी डिवाइस पर आप साइन इन थे, वहाँ से साइन आउट कर दिया गया है।",
+  "reset.error.code": "यह कोड गलत है या इसकी समय-सीमा समाप्त हो गई है। नवीनतम ईमेल देखें, या नया कोड माँगें।",
+  "reset.v.code": "ईमेल में आए 6 अंक डालें।",
+  "reset.v.repeat": "दोनों पासवर्ड मेल नहीं खाते।",
+
+  "account.password.title": "पासवर्ड बदलें",
+  "account.password.subtitle":
+    "आप यहाँ साइन इन रहेंगे। जिन अन्य डिवाइस पर आप साइन इन हैं, वहाँ से साइन आउट कर दिया जाएगा।",
+  "account.password.current": "मौजूदा पासवर्ड",
+  "account.password.save": "पासवर्ड बदलें",
+  "account.password.done": "पासवर्ड बदल गया। अन्य डिवाइस से साइन आउट कर दिया गया है।",
+  "account.password.wrongCurrent": "यह आपका मौजूदा पासवर्ड नहीं है।",
+  "account.password.sameAsCurrent": "मौजूदा पासवर्ड से अलग पासवर्ड चुनें।",
+  "account.password.schoolOnly": "सुपर एडमिन के पासवर्ड प्लेटफ़ॉर्म टीम बदलती है, यहाँ नहीं।",
 
   "signup.art.title": "तीन आसान चरणों में मुफ़्त ट्रायल शुरू करें।",
   "signup.art.body":
