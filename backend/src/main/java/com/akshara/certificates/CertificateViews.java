@@ -55,6 +55,7 @@ public final class CertificateViews {
             Subject subject, String serialNo, String academicYear, int versionNo, UUID supersedesId,
             UUID supersededById, String purpose, Map<String, String> fields, List<String> placeholders, String body,
             SchoolHeader school, Signatory signatory, String verifyToken, String verifyPath, Long duesPaise,
+            Integer booksOut,
             RequestedVia requestedVia, String requestedByName, Instant requestedAt, String preparedByName,
             Instant preparedAt, String signedByName, Instant signedAt, LocalDate issuedOn, String cancelledByName,
             Instant cancelledAt, String cancelReason, boolean editable) {

@@ -7058,7 +7058,7 @@ export const te: Record<MessageKey, string> = {
   "certificates.subjectType.STAFF": "సిబ్బంది",
   "certificates.field.student": "విద్యార్థి పేరు",
   "certificates.field.staff": "సిబ్బంది సభ్యుడి పేరు",
-  "certificates.field.father": "తండ్రి పేరు",
+  "certificates.field.father": "తల్లిదండ్రులు లేదా సంరక్షకుని పేరు",
   "certificates.field.mother": "తల్లి పేరు",
   "certificates.field.dob": "పుట్టిన తేదీ",
   "certificates.field.admissionNo": "అడ్మిషన్ నంబర్",
@@ -7143,6 +7143,7 @@ export const te: Record<MessageKey, string> = {
   "certificates.supersededBy": "సరిదిద్దిన సర్టిఫికెట్ దీని స్థానంలో వచ్చింది",
   "certificates.duesWarning":
     "{amount} ఫీజు ఇంకా బకాయి ఉంది. బదిలీ సర్టిఫికెట్ సంతకం చేసే ముందు తనిఖీ చేయండి.",
+  "certificates.booksWarning": "ఇంకా తిరిగి ఇవ్వని గ్రంథాలయ పుస్తకాలు: {count}. సంతకం చేసే ముందు వాటిని తిరిగి తీసుకోండి.",
   "certificates.requested.hint":
     "తల్లి/తండ్రి ఈ సర్టిఫికెట్ అడిగారు. పదాలు సిద్ధం చేసి, సంతకానికి పంపండి.",
   "certificates.editor.readOnly":

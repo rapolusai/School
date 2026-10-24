@@ -110,6 +110,8 @@ export type CertificateDetail = CertificateRow & {
   verifyToken: string | null;
   verifyPath: string | null;
   duesPaise: number | null;
+  /** Library books still out (transfer and experience certificates only). */
+  booksOut?: number | null;
   preparedByName: string | null;
   preparedAt: string | null;
   signedAt: string | null;

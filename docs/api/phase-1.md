@@ -175,6 +175,11 @@ of a **later** year, assigning roll numbers in name order after any already used
 enrolled in the target year are skipped with a reason. `graduate: true` instead marks them `ALUMNI` with
 `leftOn` = the source year's end date. Target capacity is checked for the whole group first (`409`).
 
+**Leaving.** Transferring or withdrawing a student (`POST /{id}/leave`, or a signed transfer certificate) and
+graduating them publish `StudentLeft(tenantId, studentId, status, leftOn, reason)` inside the transaction. The hostel
+vacates the student's bed and transport ends their bus seat from `leftOn` (or the day the place started, if later),
+which also stops those fees.
+
 ### CSV import
 
 `POST /api/students/import?dryRun=true` checks a file; `dryRun=false` imports it. Body `{ csv }`, at most

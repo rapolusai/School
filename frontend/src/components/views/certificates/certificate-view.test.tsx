@@ -52,8 +52,8 @@ describe("CertificateView", () => {
     renderAs(OFFICE, <CertificateView id="c1" />, ["FRONT_OFFICE"]);
     const editor = await screen.findByTestId("certificate-editor");
     expect(within(editor).getByLabelText("Title")).toHaveValue("Bonafide Certificate");
-    expect(within(editor).getByLabelText("Father's name")).toHaveValue("Rahul Sharma");
-    expect(within(editor).getByLabelText("Father's name")).toBeEnabled();
+    expect(within(editor).getByLabelText("Parent's or guardian's name")).toHaveValue("Rahul Sharma");
+    expect(within(editor).getByLabelText("Parent's or guardian's name")).toBeEnabled();
     expect(within(editor).queryByLabelText("Serial number")).not.toBeInTheDocument();
     expect(screen.getByTestId("save-certificate")).toBeInTheDocument();
     expect(screen.queryByTestId("sign-certificate")).not.toBeInTheDocument();
@@ -69,7 +69,7 @@ describe("CertificateView", () => {
       certificate({ title: body.title, fields: { ...certificate().fields, ...body.fields } }),
     );
     renderAs(OFFICE, <CertificateView id="c1" />, ["FRONT_OFFICE"]);
-    const father = await screen.findByLabelText("Father's name");
+    const father = await screen.findByLabelText("Parent's or guardian's name");
     await user.clear(father);
     await user.type(father, "Rahul K Sharma");
     await user.click(screen.getByTestId("save-certificate"));
@@ -92,7 +92,7 @@ describe("CertificateView", () => {
     expect(screen.getByTestId("print-certificate")).toBeInTheDocument();
     expect(screen.queryByTestId("sign-certificate")).not.toBeInTheDocument();
     // Issued: the wording is frozen.
-    expect(screen.getByLabelText("Father's name")).toBeDisabled();
+    expect(screen.getByLabelText("Parent's or guardian's name")).toBeDisabled();
     expect(screen.getByTestId("qr-code")).toBeInTheDocument();
   });
 
@@ -104,6 +104,12 @@ describe("CertificateView", () => {
     expect(screen.queryByTestId("save-certificate")).not.toBeInTheDocument();
     expect(screen.queryByTestId("cancel-certificate")).not.toBeInTheDocument();
     expect(screen.queryByTestId("sign-certificate")).not.toBeInTheDocument();
+  });
+
+  it("warns about library books still out before a transfer certificate is signed", async () => {
+    m.detail.mockResolvedValue(certificate({ type: "TRANSFER", title: "Transfer Certificate", booksOut: 2 }));
+    renderAs(READER, <CertificateView id="c1" />, ["TEACHER"]);
+    expect(await screen.findByTestId("books-warning")).toHaveTextContent("Library books still out: 2");
   });
 
   it("offers a correction on an issued certificate and shows the cancelled reason afterwards", async () => {

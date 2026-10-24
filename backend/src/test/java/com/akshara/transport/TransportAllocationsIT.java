@@ -210,6 +210,21 @@ class TransportAllocationsIT extends IntegrationTest {
     }
 
     @Test
+    void aStudentWhoLeavesTheSchoolGivesUpTheirSeat() throws Exception {
+        TransportSchool s = new TransportSchool(api);
+        Bus bus = s.bus();
+        LocalDate today = TransportSchool.today();
+        String allocation = s.allocate(s.asha, bus.route(), bus.stops().get(1), today);
+        api.post("/api/students/" + s.asha + "/leave", s.admin.accessToken(), """
+                {"status":"WITHDRAWN","leftOn":"%s","reason":"Family moved"}""".formatted(today))
+                .andExpect(status().isOk());
+        api.get("/api/transport/allocations/" + allocation, s.token())
+                .andExpect(jsonPath("$.status").value("ENDED"))
+                .andExpect(jsonPath("$.endDate").value(today.toString()))
+                .andExpect(jsonPath("$.endReason").value("Left the school (withdrawn)"));
+    }
+
+    @Test
     void aFullBusTakesMoreStudentsOnlyWithAReason() throws Exception {
         TransportSchool s = new TransportSchool(api);
         LocalDate today = TransportSchool.today();

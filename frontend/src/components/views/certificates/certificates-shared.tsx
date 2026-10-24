@@ -83,7 +83,7 @@ export const cardStatusLabel = (t: Translate, status: CardStatus) =>
   translateOr(t, `certificates.card.status.${status}`, status);
 export const subjectTypeLabel = (t: Translate, type: CertificateSubjectType) =>
   translateOr(t, `certificates.subjectType.${type}`, type);
-/** The label of a placeholder ("Father's name"), or the key itself for one the school added. */
+/** The label of a placeholder ("Parent's or guardian's name"), or the key itself for one the school added. */
 export const placeholderLabel = (t: Translate, key: string) => translateOr(t, `certificates.field.${key}`, key);
 
 export const isStaffType = (type: CertificateType) => STAFF_CERTIFICATE_TYPES.includes(type);

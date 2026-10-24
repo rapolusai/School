@@ -291,6 +291,22 @@ public class AcademicsService {
         return sectionView(id);
     }
 
+    /** Takes a member of staff who left off every section they were class teacher of; returns how many. */
+    public int clearClassTeacher(UUID userId) {
+        TenantContext.require();
+        List<Section> taught = sections.findByClassTeacherId(userId);
+        for (Section section : taught) {
+            section.update(section.getName(), section.getCapacity(), null);
+            Map<String, Object> details = new LinkedHashMap<>();
+            details.put("name", section.getName());
+            details.put("classTeacherId", null);
+            details.put("reason", "class teacher left the school");
+            record(null, "section.updated", "section", section.getId(), details);
+        }
+        sections.flush();
+        return taught.size();
+    }
+
     public void deleteSection(UUID id) {
         TenantContext.require();
         Section section = sections.findById(id).orElseThrow(() -> ApiException.notFound("Section"));

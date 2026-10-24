@@ -214,6 +214,9 @@ class CertificateIT extends IntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.fields.workingDays").value("0"))
                 .andExpect(jsonPath("$.fields.promotionStatus").exists()), "$.id");
+        // A second TC prepared alongside cannot be signed once the first is issued.
+        String spare = TestApi.read(api.post("/api/certificates", s.office.accessToken(), """
+                {"type":"TRANSFER","studentId":"%s"}""".formatted(s.bala)).andExpect(status().isCreated()), "$.id");
         api.get("/api/students/" + s.bala, s.admin.accessToken()).andExpect(jsonPath("$.status").value("ACTIVE"));
         api.post("/api/certificates/" + id + "/sign", s.principal.accessToken(), "")
                 .andExpect(status().isOk())
@@ -227,6 +230,19 @@ class CertificateIT extends IntegrationTest {
         assertThat(published.getFirst().serialNo()).isEqualTo("TC/2026-27/0001");
         assertThat(published.getFirst().studentId()).isEqualTo(UUID.fromString(s.bala));
         assertThat(published.getFirst().tenantId()).isEqualTo(s.school.tenantId());
+        assertThat(events.stream(com.akshara.students.StudentLeft.class)
+                .filter(e -> e.studentId().equals(UUID.fromString(s.bala)))).hasSize(1);
+        // One valid TC per student: no second one while it stands; a correction replaces it.
+        api.post("/api/certificates/" + spare + "/sign", s.principal.accessToken(), "")
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errors.studentId").exists());
+        api.post("/api/certificates", s.office.accessToken(), """
+                {"type":"TRANSFER","studentId":"%s"}""".formatted(s.bala)).andExpect(status().isConflict());
+        String corrected = TestApi.read(api.post("/api/certificates/" + id + "/correct", s.office.accessToken(), """
+                {"reason":"Spelling of the name"}""").andExpect(status().isCreated()), "$.id");
+        api.post("/api/certificates/" + corrected + "/sign", s.principal.accessToken(), "")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.serialNo").value("TC/2026-27/0002"));
         // A student who left still gets certificates (a second TC after a correction, for instance).
         api.post("/api/certificates", s.office.accessToken(), """
                 {"type":"BONAFIDE","studentId":"%s"}""".formatted(s.bala)).andExpect(status().isCreated())

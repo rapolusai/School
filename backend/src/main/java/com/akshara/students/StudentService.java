@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -105,10 +106,12 @@ public class StudentService {
     private final UserService userService;
     private final AuditService audit;
     private final EntityManager entityManager;
+    private final ApplicationEventPublisher events;
 
     public StudentService(StudentRepository students, GuardianRepository guardians, StudentGuardianRepository links,
             EnrollmentRepository enrollments, AcademicsDirectory academics, UserRepository users,
-            UserService userService, AuditService audit, EntityManager entityManager) {
+            UserService userService, AuditService audit, EntityManager entityManager,
+            ApplicationEventPublisher events) {
         this.students = students;
         this.guardians = guardians;
         this.links = links;
@@ -118,6 +121,7 @@ public class StudentService {
         this.userService = userService;
         this.audit = audit;
         this.entityManager = entityManager;
+        this.events = events;
     }
 
     // ------------------------------------------------------------------ list and detail
@@ -377,6 +381,8 @@ public class StudentService {
         String action = form.status() == StudentStatus.TRANSFERRED ? "student.transferred" : "student.withdrawn";
         record(null, action, "student", id, Map.of("admissionNo", student.getAdmissionNo(),
                 "leftOn", form.leftOn().toString()));
+        events.publishEvent(new StudentLeft(TenantContext.require(), id, form.status(), form.leftOn(),
+                form.reason().trim()));
         return detail(id);
     }
 
@@ -530,6 +536,11 @@ public class StudentService {
                         "section", fromSection.label(), "academicYear", fromYear.name()));
             }
             students.flush();
+            UUID tenantId = TenantContext.require();
+            for (Student s : cohort) {
+                events.publishEvent(new StudentLeft(tenantId, s.getId(), StudentStatus.ALUMNI, fromYear.endsOn(),
+                        "Graduated"));
+            }
             return new PromotionResult(0, cohort.size(), List.of());
         }
 

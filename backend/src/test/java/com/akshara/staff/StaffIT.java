@@ -169,6 +169,13 @@ class StaffIT extends IntegrationTest {
     void leavingDisablesSignInButKeepsTheRecord() throws Exception {
         String rahul = staff.staff("Rahul Verma", "rahul", "TEACHER", "SCI-02", null);
         Session session = staff.login("rahul");
+        // Rahul is class teacher of Class 6 A until he leaves.
+        com.akshara.support.SchoolFixtures fixtures = new com.akshara.support.SchoolFixtures(api);
+        String class6 = fixtures.schoolClass(admin, "Class 6");
+        String class6A = fixtures.section(admin, class6, "A", 40);
+        api.put("/api/academics/sections/" + class6A, admin.accessToken(), """
+                {"name":"A","capacity":40,"classTeacherId":"%s"}""".formatted(rahul)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.classTeacher.id").value(rahul));
 
         api.post("/api/staff/" + rahul + "/leaving", admin.accessToken(), """
                 {"leftOn":"%s","reason":"Moved to Pune"}""".formatted(staff.today.plusDays(1)))
@@ -185,6 +192,8 @@ class StaffIT extends IntegrationTest {
                 .andExpect(jsonPath("$.accountActive").value(false))
                 .andExpect(jsonPath("$.profile.dateOfLeaving").value(staff.today.toString()))
                 .andExpect(jsonPath("$.profile.leavingReason").value("Moved to Pune"));
+        api.get("/api/academics/classes/" + class6 + "/sections", admin.accessToken())
+                .andExpect(jsonPath("$[0].classTeacher").doesNotExist());
 
         // They can no longer sign in, and their open sessions cannot be renewed.
         api.post("/api/auth/login", null, """

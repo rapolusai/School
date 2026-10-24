@@ -148,6 +148,9 @@ public class CertificateService {
 
     /** The office prepares a certificate: prefilled from the records, then edited and signed. */
     public CertificateDetail prepare(PrepareForm form, Actor actor) {
+        if (form.type() == CertificateType.TRANSFER && form.studentId() != null) {
+            oneTransferCertificate(form.studentId(), null);
+        }
         Certificate c = create(form.type(), form.studentId(), form.staffUserId(), form.purpose(), form.from(),
                 form.to(), form.fields(), CertificateStatus.PREPARED, RequestedVia.OFFICE, actor, 1, null);
         audit.record(actor, "certificate.prepared", "certificate", c.getId(), details(c));
@@ -190,6 +193,9 @@ public class CertificateService {
             throw ApiException.conflict(c.getStatus() == CertificateStatus.REQUESTED
                     ? "Prepare the certificate before signing it."
                     : "This certificate is already " + c.getStatus().name().toLowerCase() + ".", "status");
+        }
+        if (c.getType() == CertificateType.TRANSFER && c.getStudentId() != null) {
+            oneTransferCertificate(c.getStudentId(), c.getId());
         }
         LocalDate today = Serials.today();
         Instant now = Instant.now();
@@ -310,6 +316,24 @@ public class CertificateService {
         return subjects.duesPaise(studentId).orElse(null);
     }
 
+    /**
+     * A student has at most one valid transfer certificate: another one is refused while one is issued (cancel or
+     * correct that one instead). Taken under a per-student lock, so two signatures at once cannot both pass.
+     */
+    private void oneTransferCertificate(UUID studentId, UUID except) {
+        entityManager.createNativeQuery("select 1 from (select pg_advisory_xact_lock(hashtextextended(?1, 0))) l")
+                .setParameter(1, "certificates.tc:" + studentId)
+                .getSingleResult();
+        certificates.findByStudentIdInOrderByRequestedAtDesc(List.of(studentId)).stream()
+                .filter(c -> c.getType() == CertificateType.TRANSFER && c.getStatus() == CertificateStatus.ISSUED
+                        && !c.getId().equals(except))
+                .findFirst()
+                .ifPresent(c -> {
+                    throw ApiException.conflict("This student already has transfer certificate " + c.getSerialNo()
+                            + ". Cancel or correct it instead of issuing another.", "studentId");
+                });
+    }
+
     private Certificate find(UUID id) {
         return certificates.findById(id).orElseThrow(() -> ApiException.notFound("certificate"));
     }
@@ -389,6 +413,7 @@ public class CertificateService {
                 c.getVersionNo(), c.getSupersedesId(), supersededBy, c.getPurpose(), fields, placeholders, body,
                 setup.header(), setup.signatory(), c.getVerifyToken(),
                 c.getVerifyToken() == null ? null : VERIFY_PATH + c.getVerifyToken(), c.getDuesPaise(),
+                subjects.booksOut(c.getType(), c.getSubjectType(), c.subjectId()),
                 c.getRequestedVia(), c.getRequestedByName(), c.getRequestedAt(), c.getPreparedByName(),
                 c.getPreparedAt(), c.getSignedByName(), c.getSignedAt(), c.getIssuedOn(), c.getCancelledByName(),
                 c.getCancelledAt(), c.getCancelReason(), c.isEditable());

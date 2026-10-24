@@ -57,6 +57,7 @@ export function certificate(overrides: Partial<CertificateDetail> = {}): Certifi
     verifyToken: null,
     verifyPath: null,
     duesPaise: null,
+    booksOut: null,
     preparedByName: "Olive Office",
     preparedAt: "2026-10-01T04:30:00Z",
     signedAt: null,

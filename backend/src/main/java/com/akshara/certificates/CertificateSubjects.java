@@ -28,6 +28,7 @@ import com.akshara.fees.FeeDuesService;
 import com.akshara.fees.FeePaymentService;
 import com.akshara.fees.FeePaymentService.ReceiptQuery;
 import com.akshara.fees.FeeViews.ReceiptPage;
+import com.akshara.library.LibraryDirectory;
 import com.akshara.payroll.PayStaffService;
 import com.akshara.payroll.PayrollViews.PayStaffDetail;
 import com.akshara.payroll.PayrollViews.PayslipRef;
@@ -69,10 +70,11 @@ class CertificateSubjects {
     private final FeeDuesService dues;
     private final FeePaymentService payments;
     private final PayStaffService payroll;
+    private final LibraryDirectory library;
 
     CertificateSubjects(StudentService students, StudentRoster roster, AcademicsDirectory academics,
             StaffService staff, StaffPayrollInputs staffInputs, AttendanceReportService attendance,
-            FeeDuesService dues, FeePaymentService payments, PayStaffService payroll) {
+            FeeDuesService dues, FeePaymentService payments, PayStaffService payroll, LibraryDirectory library) {
         this.students = students;
         this.roster = roster;
         this.academics = academics;
@@ -82,6 +84,7 @@ class CertificateSubjects {
         this.dues = dues;
         this.payments = payments;
         this.payroll = payroll;
+        this.library = library;
     }
 
     // ------------------------------------------------------------------ one subject
@@ -332,6 +335,24 @@ class CertificateSubjects {
         } catch (RuntimeException e) {
             log.debug("No receipts for {} ({})", studentId, e.getClass().getSimpleName());
             return Optional.empty();
+        }
+    }
+
+    /**
+     * Library books still out, for the warning on a transfer certificate (the student's) or an experience certificate
+     * (the staff member's); null for other certificates or when the library cannot say.
+     */
+    Integer booksOut(CertificateType type, SubjectType subjectType, UUID subjectId) {
+        boolean leaving = type == CertificateType.TRANSFER || type == CertificateType.EXPERIENCE;
+        if (!leaving || subjectId == null) {
+            return null;
+        }
+        try {
+            return subjectType == SubjectType.STUDENT ? library.booksOutOfStudent(subjectId)
+                    : library.booksOutOfStaff(subjectId);
+        } catch (RuntimeException e) {
+            log.debug("No library loans for {} ({})", subjectId, e.getClass().getSimpleName());
+            return null;
         }
     }
 

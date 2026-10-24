@@ -15,4 +15,6 @@ interface SectionRepository extends JpaRepository<Section, UUID> {
     boolean existsByNameExcept(UUID classId, String name, UUID exceptId);
 
     long countByClassId(UUID classId);
+
+    List<Section> findByClassTeacherId(UUID classTeacherId);
 }

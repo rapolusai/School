@@ -75,7 +75,7 @@ type Subject = { type: "STUDENT"|"STAFF", id, name, firstName, code /* admission
   detail /* "Class 5 A" or designation */, active };
 type Detail = Row & { academicYear, supersedesId, supersededById, fields: Record<string,string>, placeholders: string[],
   body /* frozen once signed, else a preview from the template */, school: {name, address, affiliationNo, logoText,
-  city, phone}, signatory: {name, designation}, verifyToken, verifyPath /* "/verify/<token>" */, duesPaise,
+  city, phone}, signatory: {name, designation}, verifyToken, verifyPath /* "/verify/<token>" */, duesPaise, booksOut /* TRANSFER, EXPERIENCE: library books out */,
   preparedByName, preparedAt, signedAt, cancelledByName, cancelledAt, cancelReason, editable };
 ```
 
@@ -83,7 +83,14 @@ type Detail = Row & { academicYear, supersedesId, supersededById, fields: Record
   receipts and dues (fees), the staff profile and payroll; `fields` in the body override them. Keys are letters and
   digits (`400 errors.fields`), at most 60.
 - Signing a **transfer certificate** marks an ACTIVE student as `TRANSFERRED` through the students module (left on
-  `{dateOfLeaving}`, reason `{reason}`) and publishes `TransferCertificateIssued`.
+  `{dateOfLeaving}`, reason `{reason}`) and publishes `TransferCertificateIssued`. The students module's `StudentLeft`
+  event then vacates the student's hostel bed and ends their bus seat on that day (which stops those fees).
+- **One valid TC per student:** preparing or signing a transfer certificate answers `409 errors.studentId` while the
+  student already has an ISSUED one (checked under a per-student lock). Cancel it, or use `/correct`, which cancels the
+  old one and makes the next version. Cancelling a signed TC leaves the student as left (the owner's decision,
+  24 Oct 2026); a returning student is admitted again.
+- `booksOut` on a TRANSFER (the student's) or EXPERIENCE (the staff member's) certificate is the number of library
+  books still out, read live; the screen warns before signing. It is a warning, never a block, like `duesPaise`.
 - Serial numbers come from a per-type, per-academic-year counter under a row lock. The year is the school's current
   academic year (`2026-27`), else April–March of the signing day.
 

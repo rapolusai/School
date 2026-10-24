@@ -214,6 +214,14 @@ export function CertificateView({ id }: { id: string }) {
                 {t("certificates.duesWarning", { amount: formatPaise(certificate.duesPaise) })}
               </p>
             ) : null}
+            {(certificate.type === "TRANSFER" || certificate.type === "EXPERIENCE") &&
+            certificate.status !== "ISSUED" &&
+            certificate.status !== "CANCELLED" &&
+            (certificate.booksOut ?? 0) > 0 ? (
+              <p className="alert alert-warn" role="status" data-testid="books-warning">
+                {t("certificates.booksWarning", { count: String(certificate.booksOut) })}
+              </p>
+            ) : null}
             {certificate.status === "REQUESTED" ? <p className="alert alert-info">{t("certificates.requested.hint")}</p> : null}
           </section>
 

@@ -103,6 +103,25 @@ class LibraryCirculationIT extends IntegrationTest {
     }
 
     @Test
+    void aLeavingCertificateWarnsAboutBooksStillOut() throws Exception {
+        LibrarySchool s = new LibrarySchool(api);
+        String title = s.title("Malgudi Days", 2);
+        String accession = s.accession(title, 0);
+        s.issue(accession, "STUDENT", s.asha, null);
+        String tc = TestApi.read(api.post("/api/certificates", s.admin.accessToken(), """
+                {"type":"TRANSFER","studentId":"%s"}""".formatted(s.asha))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.booksOut").value(1)), "$.id");
+        api.post("/api/certificates", s.admin.accessToken(), """
+                {"type":"BONAFIDE","studentId":"%s"}""".formatted(s.asha))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.booksOut").doesNotExist());
+        api.post("/api/library/returns", s.librarian.accessToken(), """
+                {"accessionNo":"%s"}""".formatted(accession)).andExpect(status().isOk());
+        api.get("/api/certificates/" + tc, s.admin.accessToken()).andExpect(jsonPath("$.booksOut").value(0));
+    }
+
+    @Test
     void appliesTheBorrowingRules() throws Exception {
         LibrarySchool s = new LibrarySchool(api);
         String a = s.title("Book A", 2);

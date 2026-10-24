@@ -80,7 +80,8 @@ nothing is saved (the sign-in created first is rolled back). The password is has
 Recording leaving: `409` for one's own record, a missing profile or someone who already left. It disables the
 sign-in through identity's `UserService.disableUser` (login then fails with `401` and refresh tokens are revoked;
 an access token already issued lasts until it expires, at most 15 minutes), removes them as department head, and
-cancels their pending leave and approved leave that starts after the leaving day.
+cancels their pending leave and approved leave that starts after the leaving day, and takes them off every section
+they were class teacher of (audited as `section.updated`).
 
 ### Departments — `/api/staff/departments`
 

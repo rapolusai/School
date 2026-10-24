@@ -23,6 +23,24 @@ class AllotmentIT extends IntegrationTest {
     ApplicationEvents events;
 
     @Test
+    void aStudentWhoLeavesTheSchoolGivesUpTheirBed() throws Exception {
+        HostelSchool s = new HostelSchool(api);
+        s.allot(s.asha, s.bedA);
+        api.post("/api/students/" + s.asha + "/leave", s.admin.accessToken(), """
+                {"status":"TRANSFERRED","leftOn":"%s","reason":"Family moved"}""".formatted(HostelSchool.TODAY))
+                .andExpect(status().isOk());
+        api.get("/api/hostel/students/" + s.asha + "/boarding", s.admin.accessToken())
+                .andExpect(jsonPath("$.boarder").value(false))
+                .andExpect(jsonPath("$.history[0].status").value("VACATED"))
+                .andExpect(jsonPath("$.history[0].toDate").value(HostelSchool.TODAY.toString()))
+                .andExpect(jsonPath("$.history[0].vacateReason").value("Left the school (transferred)"));
+        assertThat(events.stream(HostelVacated.class).filter(e -> e.studentId().toString().equals(s.asha)))
+                .hasSize(1);
+        // The bed is free for the next boarder.
+        s.allot(s.bala, s.bedA);
+    }
+
+    @Test
     void allotMoveAndVacateKeepTheRoomHistoryAndPublishEvents() throws Exception {
         HostelSchool s = new HostelSchool(api);
         // Before: a day scholar.

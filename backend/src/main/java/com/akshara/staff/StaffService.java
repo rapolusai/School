@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.akshara.academics.AcademicsService;
 import com.akshara.audit.AuditService;
 import com.akshara.audit.AuditService.Actor;
 import com.akshara.identity.RoleCatalog;
@@ -85,6 +86,7 @@ public class StaffService {
     }
 
     private final StaffRoster roster;
+    private final AcademicsService academics;
     private final StaffProfileRepository profiles;
     private final DepartmentRepository departments;
     private final StaffAttendanceRepository attendance;
@@ -95,8 +97,9 @@ public class StaffService {
 
     public StaffService(StaffRoster roster, StaffProfileRepository profiles, DepartmentRepository departments,
             StaffAttendanceRepository attendance, RoleRepository roles, UserService userService, LeaveService leave,
-            AuditService audit) {
+            AuditService audit, AcademicsService academics) {
         this.roster = roster;
+        this.academics = academics;
         this.profiles = profiles;
         this.departments = departments;
         this.attendance = attendance;
@@ -242,12 +245,14 @@ public class StaffService {
             d.update(d.getName(), null);
         }
         departments.flush();
+        int sectionsCleared = academics.clearClassTeacher(userId);
         Actor by = actor != null ? actor : current();
         int cancelled = leave.cancelForLeaver(userId, form.leftOn(), by);
         Map<String, Object> details = new LinkedHashMap<>();
         details.put("employeeCode", profile.getEmployeeCode());
         details.put("leftOn", form.leftOn().toString());
         details.put("leaveCancelled", cancelled);
+        details.put("classTeacherOf", sectionsCleared);
         record(actor, "staff.left", userId, details);
         userService.disableUser(userId, Map.of("reason", "left the school"), actor);
         return detail(userId);
