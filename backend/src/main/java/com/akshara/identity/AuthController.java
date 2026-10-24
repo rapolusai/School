@@ -8,16 +8,19 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.akshara.shared.AksharaProperties;
 import com.akshara.shared.ApiExceptionHandler;
+import com.akshara.shared.CurrentUser;
 import com.akshara.shared.SessionCookies;
 
 @RestController
@@ -28,10 +31,12 @@ public class AuthController {
     static final String COOKIE_PATH = SessionCookies.SCHOOL_PATH;
 
     private final AuthService auth;
+    private final PasswordResetService resets;
     private final AksharaProperties properties;
 
-    public AuthController(AuthService auth, AksharaProperties properties) {
+    public AuthController(AuthService auth, PasswordResetService resets, AksharaProperties properties) {
         this.auth = auth;
+        this.resets = resets;
         this.properties = properties;
     }
 
@@ -57,6 +62,62 @@ public class AuthController {
                 // A Super Admin session left in this browser would otherwise come back on the next reload.
                 .header(HttpHeaders.SET_COOKIE, SessionCookies.cleared(SessionCookies.PLATFORM_NAME,
                         SessionCookies.PLATFORM_PATH, properties.auth().cookieSecure()).toString())
+                .body(AuthResponse.of(session));
+    }
+
+    public record ResetRequest(
+            @NotBlank @Size(max = 40) String schoolCode,
+            @NotBlank @Size(max = 254) String email) {
+    }
+
+    public record ResetConfirm(
+            @NotBlank @Size(max = 40) String schoolCode,
+            @NotBlank @Size(max = 254) String email,
+            @NotBlank(message = "Enter the 6-digit code from the email.") @Size(max = 12) String code,
+            @NotBlank @Size(min = 10, max = 200, message = "Use at least 10 characters.") String newPassword) {
+    }
+
+    public record PasswordChange(
+            @NotBlank @Size(max = 200) String currentPassword,
+            @NotBlank @Size(min = 10, max = 200, message = "Use at least 10 characters.") String newPassword) {
+    }
+
+    public record ResetAccepted(String message) {
+    }
+
+    /**
+     * "Forgot password": sends a code to the person's email when the school and email exist. The answer is the same
+     * either way, so the form never tells anyone who has an account.
+     */
+    @PostMapping("/password-reset")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public ResetAccepted requestReset(@Valid @RequestBody ResetRequest request, HttpServletRequest http) {
+        resets.request(request.schoolCode(), request.email(), http.getRemoteAddr());
+        return new ResetAccepted("If the school code and email are right, a 6-digit code is on its way to that email. "
+                + "It works for 15 minutes.");
+    }
+
+    /** Sets a new password with the emailed code, and ends every open session of that person. */
+    @PostMapping("/password-reset/confirm")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void confirmReset(@Valid @RequestBody ResetConfirm request, HttpServletRequest http) {
+        resets.confirm(request.schoolCode(), request.email(), request.code(), request.newPassword(),
+                http.getRemoteAddr());
+    }
+
+    /**
+     * A signed-in person of a school changes their own password. Other devices are signed out; this one gets a fresh
+     * session (new refresh cookie and access token).
+     */
+    @PostMapping("/password")
+    public ResponseEntity<AuthResponse> changePassword(@Valid @RequestBody PasswordChange request) {
+        if (CurrentUser.isPlatformAdmin()) {
+            throw new org.springframework.security.access.AccessDeniedException("School accounts only");
+        }
+        AuthService.Session session = auth.changePassword(CurrentUser.requireId(), request.currentPassword(),
+                request.newPassword());
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshCookie(session.refreshToken()).toString())
                 .body(AuthResponse.of(session));
     }
 
