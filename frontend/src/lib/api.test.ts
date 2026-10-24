@@ -9,8 +9,11 @@ import {
   onSessionChange,
   parseErrorResponse,
   pathSegment,
+  CONSENT_REQUIRED_TYPE,
+  onConsentRequired,
   refreshSession,
   setAccessToken,
+  setSessionKind,
 } from "./api";
 import type { AuthResponse } from "./types";
 
@@ -41,6 +44,7 @@ function authHeader(call: number): string | undefined {
 
 beforeEach(() => {
   setAccessToken(null);
+  setSessionKind(null);
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
 });
@@ -109,6 +113,32 @@ describe("apiFetch", () => {
     expect(results).toEqual([{ url: "/api/users" }, { url: "/api/roles" }]);
     const refreshCalls = fetchMock.mock.calls.filter(([url]) => url === "/api/auth/refresh");
     expect(refreshCalls).toHaveLength(1);
+  });
+
+  it("refreshes a Super Admin's session through the platform endpoint", async () => {
+    setAccessToken("expired");
+    setSessionKind("platform");
+    fetchMock
+      .mockResolvedValueOnce(problem(401, { title: "Unauthorized" }))
+      .mockResolvedValueOnce(json(200, { ...auth("fresh"), user: { ...ME, platformAdmin: true } }))
+      .mockResolvedValueOnce(json(200, []));
+    await expect(apiFetch("/api/platform/tenants")).resolves.toEqual([]);
+    expect(fetchMock.mock.calls[1][0]).toBe("/api/platform/auth/refresh");
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("announces a consent-required answer so the privacy gate can show the consent screen", async () => {
+    setAccessToken("t1");
+    let told = 0;
+    const off = onConsentRequired(() => told++);
+    fetchMock
+      .mockResolvedValueOnce(problem(403, { type: CONSENT_REQUIRED_TYPE, title: "Consent needed" }))
+      .mockResolvedValueOnce(problem(403, { title: "Not allowed" }));
+    const error = (await apiFetch("/api/me/children").catch((e: unknown) => e)) as ApiError;
+    expect(error).toMatchObject({ status: 403, type: CONSENT_REQUIRED_TYPE });
+    await apiFetch("/api/users").catch(() => undefined);
+    off();
+    expect(told).toBe(1);
   });
 
   it("does not refresh for unauthenticated endpoints such as login", async () => {

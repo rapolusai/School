@@ -1,68 +1,53 @@
 package com.akshara.shared;
 
 import java.time.Clock;
-import java.time.Instant;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.time.Duration;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * Counts failed sign-ins per key (IP + school + email) in a sliding window. In-memory for Phase 0;
- * moves to Redis when the API runs as more than one task.
+ * Counts failed sign-ins per key (IP + school + email, or IP + email for the Super Admin) in a window. The counts live
+ * in PostgreSQL through {@link RateLimitStore}, so the limit holds across every API instance. After
+ * {@code maxFailures} failures the key gets 429 until the window that started with its first failure is over; a
+ * successful sign-in clears it.
  */
 @Component
 public class LoginRateLimiter {
 
-    private final Map<String, Deque<Instant>> failures = new ConcurrentHashMap<>();
     private final int maxFailures;
-    private final java.time.Duration window;
+    private final Duration window;
     private final Clock clock;
+    private final RateLimitStore store;
 
     @Autowired
-    public LoginRateLimiter(AksharaProperties properties) {
-        this(properties.auth().maxFailedLogins(), properties.auth().failedLoginWindow(), Clock.systemUTC());
+    public LoginRateLimiter(AksharaProperties properties, RateLimitStore store) {
+        this(properties.auth().maxFailedLogins(), properties.auth().failedLoginWindow(), Clock.systemUTC(), store);
     }
 
-    LoginRateLimiter(int maxFailures, java.time.Duration window, Clock clock) {
+    LoginRateLimiter(int maxFailures, Duration window, Clock clock, RateLimitStore store) {
         this.maxFailures = maxFailures;
         this.window = window;
         this.clock = clock;
+        this.store = store;
     }
 
     /** Throws 429 when the key has used up its failed attempts. */
     public void check(String key) {
-        Deque<Instant> attempts = failures.get(key);
-        if (attempts == null) {
-            return;
-        }
-        synchronized (attempts) {
-            prune(attempts);
-            if (attempts.size() >= maxFailures) {
-                throw ApiException.tooManyRequests();
-            }
+        if (store.hits(storeKey(key), clock.instant()) >= maxFailures) {
+            throw ApiException.tooManyRequests();
         }
     }
 
     public void recordFailure(String key) {
-        Deque<Instant> attempts = failures.computeIfAbsent(key, k -> new ArrayDeque<>());
-        synchronized (attempts) {
-            prune(attempts);
-            attempts.addLast(clock.instant());
-        }
+        store.hit(storeKey(key), window, clock.instant());
     }
 
     public void reset(String key) {
-        failures.remove(key);
+        store.clear(storeKey(key));
     }
 
-    private void prune(Deque<Instant> attempts) {
-        Instant cutoff = clock.instant().minus(window);
-        while (!attempts.isEmpty() && attempts.peekFirst().isBefore(cutoff)) {
-            attempts.removeFirst();
-        }
+    private static String storeKey(String key) {
+        return "login|" + key;
     }
 }

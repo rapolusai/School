@@ -1,7 +1,8 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ApiError } from "@/lib/api";
+import { act } from "react";
+import { ApiError, apiFetch, CONSENT_REQUIRED_TYPE } from "@/lib/api";
 import { NEEDS_CONSENT, PARENT, parentPrivacy } from "@/test/privacy-fixtures";
 import { renderAs, TEACHER_PERMISSIONS } from "@/test/render";
 import { PrivacyGate } from "./privacy-gate";
@@ -95,9 +96,45 @@ describe("PrivacyGate", () => {
     expect(screen.queryByTestId("privacy-gate")).not.toBeInTheDocument();
   });
 
+  it("shows the consent screen again when the API says consent is needed", async () => {
+    renderAs(PARENT, <PrivacyGate>{page}</PrivacyGate>, ["PARENT"]);
+    expect(await screen.findByText("The dashboard")).toBeInTheDocument();
+    // A new notice was published while the parent was using the app.
+    mocks.mine.mockResolvedValue(NEEDS_CONSENT);
+    await act(() => consentRequiredAnswer());
+    expect(await screen.findByTestId("privacy-gate")).toBeInTheDocument();
+    expect(screen.queryByText("The dashboard")).not.toBeInTheDocument();
+  });
+
+  it("tells a student their parent has to accept first", async () => {
+    renderAs(["dashboard.view", "notices.read"], <PrivacyGate>{page}</PrivacyGate>, ["STUDENT"]);
+    expect(screen.getByText("The dashboard")).toBeInTheDocument();
+    await act(() => consentRequiredAnswer());
+    const card = await screen.findByTestId("privacy-gate-student");
+    expect(within(card).getByRole("heading", { name: "Waiting for your parent" })).toBeInTheDocument();
+    expect(screen.queryByText("The dashboard")).not.toBeInTheDocument();
+    expect(mocks.mine).not.toHaveBeenCalled();
+  });
+
   it("shows the page when the check itself fails", async () => {
     mocks.mine.mockRejectedValue(new ApiError({ status: 500, title: "Server error" }));
     renderAs(PARENT, <PrivacyGate>{page}</PrivacyGate>, ["PARENT"]);
     expect(await screen.findByText("The dashboard")).toBeInTheDocument();
   });
 });
+
+/** Makes one API call answer 403 consent-required, as the API does for a family member without consent. */
+async function consentRequiredAnswer() {
+  const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+    new Response(JSON.stringify({ status: 403, type: CONSENT_REQUIRED_TYPE, title: "Consent needed" }), {
+      status: 403,
+      headers: { "content-type": "application/problem+json" },
+    }),
+  );
+  vi.stubGlobal("fetch", fetchMock);
+  try {
+    await apiFetch("/api/me/children").catch(() => undefined);
+  } finally {
+    vi.unstubAllGlobals();
+  }
+}

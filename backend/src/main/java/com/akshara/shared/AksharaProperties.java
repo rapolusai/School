@@ -16,7 +16,9 @@ public record AksharaProperties(Auth auth, Security security, @DefaultValue Tria
             @DefaultValue("true") boolean cookieSecure,
             @DefaultValue("http://localhost:3000") List<String> allowedOrigins,
             @DefaultValue("10") int maxFailedLogins,
-            @DefaultValue("PT5M") Duration failedLoginWindow) {
+            @DefaultValue("PT5M") Duration failedLoginWindow,
+            /** How long a Super Admin's refresh cookie lasts; shorter than a school user's. */
+            @DefaultValue("PT12H") Duration platformRefreshTokenTtl) {
     }
 
     public record Security(@DefaultValue("false") boolean allowPrivilegedDbRole) {

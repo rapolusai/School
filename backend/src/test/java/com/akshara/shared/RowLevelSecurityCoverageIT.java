@@ -57,7 +57,8 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
     /** Tables that are not owned by one school. Everything else must be isolated. */
     static final Set<String> NOT_SCHOOL_OWNED = Set.of("platform.tenant", "platform.platform_admin",
             "public.flyway_schema_history", "billing.subscription", "billing.invoice_counter",
-            "payroll.statutory_rate", "payroll.tax_rule", "payroll.tax_slab", "payroll.pt_slab_default");
+            "payroll.statutory_rate", "payroll.tax_rule", "payroll.tax_slab", "payroll.pt_slab_default",
+            "platform.rate_limit", "platform.platform_refresh_token");
 
     /** Tables whose isolation comes from a parent row instead of their own tenant_id. */
     static final Set<String> ISOLATED_THROUGH_PARENT = Set.of("identity.user_role");
@@ -67,6 +68,7 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
             "students.guardian", "students.student_guardian", "students.enrollment", "admissions.application",
             "admissions.application_guardian", "admissions.timeline_entry", "admissions.assessment_slot",
             "attendance.register", "attendance.entry", "notifications.message", "notifications.settings",
+            "notifications.whatsapp_opt_out",
             "fees.fee_head", "fees.fee_structure", "fees.fee_instalment", "fees.fee_instalment_share",
             "fees.late_fee_rule", "fees.concession", "fees.concession_head", "fees.student_due",
             "fees.receipt_counter", "fees.receipt", "fees.payment_allocation", "fees.late_fee_waiver",
@@ -408,6 +410,9 @@ class RowLevelSecurityCoverageIT extends IntegrationTest {
         api.post("/api/privacy/students/" + student + "/consents", admin.accessToken(), """
                 {"givenByName":"Lata Rao","signedOn":"%s","photos":true,"whatsapp":true}"""
                 .formatted(LocalDate.now(ZoneId.of("Asia/Kolkata")))).andExpect(status().isCreated());
+        // The parent withdraws WhatsApp, so their phone is kept off WhatsApp.
+        api.put("/api/me/privacy/children/" + student + "/consents/WHATSAPP", parent.accessToken(), """
+                {"given":false}""").andExpect(status().isOk());
         String request = TestApi.read(api.post("/api/me/privacy/requests", parent.accessToken(), """
                 {"type":"ACCESS","subject":"CHILD","studentId":"%s"}""".formatted(student))
                 .andExpect(status().isCreated()), "$.id");

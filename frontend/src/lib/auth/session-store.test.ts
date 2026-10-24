@@ -7,6 +7,7 @@ import {
   getSessionState,
   login,
   logout,
+  platformLogin,
 } from "./session-store";
 
 const ME = {
@@ -16,6 +17,16 @@ const ME = {
   roles: ["SCHOOL_ADMIN"],
   permissions: ["dashboard.view"],
   platformAdmin: false,
+  tenant: null,
+};
+
+const ROOT = {
+  id: "p1",
+  name: "Platform Admin",
+  email: "root@akshara.test",
+  roles: ["SUPER_ADMIN"],
+  permissions: ["platform.admin"],
+  platformAdmin: true,
   tenant: null,
 };
 
@@ -50,9 +61,32 @@ describe("session store", () => {
   });
 
   it("becomes anonymous when there is no session", async () => {
-    fetchMock.mockResolvedValueOnce(json(401, { title: "Unauthorized" }));
+    fetchMock
+      .mockResolvedValueOnce(json(401, { title: "Unauthorized" }))
+      .mockResolvedValueOnce(json(401, { title: "Unauthorized" }));
     bootstrapSession();
     await settle();
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual(["/api/auth/refresh", "/api/platform/auth/refresh"]);
+    expect(getSessionState().status).toBe("anonymous");
+  });
+
+  it("restores a Super Admin session from the platform cookie after a reload", async () => {
+    fetchMock
+      .mockResolvedValueOnce(json(401, { title: "Unauthorized" }))
+      .mockResolvedValueOnce(json(200, { accessToken: "p1", expiresIn: 900, user: ROOT }));
+    bootstrapSession();
+    await settle();
+    expect(fetchMock.mock.calls[1][0]).toBe("/api/platform/auth/refresh");
+    expect(getSessionState()).toMatchObject({ status: "authenticated", me: ROOT, accessToken: "p1" });
+  });
+
+  it("signs a Super Admin out through the platform endpoint", async () => {
+    fetchMock
+      .mockResolvedValueOnce(json(200, { accessToken: "p2", expiresIn: 900, user: ROOT }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }));
+    await platformLogin("root@akshara.test", "secret-password");
+    await logout();
+    expect(fetchMock.mock.calls[1][0]).toBe("/api/platform/auth/logout");
     expect(getSessionState().status).toBe("anonymous");
   });
 

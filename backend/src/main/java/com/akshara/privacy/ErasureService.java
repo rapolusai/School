@@ -5,9 +5,11 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.context.ApplicationEventPublisher;
@@ -24,7 +26,10 @@ import com.akshara.privacy.PrivacyForms.EraseForm;
 import com.akshara.privacy.PrivacyViews.RequestDetail;
 import com.akshara.shared.ApiException;
 import com.akshara.shared.TenantContext;
+import com.akshara.identity.UserService;
+import com.akshara.notifications.MessageErasure;
 import com.akshara.students.StudentErasure;
+import com.akshara.students.StudentRoster;
 import com.akshara.students.StudentService;
 import com.akshara.students.StudentService.StudentDetail;
 import com.akshara.students.StudentStatus;
@@ -52,10 +57,13 @@ public class ErasureService {
     private final FeeDuesService fees;
     private final AuditService audit;
     private final ApplicationEventPublisher events;
+    private final MessageErasure messageLog;
+    private final UserService users;
+    private final StudentRoster roster;
 
     ErasureService(DataRequestService requests, DataExportRepository exports, StudentService students,
             StudentErasure studentErasure, AdmissionRecords admissions, FeeDuesService fees, AuditService audit,
-            ApplicationEventPublisher events) {
+            ApplicationEventPublisher events, MessageErasure messageLog, UserService users, StudentRoster roster) {
         this.requests = requests;
         this.exports = exports;
         this.students = students;
@@ -64,6 +72,9 @@ public class ErasureService {
         this.fees = fees;
         this.audit = audit;
         this.events = events;
+        this.messageLog = messageLog;
+        this.users = users;
+        this.roster = roster;
     }
 
     /**
@@ -120,6 +131,22 @@ public class ErasureService {
             unlinked.add(result.studentUserId());
         }
         unlinked.addAll(result.parentUserIds());
+        // The message log forgets the child and the deleted parents' contacts; sign-ins that no longer stand for a
+        // child at school stop working. A parent kept for a brother or sister still at school keeps theirs.
+        int messagesCleared = messageLog.eraseStudent(studentId, result.deletedGuardianContacts());
+        Set<UUID> disable = new LinkedHashSet<>(unlinked);
+        for (UUID parent : result.keptParentUserIds()) {
+            if (roster.activeStudentIdsOf(parent).isEmpty()) {
+                disable.add(parent);
+            }
+        }
+        int signInsDisabled = 0;
+        for (UUID userId : disable) {
+            if (users.disableUser(userId, Map.of("reason", "student_data_erased", "studentId", studentId.toString()),
+                    actor)) {
+                signInsDisabled++;
+            }
+        }
         Map<String, Object> details = new LinkedHashMap<>();
         details.put("studentId", studentId.toString());
         details.put("admissionNo", result.admissionNo());
@@ -127,6 +154,8 @@ public class ErasureService {
         details.put("guardiansKept", result.guardiansKept());
         details.put("applicationAnonymised", application);
         details.put("exportsDeleted", exportsDeleted);
+        details.put("messagesCleared", messagesCleared);
+        details.put("signInsDisabled", signInsDisabled);
         details.put("receiptsKept", receipts.size());
         details.put("keepReceiptsUntil", keepUntil == null ? null : keepUntil.toString());
         audit.record(actor, "data_request.erased", "data_request", requestId, details);

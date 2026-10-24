@@ -24,4 +24,9 @@ interface ConsentRecordRepository extends JpaRepository<ConsentRecord, UUID> {
     @Query("select distinct c.studentId from ConsentRecord c where c.purpose = com.akshara.privacy.PrivacyPurpose.ESSENTIAL "
             + "and c.action = com.akshara.privacy.ConsentAction.GIVEN and c.noticeVersion = ?1")
     List<UUID> essentialGivenFor(int noticeVersion);
+
+    /** Which of these students have essential processing agreed against this notice version. */
+    @Query("select distinct c.studentId from ConsentRecord c where c.purpose = com.akshara.privacy.PrivacyPurpose.ESSENTIAL "
+            + "and c.action = com.akshara.privacy.ConsentAction.GIVEN and c.noticeVersion = ?1 and c.studentId in ?2")
+    List<UUID> essentialGivenAmong(int noticeVersion, Collection<UUID> studentIds);
 }

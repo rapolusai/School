@@ -11,6 +11,10 @@ Status: accepted (Phase 0)
   (outside a 30-second grace for two tabs refreshing together) revokes the whole chain and is
   written to the audit trail.
 - Refresh and sign-out also reject requests whose `Origin` is not the web app.
-- Failed sign-ins are throttled per address, school and email (in memory for now, Redis once the
-  API runs as several tasks), and AWS WAF rate-limits the sign-in and sign-up endpoints.
+- Failed sign-ins are throttled per address, school and email in PostgreSQL (`platform.rate_limit`, one atomic
+  upsert per failure), so the limit holds when the API runs as several tasks without adding Redis; AWS WAF also
+  rate-limits the sign-in and sign-up endpoints.
+- Super Admins get the same kind of rotating cookie (`platform_refresh_token`, scoped to `/api/platform/auth`,
+  stored in `platform.platform_refresh_token`); school and platform cookies and tokens are refused by each other's
+  endpoints.
 - Every failure gives the same message, so it does not reveal whether a school or email exists.

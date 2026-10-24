@@ -129,6 +129,13 @@ test("the admin publishes a notice; the parent accepts it, changes a choice and 
   await expectNoHorizontalScroll(visitor);
   await visitor.close();
 
+  // The API itself holds the parent's app back until they accept (not only the screen).
+  const waiting = { headers: { Authorization: `Bearer ${await loginViaApi(request, s.parent)}` } };
+  const blocked = await request.get("/api/me/children", waiting);
+  expect(blocked.status()).toBe(403);
+  expect(((await blocked.json()) as { type: string }).type).toBe("urn:akshara:problem:consent-required");
+  expect((await request.get("/api/me/privacy", waiting)).status()).toBe(200);
+
   // The parent must accept before using the app; optional choices start unticked.
   await signOut(page);
   await loginViaUi(page, s.parent);
@@ -146,6 +153,7 @@ test("the admin publishes a notice; the parent accepts it, changes a choice and 
   await choices.getByRole("checkbox", { name: /WhatsApp/ }).check();
   await gate.getByRole("button", { name: "Agree and continue" }).click();
   await expect(page.getByRole("heading", { name: "My children" })).toBeVisible();
+  expect((await request.get("/api/me/children", waiting)).status()).toBe(200);
 
   // Their privacy page: withdraw WhatsApp, then ask for a copy of the child's data.
   await mainNav(page).getByRole("link", { name: "Privacy and my data" }).click();

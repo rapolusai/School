@@ -238,6 +238,21 @@ public class StudentRoster {
                 .getResultList());
     }
 
+    /**
+     * The students at school (status ACTIVE) a family sign-in stands for: a parent's children and a student's own
+     * record. Empty for staff. The privacy module's consent check runs this on every family request, so it is two
+     * small queries.
+     */
+    public Set<UUID> activeStudentIdsOf(UUID userId) {
+        TenantContext.require();
+        return Set.copyOf(entityManager.createQuery("select s.id from Student s "
+                + "where s.status = com.akshara.students.StudentStatus.ACTIVE and (s.userAccountId = :user "
+                + "or s.id in (select l.studentId from StudentGuardian l, Guardian g "
+                + "where l.guardianId = g.id and g.userAccountId = :user))", UUID.class)
+                .setParameter("user", userId)
+                .getResultList());
+    }
+
     /** How many students the school has on roll (status ACTIVE): its plan's student count and billing use this. */
     public long activeCount() {
         TenantContext.require();

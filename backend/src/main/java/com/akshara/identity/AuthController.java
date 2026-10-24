@@ -18,13 +18,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.akshara.shared.AksharaProperties;
 import com.akshara.shared.ApiExceptionHandler;
+import com.akshara.shared.SessionCookies;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    static final String REFRESH_COOKIE = "refresh_token";
-    static final String COOKIE_PATH = "/api/auth";
+    static final String REFRESH_COOKIE = SessionCookies.SCHOOL_NAME;
+    static final String COOKIE_PATH = SessionCookies.SCHOOL_PATH;
 
     private final AuthService auth;
     private final AksharaProperties properties;
@@ -53,6 +54,9 @@ public class AuthController {
                 http.getRemoteAddr());
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, refreshCookie(session.refreshToken()).toString())
+                // A Super Admin session left in this browser would otherwise come back on the next reload.
+                .header(HttpHeaders.SET_COOKIE, SessionCookies.cleared(SessionCookies.PLATFORM_NAME,
+                        SessionCookies.PLATFORM_PATH, properties.auth().cookieSecure()).toString())
                 .body(AuthResponse.of(session));
     }
 

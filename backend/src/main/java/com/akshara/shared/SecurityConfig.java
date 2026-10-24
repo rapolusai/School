@@ -33,6 +33,7 @@ public class SecurityConfig {
 
     static final String[] PUBLIC_POSTS = {
         "/api/public/signup", "/api/auth/login", "/api/auth/refresh", "/api/auth/logout", "/api/platform/auth/login",
+        "/api/platform/auth/refresh", "/api/platform/auth/logout",
         "/api/public/payments/webhook/*"
     };
 

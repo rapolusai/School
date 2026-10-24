@@ -6,6 +6,7 @@ import {
   loginViaUi,
   mainNav,
   newSchool,
+  signOut,
   signupViaApi,
   type School,
 } from "./support/helpers";
@@ -207,6 +208,24 @@ test("a School Admin sees the plan, renewal date and invoices, and no other scho
   const headers = { Authorization: `Bearer ${await loginViaApi(request, adminCredentials(other))}` };
   expect((await request.get(`/api/billing/invoices/${invoice.id}`, { headers })).status()).toBe(404);
   expect((await request.get("/api/platform/billing/renewals", { headers })).status()).toBe(403);
+});
+
+test("the Super Admin stays signed in after a reload and signs out for good", async ({ page }) => {
+  await platformLoginViaUi(page);
+  await mainNav(page).getByRole("link", { name: "Platform health" }).click();
+  await expect(page).toHaveURL(/\/app\/platform\/health$/);
+  await page.reload();
+  await expect(page).toHaveURL(/\/app\/platform\/health$/);
+  await expect(page.getByTestId("health-database")).toContainText("Reachable");
+  // A new tab of the same browser restores the session from the cookie as well.
+  const other = await page.context().newPage();
+  await other.goto("/app/platform/schools");
+  await expect(other).toHaveURL(/\/app\/platform\/schools$/);
+  await other.close();
+
+  await signOut(page);
+  await page.goto("/app/platform/schools");
+  await expect(page).toHaveURL(/\/login(\?|$)/);
 });
 
 test("platform health shows the schools, the database and the app at every width", async ({ page }) => {
