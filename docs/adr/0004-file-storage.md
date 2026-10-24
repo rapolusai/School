@@ -1,4 +1,4 @@
-# 4. Uploaded files live in PostgreSQL for the pilot, behind a FileStore interface
+# 4. Uploaded files live in PostgreSQL for the pilot (S3 in production), behind a FileStore interface
 
 Status: accepted (Phase 1, timetable and homework)
 
@@ -54,3 +54,16 @@ A module that accepts files:
   existing rows. Downloads could then use short-lived signed URLs.
 - There is no virus scanning yet. Files are only ever served as downloads with `nosniff`, and only
   the allowed types are accepted, which limits the risk until a scanner is added.
+
+## Update: object storage (production)
+
+- `akshara.files.store=s3` (`FILES_STORE`, set by Terraform in AWS) keeps each file's bytes in the environment's
+  private S3 bucket under `<tenant id>/<file id>` (`storage.tf`: its own KMS key, versioning, TLS only). The row in
+  `files.stored_file` stays the file's record, with `storage` = `S3` and no `bytes` (migration V30), so row-level
+  security, `FileAccessPolicy`, `GET /api/files/{id}` and its headers are unchanged. The default stays `database`.
+- The same `DatabaseFileStore` does both: it uploads before the row commits and deletes the object again if the
+  change rolls back; a deleted file's object is deleted after the deletion commits (the bucket keeps old versions
+  for 30 days). Files stored before the switch keep working from the database until a start with
+  `FILES_COPY_TO_S3=true` copies them (`FilesCopyToObjectStorage`), one file per transaction, safe to repeat.
+- Downloads still pass through the API (no signed URLs yet), so access checks and audit stay in one place.
+- Not yet: deleting a whole school's prefix when a school is removed, and virus scanning.

@@ -113,7 +113,7 @@ resource "aws_s3_bucket_policy" "files" {
 
 # --- What the API may do with the bucket (task role) ------------------------------
 # The api-migrate task shares this role; the one-off copy of existing files from the database to S3
-# (FILES_MIGRATE_TO_S3, see README) runs there.
+# (FILES_COPY_TO_S3, docs/adr/0004-file-storage.md) runs there.
 
 data "aws_iam_policy_document" "api_files" {
   statement {

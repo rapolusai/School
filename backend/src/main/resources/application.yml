@@ -56,6 +56,14 @@ management:
         enabled: true
 
 akshara:
+  files:
+    # Where uploaded files' bytes go: "database" (default, the pilot) or "s3" (AWS; the bucket comes from Terraform).
+    # The file's record always stays in the database. FILES_COPY_TO_S3=true for one start copies older files over.
+    store: ${FILES_STORE:database}
+    copy-to-s3: ${FILES_COPY_TO_S3:false}
+    s3:
+      bucket: ${FILES_S3_BUCKET:}
+      region: ${AWS_REGION:}
   auth:
     jwt-secret: ${JWT_SECRET:}
     cookie-secure: ${COOKIE_SECURE:true}
@@ -73,8 +81,17 @@ akshara:
     enabled: ${DEMO_ENABLED:false}
     password: ${DEMO_PASSWORD:}
   notifications:
+    email:
+      # "simulated" (default: recorded in the message log, never sent) or "ses" (Amazon SES; AWS only). SMS and
+      # WhatsApp stay simulated until their providers are chosen.
+      sender: ${EMAIL_SENDER:simulated}
+      from: ${EMAIL_FROM:}
+      configuration-set: ${EMAIL_SES_CONFIGURATION_SET:}
+      region: ${AWS_REGION:}
+    # Development only: the message log shows simulated sign-in codes (never real deliveries). Never in AWS.
+    show-simulated-secrets: ${SHOW_SIMULATED_SECRETS:false}
     dispatch:
-      # Sends queued messages (absence alerts). Only the simulated sender exists for now: nothing leaves the system.
+      # Sends queued messages. Email goes through SES when EMAIL_SENDER=ses; everything else is simulated.
       enabled: ${NOTIFICATIONS_DISPATCH_ENABLED:true}
       interval: ${NOTIFICATIONS_DISPATCH_INTERVAL:PT15S}
   payments:
