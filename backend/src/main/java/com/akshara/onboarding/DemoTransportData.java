@@ -254,10 +254,15 @@ class DemoTransportData {
         return result;
     }
 
-    /** Arjun first, then other active students of the current year, a few from each class. */
+    /**
+     * Arjun first, then other active students of the current year, a few from each class; never the student the demo
+     * later gives a transfer certificate, whose seat would end when they leave.
+     */
     private List<StudentRow> riders() {
         List<StudentRow> all = students.list(new StudentQuery(null, null, null, StudentStatus.ACTIVE, null, 0,
-                StudentService.MAX_PAGE_SIZE)).items();
+                StudentService.MAX_PAGE_SIZE)).items().stream()
+                .filter(r -> !r.fullName().equals(DemoCertificatesData.LEFT_STUDENT))
+                .toList();
         List<StudentRow> result = new ArrayList<>();
         all.stream().filter(r -> r.fullName().equals(ARJUN)).findFirst().ifPresent(result::add);
         int every = Math.max(1, all.size() / (OTHER_RIDERS + 2));
