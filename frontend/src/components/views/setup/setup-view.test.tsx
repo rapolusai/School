@@ -93,6 +93,20 @@ describe("setup validation (mirrors the API)", () => {
 });
 
 describe("SetupView", () => {
+  it("offers the school import to someone who manages students and staff", async () => {
+    renderAs([...ADMIN_PERMISSIONS, "staff.manage"], <SetupView />);
+    const card = await screen.findByTestId("school-import-card");
+    expect(within(card).getByRole("button", { name: "Download template" })).toBeInTheDocument();
+    expect(within(card).getByRole("button", { name: "Download sample" })).toBeInTheDocument();
+    expect(within(card).getByRole("link", { name: "Upload file" })).toHaveAttribute("href", "/app/setup/import");
+  });
+
+  it("does not offer the school import without staff.manage", async () => {
+    renderAs(ADMIN_PERMISSIONS, <SetupView />);
+    expect(await screen.findByText("2026-27")).toBeInTheDocument();
+    expect(screen.queryByTestId("school-import-card")).not.toBeInTheDocument();
+  });
+
   it("lists academic years with the current one marked", async () => {
     renderAs(ADMIN_PERMISSIONS, <SetupView />);
     const list = await screen.findByTestId("years-list");

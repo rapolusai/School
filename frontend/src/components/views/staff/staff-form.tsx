@@ -528,3 +528,72 @@ export function LeavingDialog({
   );
 }
 
+/** Checks a new sign-in password: at least 10 characters (the API's rule). Pure. */
+export function validatePassword(password: string): Problems {
+  return password.length < 10 ? { password: "staff.password.v.short" } : {};
+}
+
+/**
+ * Sets the sign-in password of someone who has none yet (staff added by the school import). The admin types it and
+ * shares it in person; it is never generated here or shown again.
+ */
+export function SetPasswordDialog({
+  open,
+  staff,
+  onClose,
+  onSaved,
+}: {
+  open: boolean;
+  staff: StaffDetail;
+  onClose: () => void;
+  onSaved: (staff: StaffDetail) => void;
+}) {
+  const { t } = useI18n();
+  const form = useForm<{ password: string }>({ password: "" });
+
+  const close = () => {
+    form.reset({ password: "" });
+    onClose();
+  };
+
+  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!form.check(validatePassword(form.values.password), t, event.currentTarget)) return;
+    let saved: StaffDetail | undefined;
+    const ok = await form.submit(t, async () => {
+      saved = await staffApi.setPassword(staff.userId, form.values.password);
+    });
+    if (ok && saved) {
+      form.reset({ password: "" });
+      onSaved(saved);
+    }
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onClose={close}
+      title={t("staff.password.title", { name: staff.name })}
+      description={t("staff.password.description", { email: staff.email })}
+      closeLabel={t("common.close")}
+    >
+      <form method="post" className="flex flex-col gap-3.5" onSubmit={onSubmit} noValidate>
+        <FormAlert message={form.formError} />
+        <TextField
+          label={t("staff.password.field")}
+          name="password"
+          type="password"
+          autoComplete="new-password"
+          hint={t("staff.password.hint")}
+          value={form.values.password}
+          onChange={(e) => form.set("password", e.target.value)}
+          error={form.errors.password}
+          maxLength={200}
+          required
+        />
+        <Actions submitting={form.submitting} onCancel={close} label={t("staff.password.submit")} />
+      </form>
+    </Dialog>
+  );
+}
+

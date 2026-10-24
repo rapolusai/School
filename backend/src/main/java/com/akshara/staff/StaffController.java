@@ -26,6 +26,7 @@ import com.akshara.staff.StaffAttendanceService.PersonMonth;
 import com.akshara.staff.StaffForms.CreateStaff;
 import com.akshara.staff.StaffForms.Leaving;
 import com.akshara.staff.StaffForms.ProfileFields;
+import com.akshara.staff.StaffForms.SetPassword;
 import com.akshara.staff.StaffService.RoleRef;
 import com.akshara.staff.StaffService.StaffDetail;
 import com.akshara.staff.StaffService.StaffPage;
@@ -100,6 +101,17 @@ public class StaffController {
     @PreAuthorize(MANAGE)
     public StaffDetail saveProfile(@PathVariable UUID userId, @Valid @RequestBody ProfileFields request) {
         return staff.saveProfile(userId, request, StaffAuth.actor());
+    }
+
+    /**
+     * Sets the person's sign-in password (staff added from a spreadsheet start without one). The password is hashed
+     * before the transaction starts and is never stored or shown in clear.
+     */
+    @PutMapping("/{userId}/password")
+    @PreAuthorize(MANAGE)
+    public StaffDetail setPassword(@PathVariable UUID userId, @Valid @RequestBody SetPassword request) {
+        String hash = passwordEncoder.encode(request.password());
+        return staff.setPassword(userId, hash, StaffAuth.actor());
     }
 
     /** Records that the person left: their sign-in is disabled and open leave is cancelled. */

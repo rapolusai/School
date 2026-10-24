@@ -29,6 +29,13 @@ import com.akshara.shared.Ids;
 @Table(schema = "identity", name = "user_account")
 public class UserAccount extends AssignedIdEntity {
 
+    /**
+     * Stored instead of a password hash for people added without a password (staff brought in from a spreadsheet).
+     * It is not a valid hash, so no password ever matches it: the person cannot sign in until a School Admin sets a
+     * password for them.
+     */
+    public static final String NO_PASSWORD = "!no-password";
+
     @Id
     private UUID id;
 
@@ -95,6 +102,20 @@ public class UserAccount extends AssignedIdEntity {
         }
         status = UserStatus.DISABLED;
         return true;
+    }
+
+    /** False while the person has no password yet (added without one), so they cannot sign in. */
+    public boolean hasPassword() {
+        return hasPassword(passwordHash);
+    }
+
+    static boolean hasPassword(String passwordHash) {
+        return passwordHash != null && !passwordHash.isBlank() && !NO_PASSWORD.equals(passwordHash);
+    }
+
+    /** Replaces the password (already hashed by the caller). */
+    void changePasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 
     public boolean isActive() {

@@ -146,6 +146,7 @@ describe("StaffView", () => {
       profileComplete: true,
       profile: null,
       leaveApprover: { routing: "SCHOOL", departmentHead: null },
+      signInReady: true,
     };
     create.mockResolvedValue(created);
     const user = userEvent.setup();

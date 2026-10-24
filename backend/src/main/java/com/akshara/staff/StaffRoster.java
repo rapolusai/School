@@ -28,11 +28,11 @@ class StaffRoster {
 
     /** One staff member. {@code profile} is null while the profile is incomplete. */
     record Member(UUID userId, String name, String email, List<String> roles, boolean accountActive,
-            Instant lastLoginAt, StaffProfile profile) {
+            Instant lastLoginAt, StaffProfile profile, boolean hasPassword) {
 
         static Member of(UserAccount user, StaffProfile profile) {
             return new Member(user.getId(), user.getName(), user.getEmail(), user.roleCodes(), user.isActive(),
-                    user.getLastLoginAt(), profile);
+                    user.getLastLoginAt(), profile, user.hasPassword());
         }
 
         /** LEFT once a leaving date is recorded or the sign-in is disabled. */

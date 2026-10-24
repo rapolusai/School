@@ -22,6 +22,10 @@ public interface UserRepository extends JpaRepository<UserAccount, UUID> {
     @Query("select count(u) > 0 from UserAccount u where lower(u.email) = lower(?1)")
     boolean existsByEmail(String email);
 
+    /** The emails (lower case) of {@code lowerCaseEmails} that someone in this school already signs in with. */
+    @Query("select lower(u.email) from UserAccount u where lower(u.email) in ?1")
+    List<String> findExistingEmails(Collection<String> lowerCaseEmails);
+
     /** People holding at least one role whose code is not in {@code excludedCodes} (for example the staff), by name. */
     @Query("select distinct u from UserAccount u left join fetch u.roles where u.id in "
             + "(select u2.id from UserAccount u2 join u2.roles r2 where r2.code not in ?1) order by u.name")

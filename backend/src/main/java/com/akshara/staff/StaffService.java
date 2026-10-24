@@ -80,9 +80,10 @@ public class StaffService {
         static final String SCHOOL = "SCHOOL";
     }
 
+    /** {@code signInReady} is false while the person has no password yet (added from a spreadsheet). */
     public record StaffDetail(UUID userId, String name, String email, List<String> roles, StaffStatus status,
             boolean accountActive, Instant lastLoginAt, boolean profileComplete, ProfileView profile,
-            LeaveApprover leaveApprover) {
+            LeaveApprover leaveApprover, boolean signInReady) {
     }
 
     private final StaffRoster roster;
@@ -258,6 +259,23 @@ public class StaffService {
         return detail(userId);
     }
 
+    /**
+     * Sets the sign-in password of a staff member (hashed by the caller), for example someone brought in from a
+     * spreadsheet without one. Their open sessions end. Someone who has left cannot be given a password.
+     */
+    public StaffDetail setPassword(UUID userId, String passwordHash, Actor actor) {
+        TenantContext.require();
+        Member member = roster.find(userId).orElseThrow(() -> ApiException.notFound("Staff member"));
+        if (member.status() == StaffStatus.LEFT) {
+            throw new ApiException(HttpStatus.CONFLICT, "Already left",
+                    member.name() + " has left the school, so they cannot sign in.");
+        }
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("firstPassword", !member.hasPassword());
+        userService.setPassword(userId, passwordHash, details, actor);
+        return detail(userId);
+    }
+
     // ------------------------------------------------------------------ helpers
 
     StaffDetail detail(Member member) {
@@ -275,7 +293,7 @@ public class StaffService {
                 .map(h -> new LeaveApprover(LeaveApprover.DEPARTMENT_HEAD, new PersonRef(h.userId(), h.name())))
                 .orElse(new LeaveApprover(LeaveApprover.SCHOOL, null));
         return new StaffDetail(member.userId(), member.name(), member.email(), member.roles(), member.status(),
-                member.accountActive(), member.lastLoginAt(), p != null, profile, approver);
+                member.accountActive(), member.lastLoginAt(), p != null, profile, approver, member.hasPassword());
     }
 
     private StaffProfile.Fields clean(ProfileFields form) {
