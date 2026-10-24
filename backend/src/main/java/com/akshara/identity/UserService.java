@@ -72,6 +72,37 @@ public class UserService {
     }
 
     /**
+     * Adds a person who cannot sign in yet: the account has no password (see {@link UserAccount#NO_PASSWORD}) until a
+     * School Admin sets one. Used for staff brought in from a spreadsheet, so no password is ever generated or shown.
+     */
+    @Transactional
+    public UserAccount createUserWithoutPassword(String name, String email, Collection<String> roleCodes,
+            AuditService.Actor actor) {
+        return createUser(name, email, UserAccount.NO_PASSWORD, roleCodes, actor);
+    }
+
+    /**
+     * Sets a new password (already hashed by the caller) for a person of the current school and ends their open
+     * sessions. The audit trail records that it happened, never the password.
+     */
+    @Transactional
+    public void setPassword(UUID userId, String passwordHash, Map<String, ?> details, AuditService.Actor actor) {
+        TenantContext.require();
+        if (!UserAccount.hasPassword(passwordHash)) {
+            throw new IllegalArgumentException("A password hash is required");
+        }
+        UserAccount user = users.findById(userId).orElseThrow(() -> ApiException.notFound("User"));
+        user.changePasswordHash(passwordHash);
+        users.flush();
+        tokens.revokeAllOf(userId, Instant.now());
+        if (actor == null) {
+            audit.record("user.password_set", "user", userId, details);
+        } else {
+            audit.record(actor, "user.password_set", "user", userId, details);
+        }
+    }
+
+    /**
      * Stops a person of the current school signing in (for example when they leave) and ends their open sessions.
      * The account and everything it did stay on record. Returns false when the account was already disabled.
      */

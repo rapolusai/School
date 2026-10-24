@@ -124,7 +124,10 @@ public class AuthService {
                         .orElse(null)));
 
         // Hash outside any transaction so a slow check never holds a database connection.
-        boolean passwordOk = passwordEncoder.matches(password, candidate == null ? dummyHash : candidate.passwordHash());
+        // Someone added without a password (UserAccount.NO_PASSWORD) is checked against the dummy hash too, so they
+        // take as long as anyone else and never match.
+        boolean usable = candidate != null && UserAccount.hasPassword(candidate.passwordHash());
+        boolean passwordOk = passwordEncoder.matches(password, usable ? candidate.passwordHash() : dummyHash) && usable;
         boolean allowed = passwordOk && candidate != null && candidate.active() && tenant.status().allowsSignIn();
         boolean paused = passwordOk && candidate != null && candidate.active() && !tenant.status().allowsSignIn();
 

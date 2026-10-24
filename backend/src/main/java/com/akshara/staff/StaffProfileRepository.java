@@ -1,5 +1,6 @@
 package com.akshara.staff;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -13,6 +14,10 @@ interface StaffProfileRepository extends JpaRepository<StaffProfile, UUID> {
 
     @Query("select count(p) > 0 from StaffProfile p where lower(p.employeeCode) = lower(?1) and p.userId <> ?2")
     boolean employeeCodeTaken(String employeeCode, UUID exceptUserId);
+
+    /** The employee codes (lower case) of {@code lowerCaseCodes} already in use. */
+    @Query("select lower(p.employeeCode) from StaffProfile p where lower(p.employeeCode) in ?1")
+    List<String> findExistingEmployeeCodes(Collection<String> lowerCaseCodes);
 
     long countByDepartmentId(UUID departmentId);
 

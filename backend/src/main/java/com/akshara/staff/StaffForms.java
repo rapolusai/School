@@ -61,6 +61,11 @@ public final class StaffForms {
         }
     }
 
+    /** A sign-in password set by the School Admin, for example for staff brought in from a spreadsheet. */
+    public record SetPassword(
+            @NotBlank @Size(min = 10, max = 200, message = "Use at least 10 characters.") String password) {
+    }
+
     /** Recording that someone left: their sign-in is disabled; nothing is deleted. */
     public record Leaving(@NotNull LocalDate leftOn, @NotBlank @Size(max = 500) String reason) {
     }
