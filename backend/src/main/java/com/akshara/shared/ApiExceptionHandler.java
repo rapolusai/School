@@ -82,6 +82,9 @@ public class ApiExceptionHandler {
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     ResponseEntity<ProblemDetail> handleUnreadable(HttpMessageNotReadableException e) {
+        if (causedByTooLargeBody(e)) {
+            return tooLarge();
+        }
         Map<String, String> errors = new LinkedHashMap<>();
         if (e.getCause() instanceof JacksonException jackson) {
             String field = fieldPath(jackson.getPath());
@@ -188,6 +191,9 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     ResponseEntity<ProblemDetail> handleUnexpected(Exception e) {
+        if (causedByTooLargeBody(e)) {
+            return tooLarge();
+        }
         // Lock and unique-key failures that arrive untranslated, e.g. a JPA PersistenceException from a flush.
         for (Throwable t = e; t != null; t = t.getCause() == t ? null : t.getCause()) {
             if (isConcurrencyFailure(t)) {
@@ -212,6 +218,20 @@ public class ApiExceptionHandler {
             body.setProperty("errors", errors);
         }
         return ResponseEntity.status(status).body(body);
+    }
+
+    /** A body without a Content-Length that went over {@link RequestSizeLimitFilter}'s limit while being read. */
+    private static boolean causedByTooLargeBody(Throwable e) {
+        for (Throwable t = e; t != null; t = t.getCause() == t ? null : t.getCause()) {
+            if (t instanceof RequestSizeLimitFilter.BodyTooLargeException) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static ResponseEntity<ProblemDetail> tooLarge() {
+        return problem(HttpStatus.CONTENT_TOO_LARGE, "Too large", "The request is too large.", Map.of());
     }
 
     private static ResponseEntity<ProblemDetail> alreadyExists() {

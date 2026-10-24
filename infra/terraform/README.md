@@ -236,7 +236,7 @@ move to a shared stack first (both environments would otherwise try to create th
 ## Known limits and follow-ups
 
 - WAF's `SizeRestrictions_BODY` rule (bodies over 8 KB) only counts, so uploads, the Excel school
-  import and large forms get through; the API caps bodies itself (2 MB JSON, 26 MB uploads). Watch
+  import and large forms get through; the API caps bodies itself (8 MB JSON, 26 MB uploads). Watch
   the counted requests on the dashboard.
 - The per-IP rate limit counts all requests from the NAT gateway's address as one client. If the
   web server ever calls the public API URL server-side, exempt the NAT IPs or call the API

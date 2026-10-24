@@ -10,7 +10,7 @@ locals {
   # Managed rules that only count (and so still show in metrics and sampled requests) instead of blocking.
   # SizeRestrictions_BODY blocks every body over 8 KB, which would block file uploads, the Excel school import
   # and large forms (mark sheets, registers). The API caps request bodies itself (RequestSizeLimitFilter:
-  # 2 MB for JSON, 26 MB for uploads) and checks every uploaded file, so WAF only reports large bodies.
+  # 8 MB for JSON, 26 MB for uploads) and checks every uploaded file, so WAF only reports large bodies.
   waf_count_rules = {
     AWSManagedRulesCommonRuleSet = ["SizeRestrictions_BODY"]
   }
