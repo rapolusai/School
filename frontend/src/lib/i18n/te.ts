@@ -1609,6 +1609,9 @@ export const te: Record<MessageKey, string> = {
   "fees.child.next": "తరువాతిది: {label}, {amount} గడువు {date}",
   "fees.child.allPaid": "అన్ని ఫీజులు చెల్లించారు.",
   "fees.child.payLink": "ఫీజు చెల్లించండి",
+  "fees.child.payCancelled": "చెల్లించే ముందే చెల్లింపు విండో మూసివేయబడింది. ఏ మొత్తమూ కట్ కాలేదు; మీరు మళ్ళీ ప్రయత్నించవచ్చు.",
+  "fees.child.payUnavailable":
+    "చెల్లింపు విండో తెరుచుకోలేదు. మీ కనెక్షన్ చూసి మళ్ళీ ప్రయత్నించండి, లేదా పాఠశాల కార్యాలయంలో చెల్లించండి.",
   "fees.child.viewLink": "ఫీజు మరియు రసీదులు",
   "fees.child.back": "డాష్‌బోర్డ్",
   "fees.child.backToFees": "ఫీజు",

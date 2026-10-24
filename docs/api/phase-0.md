@@ -34,6 +34,21 @@ A Super Admin's refresh token is a separate httpOnly, `SameSite=Strict` cookie n
 | POST | `/api/platform/auth/login` | `{ email, password }` | `200 AuthResponse` (platform admin) + platform refresh cookie |
 | POST | `/api/platform/auth/refresh` | (platform refresh cookie) | `200 AuthResponse` + rotated platform refresh cookie |
 | POST | `/api/platform/auth/logout` | (platform refresh cookie) | `204`, cookie cleared, token family revoked |
+| POST | `/api/auth/password-reset` | `{ schoolCode, email }` | `202 { message }`, the same whether or not the school and email exist |
+| POST | `/api/auth/password-reset/confirm` | `{ schoolCode, email, code, newPassword }` | `204`; every session of that person ends |
+| POST | `/api/auth/password` (signed in, school users) | `{ currentPassword, newPassword }` | `200 AuthResponse` + new refresh cookie; other sessions end |
+
+**Forgot password.** A six-digit code goes to the person's sign-in email through the notifications outbox
+(template `identity.password_reset`). Only a hash of the code is kept, salted with the request id; it lasts 15
+minutes and 5 tries, and asking again replaces it. A wrong, used, replaced or expired code is
+`400 { errors.code }` that says nothing about whether the account exists. The message log never shows the
+code's text (a real delivery wipes it; `akshara.notifications.show-simulated-secrets=true` shows simulated
+codes on a development machine only), and quiet hours do not hold it back. Requests are rate-limited per IP and
+per school and email; in AWS the WAF's strict login limit also covers `/api/auth/password-reset*`. Staff
+imported without a password set their first one the same way.
+
+**Change password.** The current password must be right (`400 { errors.currentPassword }`; wrong guesses count
+towards a rate limit), and the new one must differ (`400 { errors.newPassword }`). Super Admins get `403`.
 
 `schoolCode`: 3–40 characters, lowercase letters, digits and hyphens, starting with a letter. A few
 codes are reserved (`admin`, `api`, `app`, `www`, `platform`, …) and answer `409` like a taken code.
@@ -96,7 +111,8 @@ The web app restores a session on load by trying `/api/auth/refresh` and then `/
 other way round on `/app/platform` pages); once it knows which one it holds it refreshes and signs out only there.
 
 Audit actions written in Phase 0: `school.created`, `user.created`, `auth.login`, `auth.login_failed`,
-`auth.logout`, `auth.refresh_reused`.
+`auth.logout`, `auth.refresh_reused`; and for passwords `auth.password_reset_requested`,
+`auth.password_reset_wrong_code` and `user.password_set` (with `via`: `password_reset` or `self`).
 
 ## School (tenant) endpoints
 

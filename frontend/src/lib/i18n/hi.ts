@@ -1474,6 +1474,9 @@ export const hi: Record<MessageKey, string> = {
   "fees.child.next": "अगली: {label}, {amount}, देय तिथि {date}",
   "fees.child.allPaid": "सारा शुल्क चुका दिया गया है।",
   "fees.child.payLink": "शुल्क भरें",
+  "fees.child.payCancelled": "भुगतान से पहले भुगतान विंडो बंद कर दी गई। कोई राशि नहीं कटी; आप फिर से कोशिश कर सकते हैं।",
+  "fees.child.payUnavailable":
+    "भुगतान विंडो नहीं खुल सकी। अपना कनेक्शन जाँचें और फिर से कोशिश करें, या विद्यालय कार्यालय में भुगतान करें।",
   "fees.child.viewLink": "शुल्क और रसीदें",
   "fees.child.back": "डैशबोर्ड",
   "fees.child.backToFees": "शुल्क",

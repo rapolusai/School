@@ -3,11 +3,13 @@
 import { ArrowLeft, ArrowRight, CheckCircle2, CreditCard } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { ErrorState, FormAlert, LoadingRows, PageHead } from "@/components/ui/states";
 import { toApiError } from "@/lib/api";
+import { AuthContext } from "@/lib/auth";
 import { errorMessage } from "@/lib/error-message";
 import { feesApi } from "@/lib/fees-api";
+import { openRazorpayCheckout } from "@/lib/razorpay-checkout";
 import { classLabel, formatPaise, formatPlainDate } from "@/lib/format";
 import { localeFor, useI18n } from "@/lib/i18n";
 import type { InstalmentDue, StudentFees } from "@/lib/types";
@@ -77,6 +79,8 @@ export function ChildFeesSummary({ childId }: { childId: string }) {
 export function ChildFeesView({ id }: { id: string }) {
   const { t } = useI18n();
   const router = useRouter();
+  // Only for the school's name in Razorpay's window; the screen works without a provider (tests).
+  const auth = useContext(AuthContext);
   const fees = useApiData(`me:child-fees:${id}`, () => feesApi.childFees(id));
   const [picked, setPicked] = useState<ReadonlySet<string> | null>(null);
   const [paying, setPaying] = useState(false);
@@ -139,7 +143,32 @@ export function ChildFeesView({ id }: { id: string }) {
         id,
         chosen.map((i) => i.instalmentId),
       );
-      router.push(`/app/pay/sandbox/${encodeURIComponent(order.gatewayOrderId)}`);
+      if (order.gateway !== "razorpay" || !order.checkoutKey) {
+        router.push(`/app/pay/sandbox/${encodeURIComponent(order.gatewayOrderId)}`);
+        return;
+      }
+      let proof;
+      try {
+        proof = await openRazorpayCheckout({
+          key: order.checkoutKey,
+          gatewayOrderId: order.gatewayOrderId,
+          amountPaise: order.amountPaise,
+          currency: order.currency,
+          name: auth?.me?.tenant?.name ?? t("app.fullName"),
+          description: `${s.fullName} · ${order.instalments.join(", ")}`,
+        });
+      } catch {
+        setError(t("fees.child.payUnavailable"));
+        setPaying(false);
+        return;
+      }
+      if (!proof) {
+        setError(t("fees.child.payCancelled"));
+        setPaying(false);
+        return;
+      }
+      const receipt = await feesApi.childVerify(id, order.id, proof);
+      router.replace(`/app/children/${encodeURIComponent(id)}/fees/receipts/${encodeURIComponent(receipt.id)}?paid=1`);
     } catch (caught) {
       setError(errorMessage(toApiError(caught), t));
       setPaying(false);

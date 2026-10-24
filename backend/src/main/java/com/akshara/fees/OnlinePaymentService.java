@@ -343,10 +343,16 @@ public class OnlinePaymentService {
         return gateway;
     }
 
+    /** The public key the browser's checkout needs for orders of this gateway (null for the sandbox). */
+    private String checkoutKey(String gatewayName) {
+        PaymentGateway gateway = gateways.get(gatewayName);
+        return gateway == null ? null : gateway.checkoutKey();
+    }
+
     private OrderView view(PaymentOrder order, String studentName) {
         return new OrderView(order.getId(), order.getGateway(), order.getGatewayOrderId(), order.getAmountPaise(),
                 order.getCurrency(), order.getStatus(), order.getStudentId(), studentName, labels(order),
-                order.getReceiptId(), order.getFailureReason());
+                order.getReceiptId(), order.getFailureReason(), checkoutKey(order.getGateway()));
     }
 
     private List<String> labels(PaymentOrder order) {

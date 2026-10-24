@@ -1476,6 +1476,9 @@ export const en = {
   "fees.child.next": "Next: {label}, {amount} due {date}",
   "fees.child.allPaid": "All fees are paid.",
   "fees.child.payLink": "Pay fees",
+  "fees.child.payCancelled": "The payment window was closed before paying. Nothing was charged; you can try again.",
+  "fees.child.payUnavailable":
+    "The payment window couldn't open. Check your connection and try again, or pay at the school office.",
   "fees.child.viewLink": "Fees and receipts",
   "fees.child.back": "Dashboard",
   "fees.child.backToFees": "Fees",

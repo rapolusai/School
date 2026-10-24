@@ -198,7 +198,7 @@ boolean verifyWebhookSignature(WebhookRequest request);               // raw bod
 WebhookEvent parseWebhook(WebhookRequest request);                    // event id, kind, order, payment, amount
 ```
 
-`akshara.payments.gateway` picks the implementation (`sandbox` by default). The only one built is
+`akshara.payments.gateway` picks the implementation (`sandbox` by default; `razorpay` below). The default is
 **`SandboxPaymentGateway`**: no network at all; order ids `order_SBX…`, payment ids `pay_SBX…`;
 signatures are lowercase hex HMAC-SHA256 with `akshara.payments.sandbox.secret`
 (`PAYMENTS_SANDBOX_SECRET`; a random secret per start when unset): payment signature over
@@ -221,7 +221,7 @@ compared in constant time. The webhook body has Razorpay's shape:
 ```ts
 type PaymentOrder = { id; gateway; gatewayOrderId; amountPaise; currency: "INR";
   status: "CREATED" | "PAID" | "FAILED"; studentId; studentName; instalments: string[];
-  receiptId: string | null; failureReason: string | null };
+  receiptId: string | null; failureReason: string | null; checkoutKey: string | null };
 ```
 
 - **Flow.** Create an order → the browser opens the gateway's checkout (here the web app's sandbox
@@ -241,29 +241,29 @@ type PaymentOrder = { id; gateway; gatewayOrderId; amountPaise; currency: "INR";
   `ADVANCE` line (it can only happen if dues changed while the payer was at the checkout). Online
   receipts show "Online payment" as the collector.
 
-### Razorpay adapter (documented, not built)
+### Razorpay
 
-A `RazorpayPaymentGateway implements PaymentGateway`, selected with
-`akshara.payments.gateway=razorpay`:
+`RazorpayPaymentGateway` is selected with `akshara.payments.gateway=razorpay` (`PAYMENTS_GATEWAY`).
 
-- **Keys** (`key_id`, `key_secret`, `webhook_secret`) come from AWS Secrets Manager (for example
-  `akshara/<env>/razorpay`), read at start-up through the Spring Cloud AWS Secrets Manager config
-  import or the AWS SDK with the task's IAM role. Nothing is in the repository or in environment
-  files; per-school keys (Razorpay Route or each school's own account) would be stored as a secret
-  name per tenant.
-- `createOrder` → `POST https://api.razorpay.com/v1/orders` with `{ amount, currency: "INR", receipt:
-  <payment_order.id>, notes: { tenant, student } }`, Basic auth `key_id:key_secret`. Make this call
-  outside the database transaction (create the `payment_order` row, commit, call Razorpay, then store
-  `gatewayOrderId`), with a timeout and retries on the idempotent `receipt` field.
-- `verifyPaymentSignature` = hex HMAC-SHA256(`order_id|payment_id`, `key_secret`) — the same scheme
-  as the sandbox. `verifyWebhookSignature` = HMAC-SHA256(raw body, `webhook_secret`) against
-  `X-Razorpay-Signature`; the event id is the `X-Razorpay-Event-Id` header.
-- The web app loads `https://checkout.razorpay.com/v1/checkout.js` (CSP `script-src`, `frame-src`
-  and `connect-src` must allow Razorpay) with the order id and posts the handler's
-  `razorpay_payment_id` and `razorpay_signature` to `verify`.
-- Webhook URL in the Razorpay dashboard: `https://<host>/api/public/payments/webhook/razorpay`,
-  events `payment.captured` and `payment.failed`.
-
+- **Keys** come from AWS Secrets Manager (`akshara/<env>/payments-razorpay`, JSON `key_id`, `key_secret`,
+  `webhook_secret`; see infra/terraform/README.md, "Payments"), injected by ECS as `RAZORPAY_KEY_ID`,
+  `RAZORPAY_KEY_SECRET` and `RAZORPAY_WEBHOOK_SECRET`. With the gateway set to `razorpay` and any of them
+  missing, the API refuses to start. The bean exists either way, so Razorpay orders can still be verified after
+  switching back to the sandbox.
+- `createOrder` → `POST https://api.razorpay.com/v1/orders` with `{ amount, currency, receipt: <our order id>,
+  notes }` and HTTP Basic `key_id:key_secret`, 10-second timeouts. A refusal, an answer for another amount, or no
+  answer is `502 Payment gateway unavailable`; nothing about the request or the keys is logged.
+- `verifyPaymentSignature` = hex HMAC-SHA256(`order_id|payment_id`, `key_secret`), the same scheme as the sandbox.
+  `verifyWebhookSignature` = HMAC-SHA256(raw body, `webhook_secret`) against `X-Razorpay-Signature`; the event id
+  is the `X-Razorpay-Event-Id` header. `payment.captured` and `order.paid` both record the payment (once per
+  order); `payment.failed` marks the order failed.
+- `PaymentOrder.checkoutKey` carries the public `key_id` for Razorpay orders (null for the sandbox). The web app
+  then opens Razorpay Checkout (`src/lib/razorpay-checkout.ts`; the Content-Security-Policy allows
+  `checkout.razorpay.com` scripts and `api.razorpay.com` frames) instead of the sandbox page, and posts the
+  handler's `razorpay_payment_id` and `razorpay_signature` to `verify`. Closing the window charges nothing.
+- Webhook URL in the Razorpay dashboard: `https://<host>/api/public/payments/webhook/razorpay`, events
+  `payment.captured`, `payment.failed` and `order.paid`.
+- Keys are per platform (one Razorpay account). Per-school accounts (Razorpay Route) are not built.
 ## Reports and reminders — `/api/fees`
 
 | Method | Path | Permission | Success |

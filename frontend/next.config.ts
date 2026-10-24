@@ -12,14 +12,26 @@ const apiUrl = (process.env.API_URL ?? "http://localhost:8080").replace(/\/+$/, 
 
 const isDev = process.env.NODE_ENV === "development";
 
+/**
+ * Razorpay Checkout (src/lib/razorpay-checkout.ts): its script, the payment window it opens in a frame, and the
+ * calls and images that window makes. Loaded only when a parent pays a Razorpay order.
+ */
+const razorpay = {
+  script: "https://checkout.razorpay.com",
+  frame: "https://api.razorpay.com https://checkout.razorpay.com",
+  connect: "https://api.razorpay.com https://lumberjack.razorpay.com",
+  img: "https://cdn.razorpay.com",
+};
+
 const csp = [
   "default-src 'self'",
   // Next.js injects inline bootstrap scripts; a nonce-based policy would force dynamic rendering.
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} ${razorpay.script}`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
-  "img-src 'self' data: blob:",
-  `connect-src 'self'${isDev ? " ws: wss:" : ""}`,
+  `img-src 'self' data: blob: ${razorpay.img}`,
+  `connect-src 'self'${isDev ? " ws: wss:" : ""} ${razorpay.connect}`,
+  `frame-src ${razorpay.frame}`,
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -33,7 +45,8 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   {
     key: "Permissions-Policy",
-    value: "camera=(self), microphone=(), geolocation=(self), payment=(), usb=(), interest-cohort=()",
+    value:
+      'camera=(self), microphone=(), geolocation=(self), payment=(self "https://api.razorpay.com"), usb=(), interest-cohort=()',
   },
 ];
 

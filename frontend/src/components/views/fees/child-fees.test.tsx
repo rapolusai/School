@@ -42,6 +42,9 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/app/children/st1/fees",
 }));
 
+const { openRazorpayCheckout } = vi.hoisted(() => ({ openRazorpayCheckout: vi.fn() }));
+vi.mock("@/lib/razorpay-checkout", () => ({ openRazorpayCheckout }));
+
 const CHECKOUT = {
   gatewayOrderId: "order_SBX1",
   orderId: "o1",
@@ -91,6 +94,52 @@ describe("a parent's view of fees", () => {
     await user.click(screen.getByRole("button", { name: "Pay ₹11,600 online" }));
     await waitFor(() => expect(childOrder).toHaveBeenCalledWith("st1", ["q2"]));
     expect(push).toHaveBeenCalledWith("/app/pay/sandbox/order_SBX1");
+  });
+
+  it("pays a Razorpay order in Razorpay's window and opens the receipt", async () => {
+    const user = userEvent.setup();
+    childOrder.mockResolvedValue({
+      ...CHECKOUT,
+      id: "o9",
+      gatewayOrderId: "order_RZP9",
+      gateway: "razorpay",
+      checkoutKey: "rzp_test_key",
+      status: "CREATED",
+      receiptId: null,
+      failureReason: null,
+    });
+    openRazorpayCheckout.mockResolvedValue({ gatewayPaymentId: "pay_RZP9", signature: "sig" });
+    childVerify.mockResolvedValue(receipt({ id: "r9" }));
+    renderAs(PARENT, <ChildFeesView id="st1" />, ["PARENT"]);
+    await user.click(await screen.findByRole("button", { name: "Pay ₹11,600 online" }));
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/app/children/st1/fees/receipts/r9?paid=1"));
+    expect(openRazorpayCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({ key: "rzp_test_key", gatewayOrderId: "order_RZP9", amountPaise: 11_600_00 }),
+    );
+    expect(childVerify).toHaveBeenCalledWith("st1", "o9", { gatewayPaymentId: "pay_RZP9", signature: "sig" });
+    expect(push).not.toHaveBeenCalledWith(expect.stringContaining("/app/pay/sandbox/"));
+  });
+
+  it("says nothing was charged when the Razorpay window is closed", async () => {
+    const user = userEvent.setup();
+    childOrder.mockResolvedValue({
+      ...CHECKOUT,
+      id: "o9",
+      gateway: "razorpay",
+      checkoutKey: "rzp_test_key",
+      status: "CREATED",
+      receiptId: null,
+      failureReason: null,
+    });
+    openRazorpayCheckout.mockResolvedValue(null);
+    childVerify.mockClear();
+    renderAs(PARENT, <ChildFeesView id="st1" />, ["PARENT"]);
+    await user.click(await screen.findByRole("button", { name: "Pay ₹11,600 online" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Nothing was charged");
+    expect(childVerify).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Pay ₹11,600 online" })).toBeEnabled();
   });
 
   it("does not show another family's child", async () => {

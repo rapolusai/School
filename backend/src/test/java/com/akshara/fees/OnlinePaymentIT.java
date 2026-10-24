@@ -255,7 +255,9 @@ class OnlinePaymentIT extends IntegrationTest {
         fees.webhook("sandbox", unknown, FeeFixtures.sign(unknown))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.outcome").value("IGNORED"));
-        fees.webhook("razorpay", payload, FeeFixtures.sign(payload)).andExpect(status().isNotFound());
+        fees.webhook("paypal", payload, FeeFixtures.sign(payload)).andExpect(status().isNotFound());
+        // Razorpay exists but has no keys here, so nothing it is sent can carry a valid signature.
+        fees.webhook("razorpay", payload, FeeFixtures.sign(payload)).andExpect(status().isBadRequest());
 
         // A failed sandbox payment marks a new order failed; it can still be paid later.
         String q2 = fees.instalmentIds(admin, other).get(1);

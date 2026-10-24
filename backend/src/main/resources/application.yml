@@ -78,11 +78,16 @@ akshara:
       enabled: ${NOTIFICATIONS_DISPATCH_ENABLED:true}
       interval: ${NOTIFICATIONS_DISPATCH_INTERVAL:PT15S}
   payments:
-    # Online fee payments. Only the sandbox gateway exists; it makes no network calls. Its secret signs sandbox
-    # payments and webhooks (a random one is made at startup when empty). Real gateway keys come from Secrets Manager.
+    # Online fee payments: "sandbox" (no network calls, no real money) or "razorpay". The sandbox secret signs
+    # sandbox payments and webhooks (a random one is made at startup when empty). Razorpay's keys come from Secrets
+    # Manager as environment variables; the API refuses to start with gateway "razorpay" and any of them missing.
     gateway: ${PAYMENTS_GATEWAY:sandbox}
     sandbox:
       secret: ${PAYMENTS_SANDBOX_SECRET:}
+    razorpay:
+      key-id: ${RAZORPAY_KEY_ID:}
+      key-secret: ${RAZORPAY_KEY_SECRET:}
+      webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:}
   communication:
     scheduler:
       # Sends scheduled circulars and calendar reminders when they are due (their messages go through the outbox).
