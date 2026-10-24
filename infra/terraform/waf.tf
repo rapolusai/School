@@ -1,7 +1,8 @@
 locals {
-  # AWS managed rule group => rule priority (lower runs first). Priorities 1 and 2 are the rate limits.
+  # AWS managed rule group => rule priority (lower runs first). 0 allows waf_trusted_ips (load tests), 1 and 2 are
+  # the rate limits.
   waf_managed_rule_groups = {
-    AWSManagedRulesAmazonIpReputationList = 0
+    AWSManagedRulesAmazonIpReputationList = 6
     AWSManagedRulesCommonRuleSet          = 3
     AWSManagedRulesKnownBadInputsRuleSet  = 4
     AWSManagedRulesSQLiRuleSet            = 5
@@ -31,6 +32,33 @@ resource "aws_wafv2_web_acl" "main" {
 
   default_action {
     allow {}
+  }
+
+  # Load generators (loadtest/, docs/runbooks/load-testing.md) send far more than one client would: let their
+  # addresses past the rate limits for the length of a test, then empty the list again.
+  dynamic "rule" {
+    for_each = length(var.waf_trusted_ips) > 0 ? [1] : []
+
+    content {
+      name     = "allow-trusted-ips"
+      priority = 0
+
+      action {
+        allow {}
+      }
+
+      statement {
+        ip_set_reference_statement {
+          arn = aws_wafv2_ip_set.trusted[0].arn
+        }
+      }
+
+      visibility_config {
+        cloudwatch_metrics_enabled = true
+        metric_name                = "${local.name}-allow-trusted-ips"
+        sampled_requests_enabled   = true
+      }
+    }
   }
 
   dynamic "rule" {
@@ -153,6 +181,16 @@ resource "aws_wafv2_web_acl" "main" {
     metric_name                = local.name
     sampled_requests_enabled   = true
   }
+}
+
+resource "aws_wafv2_ip_set" "trusted" {
+  count = length(var.waf_trusted_ips) > 0 ? 1 : 0
+
+  name               = "${local.name}-trusted"
+  description        = "Load generators allowed past the rate limits during a test"
+  scope              = "REGIONAL"
+  ip_address_version = "IPV4"
+  addresses          = var.waf_trusted_ips
 }
 
 resource "aws_wafv2_web_acl_association" "alb" {

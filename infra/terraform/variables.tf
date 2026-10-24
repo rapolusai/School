@@ -98,6 +98,17 @@ variable "waf_login_rate_limit" {
   default     = 100
 }
 
+variable "waf_trusted_ips" {
+  description = "IPv4 CIDRs (e.g. a load generator's \"203.0.113.10/32\") allowed past every WAF rule. Only for the length of a load test; keep it empty otherwise."
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = alltrue([for c in var.waf_trusted_ips : can(cidrhost(c, 0)) && !startswith(c, "0.0.0.0")])
+    error_message = "waf_trusted_ips must be IPv4 CIDRs and must not be 0.0.0.0/x."
+  }
+}
+
 variable "waf_logging_enabled" {
   description = "Send WAF request logs (cookies and Authorization headers redacted) to CloudWatch Logs."
   type        = bool
