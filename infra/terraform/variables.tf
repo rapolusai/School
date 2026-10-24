@@ -238,6 +238,62 @@ variable "db_max_allocated_storage" {
   default     = 100
 }
 
+variable "db_backup_retention_days" {
+  description = "Days of automated backups (point-in-time restore window). RDS allows 1-35."
+  type        = number
+  default     = 14
+
+  validation {
+    condition     = var.db_backup_retention_days >= 1 && var.db_backup_retention_days <= 35
+    error_message = "db_backup_retention_days must be between 1 and 35."
+  }
+}
+
+variable "backup_replica_region" {
+  description = "Second region that receives a copy of the automated backups (disaster recovery), e.g. ap-south-2 (Hyderabad). null turns the copy off."
+  type        = string
+  default     = null
+}
+
+variable "backup_replica_retention_days" {
+  description = "Days the copied backups are kept in backup_replica_region."
+  type        = number
+  default     = 7
+}
+
+# ---------------------------------------------------------------------------
+# Payments, email and file storage
+# ---------------------------------------------------------------------------
+
+variable "payments_gateway" {
+  description = "Online fee payment gateway: \"sandbox\" (no real money) or \"razorpay\". Put the Razorpay keys in the akshara/<env>/payments-razorpay secret before switching (README)."
+  type        = string
+  default     = "sandbox"
+
+  validation {
+    condition     = contains(["sandbox", "razorpay"], var.payments_gateway)
+    error_message = "payments_gateway must be sandbox or razorpay."
+  }
+}
+
+variable "email_enabled" {
+  description = "Send email through Amazon SES. Off, email stays simulated (recorded, never sent). Needs the SES domain verified (DKIM records) and SES out of its sandbox."
+  type        = bool
+  default     = false
+}
+
+variable "email_from_address" {
+  description = "Sender address for email, in the verified SES domain (e.g. no-reply@example.com). null uses no-reply@<domain_name>."
+  type        = string
+  default     = null
+}
+
+variable "files_noncurrent_retention_days" {
+  description = "Days an overwritten or deleted uploaded file is kept in the files bucket before S3 removes it."
+  type        = number
+  default     = 30
+}
+
 # ---------------------------------------------------------------------------
 # Monitoring
 # ---------------------------------------------------------------------------
@@ -246,6 +302,29 @@ variable "alarm_5xx_threshold" {
   description = "5xx responses per 5 minutes (from the ALB itself, and from targets) above which an alarm fires."
   type        = number
   default     = 10
+}
+
+variable "alarm_latency_p95_seconds" {
+  description = "API p95 response time (seconds, over 5 minutes) above which an alarm fires."
+  type        = number
+  default     = 2
+}
+
+variable "alarm_emails" {
+  description = "Email addresses subscribed to the alarm topics. Each gets a confirmation email from AWS that must be accepted."
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = alltrue([for e in var.alarm_emails : can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", e))])
+    error_message = "Every entry in alarm_emails must be an email address."
+  }
+}
+
+variable "uptime_check_enabled" {
+  description = "Route 53 health check of https://<domain_name>/login from several regions outside the VPC, with an alarm (in us-east-1, where Route 53 publishes its metrics)."
+  type        = bool
+  default     = true
 }
 
 # ---------------------------------------------------------------------------

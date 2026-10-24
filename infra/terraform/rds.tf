@@ -58,7 +58,7 @@ resource "aws_db_instance" "main" {
   parameter_group_name   = aws_db_parameter_group.postgres.name
 
   # Times are UTC: backups 01:30-02:30 IST daily, maintenance Monday 03:00-04:00 IST.
-  backup_retention_period    = 14
+  backup_retention_period    = var.db_backup_retention_days
   backup_window              = "20:00-21:00"
   maintenance_window         = "sun:21:30-sun:22:30"
   copy_tags_to_snapshot      = true
@@ -67,6 +67,8 @@ resource "aws_db_instance" "main" {
   deletion_protection       = true
   skip_final_snapshot       = false
   final_snapshot_identifier = "${local.name}-final"
+  # Keep the automated backups for their retention period even if the instance is deleted by mistake.
+  delete_automated_backups = false
 
   performance_insights_enabled          = true
   performance_insights_kms_key_id       = aws_kms_key.rds.arn
@@ -76,6 +78,28 @@ resource "aws_db_instance" "main" {
   enabled_cloudwatch_logs_exports       = ["postgresql", "upgrade"]
 
   depends_on = [aws_cloudwatch_log_group.rds]
+}
+
+# --- Copy of the backups in a second region (disaster recovery) --------------
+# Point-in-time restore is then possible in backup_replica_region if ap-south-1 is unavailable
+# (docs/runbooks/restore-database.md). The copy is encrypted with a key that lives in that region.
+
+resource "aws_kms_key" "backup_replica" {
+  count    = var.backup_replica_region == null ? 0 : 1
+  provider = aws.backup
+
+  description             = "${local.name} copy of the RDS automated backups"
+  enable_key_rotation     = true
+  deletion_window_in_days = 30
+}
+
+resource "aws_db_instance_automated_backups_replication" "main" {
+  count    = var.backup_replica_region == null ? 0 : 1
+  provider = aws.backup
+
+  source_db_instance_arn = aws_db_instance.main.arn
+  kms_key_id             = aws_kms_key.backup_replica[0].arn
+  retention_period       = var.backup_replica_retention_days
 }
 
 # --- Enhanced monitoring ----------------------------------------------------

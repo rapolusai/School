@@ -1,8 +1,8 @@
 # Akshara on AWS (Terraform)
 
 Infrastructure for the Akshara school management SaaS in **ap-south-1 (Mumbai)**. One root module;
-each environment is a `*.tfvars` file plus a `*.backend.hcl` file (its own state key). Staging is
-the only environment defined so far.
+each environment is a `*.tfvars` file plus a `*.backend.hcl` file (its own state key): `staging` and
+`prod`.
 
 > **Approval gate.** Nothing in this directory has been planned or applied. It was written and
 > checked with `terraform fmt` and `terraform validate` only, without AWS credentials.
@@ -17,9 +17,12 @@ the only environment defined so far.
 | Entry point (`alb.tf`, `waf.tf`) | Internet-facing ALB: HTTP→HTTPS redirect, TLS 1.2/1.3 policy, invalid headers dropped, access logs to an S3 bucket (SSE-S3, private, 90-day expiry). `/api/*` → API, everything else → web, `/actuator*` → 404. WAF: AWS IP reputation, common, known-bad-inputs and SQLi rule sets, a per-IP rate limit (2000 per 5 min) and a stricter one (100 per 5 min) on login and signup. |
 | Containers (`ecr.tf`, `ecs.tf`) | ECR `akshara-api` and `akshara-web` (immutable tags, scan on push, keep last 30). ECS cluster with Container Insights. Fargate services `api` (8080) and `web` (3000) in private subnets with rollback on failed deployments and CPU autoscaling (target 60%). One-off task definition `api-migrate`. |
 | Database (`rds.tf`) | RDS PostgreSQL 17, gp3 with storage autoscaling, encrypted with a customer-managed KMS key, TLS enforced, Multi-AZ switch, 14-day backups, deletion protection, final snapshot, Performance Insights, enhanced monitoring, logs to CloudWatch. The master password is generated and held by RDS in Secrets Manager. |
-| Secrets (`secrets.tf`, `kms.tf`) | `akshara/<env>/db-app`, `db-owner`, `jwt`, `platform-admin` and (when demo is enabled) `demo` in Secrets Manager, encrypted with a second KMS key, 7-day recovery window. |
-| Access (`iam.tf`) | ECS execution roles (one for api/web, a separate one for api-migrate, the only role that can read `db-owner`), empty task roles, GitHub Actions OIDC provider (optional) and a deploy role. |
-| Monitoring (`monitoring.tf`) | SNS topic (no subscribers yet) and alarms: ALB 5xx, target 5xx, RDS CPU > 80%, RDS free storage < 5 GiB, fewer API tasks running than desired. |
+| Secrets (`secrets.tf`, `kms.tf`) | `akshara/<env>/db-app`, `db-owner`, `jwt`, `platform-admin`, `payments-sandbox` and (when demo is enabled) `demo` in Secrets Manager, encrypted with a second KMS key, 7-day recovery window. An empty `payments-razorpay` secret that the owner fills (see "Payments"). |
+| Files (`storage.tf`) | Private S3 bucket for uploaded files (KMS key of its own, versioning, old versions expire after 30 days, TLS-only policy). The API stores files there (`FILES_STORE=s3`); downloads still go through the API's access checks. |
+| Email (`email.tf`) | SES domain identity with DKIM and a configuration set (TLS required, bounces and complaints suppressed). The API sends through it when `email_enabled`; otherwise email stays simulated. |
+| Access (`iam.tf`) | ECS execution roles (one for api/web, a separate one for api-migrate, the only role that can read `db-owner`), task roles (api: the files bucket and SES only; web: nothing), GitHub Actions OIDC provider (optional) and a deploy role. |
+| Monitoring (`monitoring.tf`) | SNS topic with `alarm_emails` subscribed, alarms (ALB 5xx, target 5xx, API p95 response time, RDS CPU, connections and free storage, fewer api or web tasks than desired), an uptime check of `/login` from Route 53 checkers outside AWS (alarm in us-east-1), and one CloudWatch dashboard. |
+| Disaster recovery (`rds.tf`) | Point-in-time restore for `db_backup_retention_days`; backups survive an accidental instance deletion; with `backup_replica_region` set, a continuous copy of the backups in a second region (prod: ap-south-2, Hyderabad). Restore steps: `docs/runbooks/restore-database.md`. |
 
 ## Monthly cost drivers (staging)
 
@@ -40,10 +43,14 @@ Rough on-demand figures for ap-south-1, before tax and data transfer. Check them
   each NAT gateway one), so about $15 for staging.
 - **WAF**: $5 for the web ACL plus $1 for each of the 6 rules, plus $0.60 per million requests.
 - **Small items**: CloudWatch logs and Container Insights metrics (grow with traffic and the
-  retention settings), 2 KMS keys ($1 each), about 6 secrets ($0.40 each), ECR storage, alarms.
+  retention settings), 3 KMS keys ($1 each), about 8 secrets ($0.40 each), ECR storage, about
+  10 alarms ($0.10 each), the dashboard ($3), the Route 53 health check (about $1-2).
+- **Files and email** grow with use: S3 about $0.025 per GB-month (1,000 schools with 1 GB each is
+  about $25), SES about $0.10 per 1,000 emails.
 
-Ballpark: **$170-220 a month for staging** as configured. A prod setup with Multi-AZ, three NAT
-gateways and two or more tasks per service is roughly double.
+Ballpark: **$170-220 a month for staging** as configured. `environments/prod.tfvars` (Multi-AZ
+`db.m7g.large`, three NAT gateways, two or more tasks per service, backup copy in a second region)
+is roughly **$450-600 a month** before growth; size it from the load-test report.
 
 ## One-time prerequisites (owner)
 
@@ -90,10 +97,26 @@ so the first rollout is done in this order:
 6. **Start the API cleanly:**
    `aws ecs update-service --cluster akshara-staging --service api --force-new-deployment`
 7. **DNS:** point the domain at `terraform output alb_dns_name` (CNAME, or a Route 53 alias).
-8. **Alarms:** subscribe an email address or chat webhook to `terraform output alarm_topic_arn`.
-9. **Pipeline:** store the outputs the deploy job needs as GitHub `staging` environment variables
-   (`github_deploy_role_arn`, `ecr_repository_urls`, `ecs_cluster_name`,
-   `task_definition_families`, `migrate_network_configuration`).
+8. **Alarms:** list on-call addresses in `alarm_emails` (each must accept AWS's confirmation email);
+   chat webhooks can be subscribed to `terraform output alarm_topic_arn` by hand.
+9. **Pipeline:** in the repository's `staging` GitHub environment, add these variables (Settings →
+   Environments → staging → Variables), all taken from `terraform output`:
+
+   | Variable | Value |
+   |----------|-------|
+   | `AWS_REGION` | `ap-south-1` |
+   | `AWS_DEPLOY_ROLE_ARN` | `github_deploy_role_arn` |
+   | `DOMAIN_NAME` | the `domain_name` variable |
+   | `ECS_CLUSTER` | `ecs_cluster_name` |
+   | `ECR_API_REPOSITORY`, `ECR_WEB_REPOSITORY` | `ecr_repository_urls.api`, `.web` |
+   | `TASK_FAMILY_API`, `TASK_FAMILY_MIGRATE`, `TASK_FAMILY_WEB` | `task_definition_families.api`, `.api_migrate`, `.web` |
+   | `MIGRATE_NETWORK_CONFIGURATION` | `migrate_network_configuration` |
+
+   From then on `.github/workflows/deploy.yml` deploys every commit on `main` whose CI passed. For `prod`,
+   create a `prod` environment with **required reviewers**, the same variables from the prod account, and
+   deploy a release tag with *Actions → Deploy → Run workflow*.
+10. **Email (optional):** add the CNAME records from `terraform output ses_dkim_records` at the DNS
+    provider, request SES production access in the SES console, then set `email_enabled = true`.
 
 ## Database role bootstrap
 
@@ -128,6 +151,20 @@ unset PGPASSWORD MASTER
 4. Delete the CloudShell VPC environment.
 
 The script is safe to re-run. Re-run it whenever the `db-owner` or `db-app` password changes.
+
+## Payments
+
+Fees are paid through the sandbox gateway (no real money) until Razorpay is switched on:
+
+1. In the Razorpay dashboard (test mode on staging, live mode on prod): create API keys, and a webhook to
+   `https://<domain_name>/api/public/payments/webhook/razorpay` for `payment.captured` and
+   `payment.failed`, with a webhook secret.
+2. Store all three in the empty secret, without them passing through the shell history:
+   `aws secretsmanager put-secret-value --secret-id akshara/<env>/payments-razorpay --secret-string file://razorpay.json`
+   with `{"key_id": "...", "key_secret": "...", "webhook_secret": "..."}`, then delete the file.
+3. Set `payments_gateway = "razorpay"`, plan and apply, and deploy (or force a new deployment).
+
+Payment orders made before the switch stay with the gateway that created them.
 
 ## Deploying a new version (the pipeline's job)
 
@@ -185,10 +222,11 @@ reaches the running services with the next pipeline deploy (or a `--force-new-de
 
 ## Adding prod
 
-Copy `staging.tfvars` and `staging.backend.hcl` to `prod.*`, change `environment`, the state `key`
-and the domain/certificate, and set `one_nat_per_az = true`, `db_multi_az = true`,
-`demo_enabled = false`, and min/desired counts of 2 or more. Create a `prod` GitHub environment
-with required reviewers.
+`environments/prod.tfvars` and `prod.backend.hcl` are ready: fill in their `REPLACE` values (domain,
+certificate, admin and on-call emails, the prod account id in the bucket name). They set
+`one_nat_per_az = true`, `db_multi_az = true`, `demo_enabled = false`, 30 days of backups with a copy in
+ap-south-2, WAF logging, and two or more tasks per service. Create a `prod` GitHub environment with
+required reviewers, and follow "First-time bring-up" with `prod` in place of `staging`.
 
 Some names are account-wide: the ECR repositories (`akshara-api`, `akshara-web`) and the GitHub
 OIDC provider. Prod in its **own AWS account** (recommended) needs no change. Prod in the
@@ -197,8 +235,9 @@ move to a shared stack first (both environments would otherwise try to create th
 
 ## Known limits and follow-ups
 
-- WAF `AWSManagedRulesCommonRuleSet` blocks request bodies over 8 KB. If file or bulk uploads are
-  added, override `SizeRestrictions_BODY` for those paths.
+- WAF's `SizeRestrictions_BODY` rule (bodies over 8 KB) only counts, so uploads, the Excel school
+  import and large forms get through; the API caps bodies itself (2 MB JSON, 26 MB uploads). Watch
+  the counted requests on the dashboard.
 - The per-IP rate limit counts all requests from the NAT gateway's address as one client. If the
   web server ever calls the public API URL server-side, exempt the NAT IPs or call the API
   internally.

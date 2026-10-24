@@ -29,6 +29,12 @@ web_max_count     = 2
 demo_enabled         = true
 platform_admin_email = "REPLACE_WITH_ADMIN_EMAIL"
 
+payments_gateway = "sandbox" # "razorpay" with Razorpay test-mode keys (README, "Payments")
+email_enabled    = false     # true once the DKIM records are in DNS (README, step 10)
+
+alarm_emails         = [] # e.g. ["oncall@example.com"]
+uptime_check_enabled = true
+
 db_engine_version        = "17"
 db_instance_class        = "db.t4g.medium"
 db_multi_az              = false

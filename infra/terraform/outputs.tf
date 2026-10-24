@@ -72,6 +72,32 @@ output "github_deploy_role_arn" {
 }
 
 output "alarm_topic_arn" {
-  description = "SNS topic the CloudWatch alarms publish to (subscribe an email or chat endpoint)."
+  description = "SNS topic the CloudWatch alarms publish to (alarm_emails are subscribed; add chat endpoints by hand)."
   value       = aws_sns_topic.alarms.arn
+}
+
+output "dashboard_url" {
+  description = "CloudWatch dashboard for this environment."
+  value       = "https://${var.aws_region}.console.aws.amazon.com/cloudwatch/home?region=${var.aws_region}#dashboards/dashboard/${aws_cloudwatch_dashboard.main.dashboard_name}"
+}
+
+output "files_bucket" {
+  description = "S3 bucket holding uploaded files (private, KMS-encrypted, versioned)."
+  value       = aws_s3_bucket.files.bucket
+}
+
+output "ses_dkim_records" {
+  description = "CNAME records to add at the DNS provider so SES can send as domain_name."
+  value = [
+    for token in aws_sesv2_email_identity.domain.dkim_signing_attributes[0].tokens : {
+      name  = "${token}._domainkey.${var.domain_name}"
+      type  = "CNAME"
+      value = "${token}.dkim.amazonses.com"
+    }
+  ]
+}
+
+output "payments_razorpay_secret_arn" {
+  description = "Empty secret for the Razorpay keys; fill it before setting payments_gateway = \"razorpay\"."
+  value       = aws_secretsmanager_secret.external["payments-razorpay"].arn
 }

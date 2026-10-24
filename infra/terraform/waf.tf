@@ -7,8 +7,21 @@ locals {
     AWSManagedRulesSQLiRuleSet            = 5
   }
 
-  # Credential and signup endpoints get the stricter per-IP limit.
-  waf_login_paths = ["/api/auth/login", "/api/platform/auth/login", "/api/public/signup"]
+  # Managed rules that only count (and so still show in metrics and sampled requests) instead of blocking.
+  # SizeRestrictions_BODY blocks every body over 8 KB, which would block file uploads, the Excel school import
+  # and large forms (mark sheets, registers). The API caps request bodies itself (RequestSizeLimitFilter:
+  # 2 MB for JSON, 26 MB for uploads) and checks every uploaded file, so WAF only reports large bodies.
+  waf_count_rules = {
+    AWSManagedRulesCommonRuleSet = ["SizeRestrictions_BODY"]
+  }
+
+  # Credential, signup and password-reset endpoints get the stricter per-IP limit.
+  waf_login_paths = [
+    "/api/auth/login",
+    "/api/auth/password-reset",
+    "/api/platform/auth/login",
+    "/api/public/signup",
+  ]
 }
 
 resource "aws_wafv2_web_acl" "main" {
@@ -35,6 +48,18 @@ resource "aws_wafv2_web_acl" "main" {
         managed_rule_group_statement {
           name        = rule.key
           vendor_name = "AWS"
+
+          dynamic "rule_action_override" {
+            for_each = lookup(local.waf_count_rules, rule.key, [])
+
+            content {
+              name = rule_action_override.value
+
+              action_to_use {
+                count {}
+              }
+            }
+          }
         }
       }
 

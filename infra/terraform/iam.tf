@@ -7,12 +7,18 @@ locals {
     app = {
       repositories = [for repo in aws_ecr_repository.app : repo.arn]
       log_groups   = [aws_cloudwatch_log_group.ecs["api"].arn, aws_cloudwatch_log_group.ecs["web"].arn]
-      secrets      = [for name, secret in aws_secretsmanager_secret.app : secret.arn if name != "db-owner"]
+      secrets = concat(
+        [for name, secret in aws_secretsmanager_secret.app : secret.arn if name != "db-owner"],
+        [for secret in aws_secretsmanager_secret.external : secret.arn],
+      )
     }
     migrate = {
       repositories = [aws_ecr_repository.app["api"].arn]
       log_groups   = [aws_cloudwatch_log_group.ecs["api-migrate"].arn]
-      secrets      = [for secret in aws_secretsmanager_secret.app : secret.arn]
+      secrets = concat(
+        [for secret in aws_secretsmanager_secret.app : secret.arn],
+        [for secret in aws_secretsmanager_secret.external : secret.arn],
+      )
     }
   }
 }
@@ -84,7 +90,8 @@ resource "aws_iam_role_policy" "ecs_execution" {
 }
 
 # --- ECS task roles -------------------------------------------------------------
-# What the application itself may call in AWS: nothing yet. api-migrate shares the api role.
+# What the application itself may call in AWS: the files bucket (storage.tf) and SES (email.tf), both on the
+# api role, which api-migrate shares. The web role has no permissions.
 
 data "aws_iam_policy_document" "ecs_task_trust" {
   statement {

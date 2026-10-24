@@ -1,0 +1,219 @@
+name: Deploy
+
+# Staging: every commit on main whose CI run passed. Production: started by hand ("Run workflow") with a release
+# tag, and held by the prod environment's required reviewers until someone approves it.
+#
+# Each GitHub environment (staging, prod) holds these variables, copied from `terraform output`
+# (infra/terraform/README.md, "First-time bring-up", step 9):
+#   AWS_REGION, AWS_DEPLOY_ROLE_ARN, DOMAIN_NAME, ECS_CLUSTER, ECR_API_REPOSITORY, ECR_WEB_REPOSITORY,
+#   TASK_FAMILY_API, TASK_FAMILY_MIGRATE, TASK_FAMILY_WEB, MIGRATE_NETWORK_CONFIGURATION
+# No AWS keys are stored: the job signs in with GitHub's OIDC token and the environment's deploy role.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Where to deploy
+        type: choice
+        options: [staging, prod]
+        default: staging
+      ref:
+        description: Release tag (prod) or commit SHA to deploy
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    name: Deploy to ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'staging' }}
+    # From CI only when it passed on a push to main (never for pull requests).
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'staging' }}
+      url: https://${{ vars.DOMAIN_NAME }}
+    # One deploy per environment at a time; a newer one waits instead of cancelling a half-finished rollout.
+    concurrency:
+      group: deploy-${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'staging' }}
+      cancel-in-progress: false
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      CLUSTER: ${{ vars.ECS_CLUSTER }}
+    steps:
+      - name: Choose the commit
+        id: commit
+        env:
+          DISPATCH_REF: ${{ inputs.ref }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          TARGET: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'staging' }}
+        run: |
+          ref="${DISPATCH_REF:-$RUN_SHA}"
+          if [ "$TARGET" = "prod" ] && ! [[ "$ref" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Production deploys take a release tag such as v1.4.0, not '$ref'."
+            exit 1
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.commit.outputs.ref }}
+
+      - name: Image tag (the commit SHA)
+        id: tag
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Tags are immutable in ECR, so an image that already exists for this commit (a re-run) is reused.
+      - name: Is the API image already pushed?
+        id: api_exists
+        run: |
+          repo="${{ vars.ECR_API_REPOSITORY }}"
+          if aws ecr describe-images --repository-name "${repo##*/}" --image-ids imageTag=${{ steps.tag.outputs.sha }} >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and push the API image
+        if: steps.api_exists.outputs.exists != 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: true
+          tags: ${{ vars.ECR_API_REPOSITORY }}:${{ steps.tag.outputs.sha }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+      - name: Is the web image already pushed?
+        id: web_exists
+        run: |
+          repo="${{ vars.ECR_WEB_REPOSITORY }}"
+          if aws ecr describe-images --repository-name "${repo##*/}" --image-ids imageTag=${{ steps.tag.outputs.sha }} >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and push the web image
+        if: steps.web_exists.outputs.exists != 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          push: true
+          tags: ${{ vars.ECR_WEB_REPOSITORY }}:${{ steps.tag.outputs.sha }}
+          build-args: API_URL=https://${{ vars.DOMAIN_NAME }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+      - name: Remember what is running now (for rollback)
+        id: previous
+        run: |
+          for svc in api web; do
+            td=$(aws ecs describe-services --cluster "$CLUSTER" --services "$svc" \
+              --query 'services[0].taskDefinition' --output text)
+            echo "$svc=$td" >> "$GITHUB_OUTPUT"
+            echo "$svc is running $td"
+          done
+
+      # Terraform owns the shape of each task definition; the pipeline only swaps the image.
+      - name: Register task definitions with the new images
+        id: taskdefs
+        env:
+          API_IMAGE: ${{ vars.ECR_API_REPOSITORY }}:${{ steps.tag.outputs.sha }}
+          WEB_IMAGE: ${{ vars.ECR_WEB_REPOSITORY }}:${{ steps.tag.outputs.sha }}
+        run: |
+          register() {
+            local family="$1" image="$2"
+            aws ecs describe-task-definition --task-definition "$family" --query taskDefinition --output json |
+              jq --arg image "$image" '.containerDefinitions[0].image = $image
+                | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities,
+                      .registeredAt, .registeredBy, .deregisteredAt)' > td.json
+            aws ecs register-task-definition --cli-input-json file://td.json \
+              --query 'taskDefinition.taskDefinitionArn' --output text
+          }
+          echo "api=$(register '${{ vars.TASK_FAMILY_API }}' "$API_IMAGE")" >> "$GITHUB_OUTPUT"
+          echo "migrate=$(register '${{ vars.TASK_FAMILY_MIGRATE }}' "$API_IMAGE")" >> "$GITHUB_OUTPUT"
+          echo "web=$(register '${{ vars.TASK_FAMILY_WEB }}' "$WEB_IMAGE")" >> "$GITHUB_OUTPUT"
+
+      # Migrations only add (expand/contract), so the previous API version keeps working on the new schema
+      # and a rollback below never needs a database rollback.
+      - name: Run database migrations
+        env:
+          NETWORK: ${{ vars.MIGRATE_NETWORK_CONFIGURATION }}
+        run: |
+          task=$(aws ecs run-task --cluster "$CLUSTER" --launch-type FARGATE \
+            --task-definition '${{ steps.taskdefs.outputs.migrate }}' \
+            --network-configuration "$NETWORK" \
+            --query 'tasks[0].taskArn' --output text)
+          echo "Migration task: $task"
+          aws ecs wait tasks-stopped --cluster "$CLUSTER" --tasks "$task"
+          code=$(aws ecs describe-tasks --cluster "$CLUSTER" --tasks "$task" \
+            --query 'tasks[0].containers[0].exitCode' --output text)
+          if [ "$code" != "0" ]; then
+            echo "::error::Migrations failed (exit code $code). Nothing was rolled out; see the api-migrate log group."
+            exit 1
+          fi
+
+      - name: Roll out the API, then the web app
+        run: |
+          aws ecs update-service --cluster "$CLUSTER" --service api \
+            --task-definition '${{ steps.taskdefs.outputs.api }}' >/dev/null
+          aws ecs wait services-stable --cluster "$CLUSTER" --services api
+          aws ecs update-service --cluster "$CLUSTER" --service web \
+            --task-definition '${{ steps.taskdefs.outputs.web }}' >/dev/null
+          aws ecs wait services-stable --cluster "$CLUSTER" --services web
+
+      # Through the public address, like a user: the sign-in page (web) and a public API answer (api).
+      - name: Smoke test
+        id: smoke
+        env:
+          BASE: https://${{ vars.DOMAIN_NAME }}
+        run: |
+          check() {
+            for i in $(seq 1 10); do
+              if "$@"; then return 0; fi
+              sleep 6
+            done
+            return 1
+          }
+          check sh -c "curl -sf '$BASE/login' | grep -q Akshara" || { echo "::error::$BASE/login failed"; exit 1; }
+          check sh -c "test \"\$(curl -s -o /dev/null -w '%{http_code}' '$BASE/api/public/schools/smoke-test-no-such-school/admission-info')\" = 404" \
+            || { echo "::error::The API did not answer through $BASE/api"; exit 1; }
+          check sh -c "test \"\$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'content-type: application/json' -d '{}' '$BASE/api/auth/login')\" = 400" \
+            || { echo "::error::Sign-in validation did not answer 400"; exit 1; }
+          echo "Smoke test passed for ${{ steps.tag.outputs.sha }}"
+
+      - name: Roll back to the previous version
+        if: failure() && steps.previous.outcome == 'success' && steps.taskdefs.outcome == 'success'
+        run: |
+          echo "::warning::Rolling back api to ${{ steps.previous.outputs.api }} and web to ${{ steps.previous.outputs.web }}"
+          aws ecs update-service --cluster "$CLUSTER" --service api \
+            --task-definition '${{ steps.previous.outputs.api }}' >/dev/null
+          aws ecs update-service --cluster "$CLUSTER" --service web \
+            --task-definition '${{ steps.previous.outputs.web }}' >/dev/null
+          aws ecs wait services-stable --cluster "$CLUSTER" --services api web
+          echo "Rolled back."
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Deploy ${{ job.status }}"
+            echo "- Environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'staging' }}"
+            echo "- Commit: ${{ steps.tag.outputs.sha }} (${{ steps.commit.outputs.ref }})"
+            echo "- API: ${{ steps.taskdefs.outputs.api }}"
+            echo "- Web: ${{ steps.taskdefs.outputs.web }}"
+          } >> "$GITHUB_STEP_SUMMARY"
