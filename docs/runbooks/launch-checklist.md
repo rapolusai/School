@@ -37,7 +37,7 @@ this repository; "To do" needs someone with the accounts, or a run against AWS.
 | ☑ | Uploaded files in S3; email through SES; Razorpay payments | Built (switched on per environment) |
 | ☑ | Request size limits; double payments from two tabs prevented | Built |
 | ☐ | SMS and WhatsApp senders | Waits for the provider |
-| ☐ | Sign-in rate limits shared across API tasks (today each task counts on its own; the WAF limit applies to all) | Follow-up |
+| ☑ | Sign-in rate limits shared across API tasks (counted in PostgreSQL) and Super Admin sessions | Built |
 | ☐ | S3 copy of files in a second region; removing a deleted school's files | Follow-up |
 | ☐ | `demo_enabled = false` on prod; Super Admin password read from Secrets Manager and changed after first sign-in | At go-live |
 
