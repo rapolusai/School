@@ -1,4 +1,4 @@
-import { api, onSessionChange, refreshSession, setAccessToken } from "../api";
+import { api, onSessionChange, refreshSession, setAccessToken, setSessionKind } from "../api";
 import { applyAccountLang, hasDeviceLang, isLang, type Lang } from "../i18n";
 import type { AuthResponse, Me } from "../types";
 
@@ -37,6 +37,7 @@ export function subscribeSession(listener: () => void): () => void {
 function applyAuth(auth: AuthResponse) {
   const signingIn = state.status !== "authenticated" || state.me.id !== auth.user.id;
   setAccessToken(auth.accessToken);
+  setSessionKind(auth.user.platformAdmin ? "platform" : "school");
   setState({ status: "authenticated", me: auth.user, accessToken: auth.accessToken });
   if (signingIn) void loadAccountLanguage(auth.user);
 }
@@ -67,6 +68,7 @@ export async function saveAccountLanguage(lang: Lang): Promise<void> {
 
 function clearAuth() {
   setAccessToken(null);
+  setSessionKind(null);
   setState(ANONYMOUS);
 }
 
@@ -75,11 +77,14 @@ onSessionChange((auth) => (auth ? applyAuth(auth) : clearAuth()));
 
 let bootstrapped = false;
 
-/** Restore the session from the refresh cookie once per page load. Safe to call repeatedly. */
+/**
+ * Restore the session from the refresh cookie once per page load (a school user's or a Super Admin's, whichever the
+ * browser holds). Safe to call repeatedly.
+ */
 export function bootstrapSession(): void {
   if (bootstrapped) return;
   bootstrapped = true;
-  void refreshSession().then((auth) => {
+  void refreshSession({ restore: true }).then((auth) => {
     if (!auth && state.status === "loading") clearAuth();
   });
 }
@@ -117,5 +122,6 @@ export async function reloadMe(): Promise<Me | null> {
 export function __resetSessionForTests(): void {
   bootstrapped = false;
   setAccessToken(null);
+  setSessionKind(null);
   state = LOADING;
 }

@@ -31,9 +31,13 @@ public class StudentErasure {
     /**
      * What was erased. {@code studentUserId} is the student's own sign-in that was unlinked (if any);
      * {@code parentUserIds} are parents' sign-ins whose guardian record was deleted because it had no other child.
+     * {@code keptParentUserIds} are sign-ins of parents kept for a brother or sister, and
+     * {@code deletedGuardianContacts} the phone numbers and emails of the deleted guardian records (so other modules
+     * can clear what they sent them).
      */
     public record Result(UUID studentId, String admissionNo, UUID studentUserId, List<UUID> parentUserIds,
-            int guardiansDeleted, int guardiansKept) {
+            int guardiansDeleted, int guardiansKept, List<UUID> keptParentUserIds,
+            List<String> deletedGuardianContacts) {
     }
 
     private final StudentRepository students;
@@ -70,11 +74,15 @@ public class StudentErasure {
         links.deleteAll(studentLinks);
         links.flush();
         List<UUID> parentUserIds = new ArrayList<>();
+        List<UUID> keptParentUserIds = new ArrayList<>();
+        List<String> deletedContacts = new ArrayList<>();
         int deleted = 0;
         int kept = 0;
         for (StudentGuardian link : studentLinks) {
             if (links.countByGuardianId(link.getGuardianId()) > 0) {
                 kept++;
+                guardians.findById(link.getGuardianId()).map(Guardian::getUserAccountId)
+                        .ifPresent(keptParentUserIds::add);
                 continue;
             }
             Guardian guardian = guardians.findById(link.getGuardianId()).orElse(null);
@@ -83,6 +91,11 @@ public class StudentErasure {
             }
             if (guardian.getUserAccountId() != null) {
                 parentUserIds.add(guardian.getUserAccountId());
+            }
+            for (String contact : new String[] {guardian.getPhone(), guardian.getEmail()}) {
+                if (contact != null && !contact.isBlank()) {
+                    deletedContacts.add(contact.trim());
+                }
             }
             guardians.delete(guardian);
             deleted++;
@@ -96,6 +109,6 @@ public class StudentErasure {
         details.put("signInUnlinked", studentUserId != null);
         audit.record(actor, "student.anonymised", "student", studentId, details);
         return new Result(studentId, student.getAdmissionNo(), studentUserId, List.copyOf(parentUserIds), deleted,
-                kept);
+                kept, List.copyOf(keptParentUserIds), List.copyOf(deletedContacts));
     }
 }

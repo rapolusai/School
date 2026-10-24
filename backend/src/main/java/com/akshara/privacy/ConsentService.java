@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.akshara.audit.AuditService;
 import com.akshara.audit.AuditService.Actor;
+import com.akshara.notifications.WhatsAppConsent;
 import com.akshara.privacy.PrivacyForms.AcceptForm;
 import com.akshara.privacy.PrivacyForms.ConsentChoice;
 import com.akshara.privacy.PrivacyForms.PaperConsentForm;
@@ -45,7 +46,9 @@ import com.akshara.students.StudentStatus;
 /**
  * Parents' consent per child and purpose, against a notice version: given online in the parent app (on first sign-in
  * after a new version, and later from the privacy page), or entered by staff from a signed paper form. Every decision
- * is a new row, so the full history is kept, and each one publishes {@link ConsentChanged}.
+ * is a new row, so the full history is kept, and each one publishes {@link ConsentChanged}. A WhatsApp decision also
+ * tells the notifications module ({@link WhatsAppConsent}): when it is not "given", the child's guardians get SMS
+ * instead of WhatsApp.
  */
 @Service
 @Transactional
@@ -60,9 +63,11 @@ public class ConsentService {
     private final StudentRoster roster;
     private final AuditService audit;
     private final ApplicationEventPublisher events;
+    private final WhatsAppConsent whatsApp;
 
     ConsentService(ConsentRecordRepository records, PrivacyNoticeService notices, StudentService students,
-            StudentRoster roster, AuditService audit, ApplicationEventPublisher events) {
+            StudentRoster roster, AuditService audit, ApplicationEventPublisher events, WhatsAppConsent whatsApp) {
+        this.whatsApp = whatsApp;
         this.records = records;
         this.notices = notices;
         this.students = students;
@@ -254,6 +259,14 @@ public class ConsentService {
 
     private void save(ConsentRecord record) {
         records.save(record);
+        if (record.getPurpose() == PrivacyPurpose.WHATSAPP) {
+            if (record.getAction() == ConsentAction.GIVEN) {
+                whatsApp.optIn(record.getStudentId());
+            } else {
+                whatsApp.optOut(record.getStudentId(), students.detail(record.getStudentId()).guardians().stream()
+                        .map(StudentService.GuardianView::phone).toList());
+            }
+        }
         events.publishEvent(new ConsentChanged(TenantContext.require(), record.getStudentId(), record.getPurpose(),
                 record.getAction(), record.getMethod(), record.getNoticeVersion(), record.getAt()));
     }

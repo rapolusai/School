@@ -25,12 +25,16 @@ import tools.jackson.databind.json.JsonMapper;
  * sends every message in its own short transaction, holding the row with {@code for update skip locked} so two API
  * instances never send the same message. During the school's quiet hours messages wait until the window ends. A
  * failed attempt is retried with a growing wait until the attempts run out; a message that fails for good hands over
- * to its fallback channel. Only ids are logged.
+ * to its fallback channel. A WhatsApp message to a parent whose WhatsApp consent is not given (see
+ * {@link WhatsAppConsent}) is never sent: it is skipped and the same text goes by SMS. Only ids are logged.
  */
 @Service
 public class MessageDispatcher {
 
     private static final Logger log = LoggerFactory.getLogger(MessageDispatcher.class);
+
+    /** Why a WhatsApp message was skipped and sent by SMS instead. */
+    static final String WHATSAPP_WITHDRAWN = "No WhatsApp consent for this parent: sent by SMS instead";
 
     private final MessageRepository messages;
     private final NotificationSettingsRepository settings;
@@ -38,11 +42,13 @@ public class MessageDispatcher {
     private final NotificationProperties.Dispatch config;
     private final TransactionTemplate tx;
     private final JsonMapper json;
+    private final WhatsAppConsent whatsApp;
 
     public MessageDispatcher(MessageRepository messages, NotificationSettingsRepository settings,
             List<MessageSender> senders, NotificationProperties properties, PlatformTransactionManager transactions,
-            JsonMapper json) {
+            JsonMapper json, WhatsAppConsent whatsApp) {
         this.messages = messages;
+        this.whatsApp = whatsApp;
         this.settings = settings;
         this.senders = List.copyOf(senders);
         this.config = properties.dispatch();
@@ -98,6 +104,11 @@ public class MessageDispatcher {
             message.holdUntil(holdUntil);
             return false;
         }
+        if (message.getChannel() == Channel.WHATSAPP && whatsApp.optedOut(message.getRecipient())) {
+            message.skip(WHATSAPP_WITHDRAWN);
+            continueAs(message, Channel.SMS, now);
+            return true;
+        }
         MessageSender sender = senders.stream().filter(s -> s.supports(message.getChannel())).findFirst()
                 .orElseThrow(() -> new IllegalStateException("No sender for " + message.getChannel()));
         try {
@@ -131,7 +142,12 @@ public class MessageDispatcher {
 
     /** Queues the same text on the fallback channel, once per dedupe key. */
     private void fallBack(Message message, Instant now) {
-        String key = NotificationQueue.fallbackKey(message.getDedupeKey(), message.getFallbackChannel());
+        continueAs(message, message.getFallbackChannel(), now);
+    }
+
+    /** Queues the same text on another channel, once per dedupe key. */
+    private void continueAs(Message message, Channel channel, Instant now) {
+        String key = NotificationQueue.fallbackKey(message.getDedupeKey(), channel);
         Message existing = key == null ? null : messages.findByDedupeKey(key).orElse(null);
         if (existing != null) {
             if (existing.getStatus() == MessageStatus.SKIPPED) {
@@ -139,7 +155,7 @@ public class MessageDispatcher {
             }
             return;
         }
-        Message fallback = messages.save(new Message(message.getFallbackChannel(), message.getRecipient(),
+        Message fallback = messages.save(new Message(channel, message.getRecipient(),
                 message.getRecipientName(), message.getTemplateKey(), message.getLanguage(), message.getParams(),
                 message.getBody(), null, message.getRelatedType(), message.getRelatedId(), message.getRelatedLabel(),
                 key, now));

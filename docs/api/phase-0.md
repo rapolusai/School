@@ -20,6 +20,8 @@ Common client mistakes, on any endpoint:
 
 Authenticated calls send `Authorization: Bearer <accessToken>`. Access tokens last 15 minutes.
 The refresh token is an httpOnly, `SameSite=Strict` cookie named `refresh_token`, scoped to `/api/auth`.
+A Super Admin's refresh token is a separate httpOnly, `SameSite=Strict` cookie named
+`platform_refresh_token`, scoped to `/api/platform/auth` (see [Super Admin sessions](#super-admin-sessions)).
 
 ## Public
 
@@ -29,7 +31,9 @@ The refresh token is an httpOnly, `SameSite=Strict` cookie named `refresh_token`
 | POST | `/api/auth/login` | `{ schoolCode, email, password }` | `200 AuthResponse` + refresh cookie |
 | POST | `/api/auth/refresh` | (refresh cookie) | `200 AuthResponse` + rotated refresh cookie |
 | POST | `/api/auth/logout` | (refresh cookie) | `204`, cookie cleared, token family revoked |
-| POST | `/api/platform/auth/login` | `{ email, password }` | `200 AuthResponse` (platform admin, no refresh cookie) |
+| POST | `/api/platform/auth/login` | `{ email, password }` | `200 AuthResponse` (platform admin) + platform refresh cookie |
+| POST | `/api/platform/auth/refresh` | (platform refresh cookie) | `200 AuthResponse` + rotated platform refresh cookie |
+| POST | `/api/platform/auth/logout` | (platform refresh cookie) | `204`, cookie cleared, token family revoked |
 
 `schoolCode`: 3–40 characters, lowercase letters, digits and hyphens, starting with a letter. A few
 codes are reserved (`admin`, `api`, `app`, `www`, `platform`, …) and answer `409` like a taken code.
@@ -58,13 +62,38 @@ type Me = {
 ```
 
 Login failures return `401` with a generic message (no hint whether the school, email or password was wrong).
-Repeated failures return `429`.
+Repeated failures return `429`: after `akshara.auth.max-failed-logins` (10) failures for one IP address, school
+code and email (IP address and email for the Super Admin) the key is refused until the
+`akshara.auth.failed-login-window` (5 minutes) that started with its first failure is over; a successful sign-in
+clears it. The counts are kept in PostgreSQL (`platform.rate_limit`, migration `V29`), so the limit holds across every
+API instance: each failure is one atomic `insert ... on conflict do update` on the SHA-256 of the key (no email or IP
+address is stored in clear), and rows whose window is over are deleted every 500 hits. The public limits (enquiry
+form, certificate verification, privacy notice, GPS devices) use the same table.
 
 Refresh rotates the cookie. A refresh with a cookie that was already replaced in the last 30 seconds (two
 tabs refreshing together, or a response lost because the page was left or reloaded mid-refresh) succeeds
 with another new cookie in the same chain and leaves the earlier new cookie valid too, unless the chain has
 been signed out; an older replaced cookie is treated as stolen: every session in that chain ends and the
 event is audited. Refresh and logout reject requests whose `Origin` header is not the web app.
+
+### Super Admin sessions
+
+A Super Admin's sign-in sets `platform_refresh_token` (httpOnly, `SameSite=Strict`, `Secure` outside
+local development, path `/api/platform/auth`, 12 hours by default: `akshara.auth.platform-refresh-token-ttl`), so a
+reload of the web app keeps them signed in. It rotates exactly like a school user's cookie (same 30-second grace; an
+older replaced cookie ends the whole chain and is logged), and is stored hashed in `platform.platform_refresh_token`
+(no school, so no `tenant_id`). The two sessions never cross:
+
+- each cookie is sent only to its own path, and the values differ in shape (`<schoolId>.<random>` for a school,
+  `p.<random>` for the platform), so a platform cookie is refused (`401`) by `/api/auth/refresh` and a school cookie
+  by `/api/platform/auth/refresh`, whatever name it is sent under;
+- a platform access token has no school and only `platform.admin`, so school endpoints answer `403`; a school access
+  token gets `403` from `/api/platform/**`;
+- signing in as one clears the other cookie in the same response, so the next reload restores the session that
+  signed in last.
+
+The web app restores a session on load by trying `/api/auth/refresh` and then `/api/platform/auth/refresh` (the
+other way round on `/app/platform` pages); once it knows which one it holds it refreshes and signs out only there.
 
 Audit actions written in Phase 0: `school.created`, `user.created`, `auth.login`, `auth.login_failed`,
 `auth.logout`, `auth.refresh_reused`.

@@ -158,8 +158,26 @@ A child **needs consent** when a notice is published, the child is active, and e
 for the current version has not been given (online or on paper). The web app shows a parent who
 needs consent the notice, an "I agree" for essential school records and an unticked choice per child
 for photos and WhatsApp before any page except their privacy page (so a parent who does not agree can
-still raise a request or a grievance). This is a screen, not access control: other modules' APIs
-are not blocked, and if the check fails the page is shown.
+still raise a request or a grievance).
+
+### The API enforces it
+
+The API applies the same rule to every family sign-in (every role is `PARENT` or `STUDENT`): while any
+of the parent's children at school, or the student's own record, needs consent, every endpoint answers
+
+```json
+403 { "type": "urn:akshara:problem:consent-required", "title": "Consent needed",
+      "detail": "Accept the school's privacy notice to continue.", "status": 403 }
+```
+
+(a student reads "A parent needs to accept the school's privacy notice before you can use the app.")
+except what the consent screen needs: `GET /api/me`, `/api/me/preferences`, everything under
+`/api/me/privacy` (read the notice, give consent, raise a request or grievance), and the token-less
+`/api/auth/*` (sign-in, refresh, sign-out) and `/api/public/*`. Staff, including a teacher who is also
+a parent, are never checked; a school with no published notice asks nothing; a child who has left
+needs nothing. Publishing a new version applies at once. The check is three small queries per family
+request, under the school's row-level security. The web app routes this problem type to the consent
+screen (a student sees "Waiting for your parent").
 
 ## Data export
 
@@ -199,8 +217,19 @@ withdrawn or alumni; `409 Still enrolled` otherwise). In one transaction:
   (year only), previous school, message, timeline notes and test/interview notes are cleared and its
   guardians deleted.
 - Ready export files of that student are deleted (`ERASED`).
-- The timeline gets `ERASED` with what was kept, the audit gets `data_request.erased`,
-  `student.anonymised` and `application.anonymised`, and `StudentDataErased` is published.
+- The message log (notifications) forgets the child: every message about the student
+  (`related_type = 'student'`) and every message sent to a phone number or email of a guardian
+  record deleted with them (except messages about another student) keeps its channel, template,
+  status, attempts and dates, but its recipient becomes `erased` (shown as `•••`), its name, text and
+  parameters are cleared and its label becomes "Erased student"; one still waiting is `SKIPPED`. The
+  child's WhatsApp opt-outs (they hold phone numbers) are deleted.
+- Sign-ins that no longer stand for a child at school are disabled and their sessions ended
+  (`user.disabled`, reason `student_data_erased`): the student's own sign-in, the sign-ins of
+  guardian records deleted with them, and those of guardians kept for a brother or sister when none of
+  their children is still at school. A parent with another child at school keeps theirs.
+- The timeline gets `ERASED` with what was kept, the audit gets `data_request.erased` (with
+  `messagesCleared` and `signInsDisabled`), `student.anonymised` and `application.anonymised`, and
+  `StudentDataErased` is published.
 
 Rows of another school are never touched: everything runs under the caller's school with row-level
 security, and a request id of another school is `404`.
@@ -213,7 +242,7 @@ security, and a request id of another school is `404`.
 | Published notices, consent decisions, request timelines | as long as the school uses the service | proof of consent and of how requests were handled (DPDP Act s.6(10)); append-only for the runtime role |
 | Audit log | unchanged by this slice | |
 | Data export ZIPs | 7 days, then content deleted | |
-| Message log (absence alerts, fee messages) | unchanged; not erased yet | follow-up through `StudentDataErased` |
+| Message log (absence alerts, fee messages) | entries kept for the statistics; recipient, name, text and parameters cleared on erasure | see [Erasure](#erasure) |
 | Database backups | up to 14 days after erasure | see below |
 
 The erasure timeline entry tells the parent how many receipts are kept and until when.
@@ -237,15 +266,20 @@ The erasure timeline entry tells the parent how many receipts are kept and until
 
 ## Events for other modules
 
-Published with `ApplicationEventPublisher` inside the transaction; nothing listens yet.
+Published with `ApplicationEventPublisher` inside the transaction. The notifications and identity
+modules cannot listen to privacy events (privacy already depends on them, and Spring Modulith forbids
+the cycle), so the privacy module calls their public services itself, in the same transaction.
 
 - `ConsentChanged(tenantId, studentId, purpose, action, method, noticeVersion, at)` for every decision.
-  Follow-up: the notifications module can skip WhatsApp for a child whose `WHATSAPP` consent is not
-  `GIVEN` and fall back to SMS; communication can do the same for circulars, and photo features can
-  check `PHOTOS`. Absence alerts and fee messages are sent exactly as before.
-- `StudentDataErased(tenantId, studentId, requestId, unlinkedUserIds, at)`. Follow-up: notifications
-  can clear names in its message log; identity can disable `unlinkedUserIds` sign-ins that no longer
-  point at any child (this slice leaves accounts active).
+  Every `WHATSAPP` decision also goes to `notifications.WhatsAppConsent`: when it is not `GIVEN`
+  (withdrawn, or declined at acceptance or on paper) the phones of the child's guardians are opted out
+  of WhatsApp (`notifications.whatsapp_opt_out`, migration `V29`, row-level security); when it is
+  given again the child's opt-outs are deleted. The dispatcher never sends WhatsApp to an opted-out
+  phone: the message is `SKIPPED` ("No WhatsApp consent for this parent: sent by SMS instead") and the
+  same text is queued by SMS (dedupe key `<key>:sms`). A guardian opted out for one child gets no
+  WhatsApp for any child. Communication circulars and photo features can follow later.
+- `StudentDataErased(tenantId, studentId, requestId, unlinkedUserIds, at)`. Lessons, exams and chat
+  listen; the message log and sign-ins are handled by the erasure itself (above).
 
 ## Audit
 

@@ -5,9 +5,9 @@ import java.util.UUID;
 
 /**
  * Published for every consent decision (given, declined or withdrawn), online or on paper, inside the transaction that
- * records it. Nothing listens yet: absence alerts and fee messages are sent exactly as before. A later change can make
- * the notifications module skip WhatsApp for a child whose WHATSAPP consent was withdrawn (see
- * docs/api/phase-1-privacy.md).
+ * records it. The WhatsApp follow-up does not wait for this event: {@link ConsentService} tells the notifications
+ * module directly (notifications cannot depend on privacy without a module cycle), so a guardian whose child's
+ * WHATSAPP consent is not given gets SMS instead of WhatsApp (see docs/api/phase-1-privacy.md).
  */
 public record ConsentChanged(UUID tenantId, UUID studentId, PrivacyPurpose purpose, ConsentAction action,
         ConsentMethod method, int noticeVersion, Instant at) {

@@ -25,7 +25,7 @@ export const AuthContext = createContext<AuthContextValue | null>(null);
 
 /**
  * Holds the signed-in user (`me`) and access token. On first mount it calls
- * POST /api/auth/refresh to restore a session from the httpOnly refresh cookie.
+ * POST /api/auth/refresh (then /api/platform/auth/refresh) to restore a session from the httpOnly refresh cookie.
  */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const session = useSyncExternalStore(subscribeSession, getSessionState, getServerSessionState);

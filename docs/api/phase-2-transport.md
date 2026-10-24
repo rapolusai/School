@@ -232,8 +232,9 @@ it also goes into that trip's log and moves the trip on like a phone's position.
 after **20 wrong tokens from one IP in 10 minutes** that IP gets `429` for the rest of the window; each vehicle may post
 **12 positions a minute** (`429`). The token's SHA-256 is matched by a `security definer` database function that
 returns only the vehicle's school, so the request then works as that school under row-level security. Limits are set by
-`akshara.transport.positions-per-minute`, `.device-failures-per-ip` and `.device-failure-window` (in memory, per API
-instance, like the sign-in limiter).
+`akshara.transport.positions-per-minute`, `.device-failures-per-ip` and `.device-failure-window`. The counts are
+kept in PostgreSQL (`platform.rate_limit`, like the sign-in limiter), so they hold across API instances; a window
+starts with its first count.
 
 ## Live board — `GET /api/transport/live` (`transport.read`)
 

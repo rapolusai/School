@@ -28,7 +28,8 @@ public class OriginCheckFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        return !(path.equals("/api/auth/refresh") || path.equals("/api/auth/logout"));
+        return !(path.equals("/api/auth/refresh") || path.equals("/api/auth/logout")
+                || path.equals("/api/platform/auth/refresh") || path.equals("/api/platform/auth/logout"));
     }
 
     @Override

@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
 import com.akshara.shared.ApiException;
+import com.akshara.shared.InMemoryRateLimitStore;
 
 class VerifyRateLimiterTest {
 
@@ -36,7 +37,8 @@ class VerifyRateLimiterTest {
 
     @Test
     void limitsLookupsPerIpAndForgetsThemAfterTheWindow() {
-        VerifyRateLimiter limiter = new VerifyRateLimiter(3, Duration.ofHours(1), clock);
+        VerifyRateLimiter limiter = new VerifyRateLimiter(3, Duration.ofHours(1), clock,
+                new InMemoryRateLimitStore());
         for (int i = 0; i < 3; i++) {
             limiter.take("10.0.0.1");
         }
@@ -46,17 +48,5 @@ class VerifyRateLimiterTest {
         limiter.take("10.0.0.2");
         now = now.plus(Duration.ofHours(1)).plusSeconds(1);
         limiter.take("10.0.0.1");
-    }
-
-    @Test
-    void dropsKeysWhoseWindowPassed() {
-        VerifyRateLimiter limiter = new VerifyRateLimiter(1000, Duration.ofMinutes(1), clock);
-        for (int i = 0; i < 499; i++) {
-            limiter.take("10.0.0." + (i % 250));
-        }
-        assertThat(limiter.trackedKeys()).isEqualTo(250);
-        now = now.plus(Duration.ofMinutes(2));
-        limiter.take("10.1.1.1");
-        assertThat(limiter.trackedKeys()).isEqualTo(1);
     }
 }

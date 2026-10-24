@@ -53,6 +53,9 @@ class NotificationsIT extends IntegrationTest {
     @Autowired
     JsonMapper json;
 
+    @Autowired
+    WhatsAppConsent whatsApp;
+
     private final LocalDate today = LocalDate.now(INDIA);
     private School school;
     private Session admin;
@@ -384,7 +387,8 @@ class NotificationsIT extends IntegrationTest {
     private MessageDispatcher dispatcher(MessageSender sender, int maxAttempts) {
         NotificationProperties properties = new NotificationProperties(new NotificationProperties.Dispatch(true,
                 Duration.ofSeconds(15), 50, 20, maxAttempts, Duration.ofMinutes(1), Duration.ofHours(1)));
-        return new MessageDispatcher(messages, settingsRepository, List.of(sender), properties, transactions, json);
+        return new MessageDispatcher(messages, settingsRepository, List.of(sender), properties, transactions, json,
+                whatsApp);
     }
 
     private ResultActions mark(LocalDate date, String ashaMark,

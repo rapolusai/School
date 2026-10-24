@@ -33,7 +33,7 @@ class LoginRateLimiterTest {
 
     @Test
     void blocksAfterTooManyFailuresAndForgetsThemAfterTheWindow() {
-        LoginRateLimiter limiter = new LoginRateLimiter(3, Duration.ofMinutes(5), clock);
+        LoginRateLimiter limiter = new LoginRateLimiter(3, Duration.ofMinutes(5), clock, new InMemoryRateLimitStore());
         for (int i = 0; i < 3; i++) {
             limiter.check("k");
             limiter.recordFailure("k");
@@ -48,7 +48,7 @@ class LoginRateLimiterTest {
 
     @Test
     void aSuccessfulSignInClearsTheCount() {
-        LoginRateLimiter limiter = new LoginRateLimiter(2, Duration.ofMinutes(5), clock);
+        LoginRateLimiter limiter = new LoginRateLimiter(2, Duration.ofMinutes(5), clock, new InMemoryRateLimitStore());
         limiter.recordFailure("k");
         limiter.recordFailure("k");
         limiter.reset("k");

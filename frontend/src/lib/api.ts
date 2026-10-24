@@ -141,34 +141,79 @@ function emitSession(session: AuthResponse | null) {
   for (const listener of sessionListeners) listener(session);
 }
 
+/**
+ * Which refresh cookie the session lives on: a school user's (`refresh_token`, sent to /api/auth) or a Super
+ * Admin's (`platform_refresh_token`, sent to /api/platform/auth). Null until a sign-in or a restored session tells.
+ */
+export type SessionKind = "school" | "platform";
+
+const REFRESH_PATH: Record<SessionKind, string> = {
+  school: "/api/auth/refresh",
+  platform: "/api/platform/auth/refresh",
+};
+
+const LOGOUT_PATH: Record<SessionKind, string> = {
+  school: "/api/auth/logout",
+  platform: "/api/platform/auth/logout",
+};
+
+let sessionKind: SessionKind | null = null;
+
+export function getSessionKind(): SessionKind | null {
+  return sessionKind;
+}
+
+export function setSessionKind(kind: SessionKind | null): void {
+  sessionKind = kind;
+}
+
+function kindOf(session: AuthResponse): SessionKind {
+  return session.user.platformAdmin ? "platform" : "school";
+}
+
+/** On a page reload nothing says which cookie the browser holds: try the one the address suggests first. */
+function restoreOrder(): SessionKind[] {
+  const onPlatformPage = typeof window !== "undefined" && window.location?.pathname?.startsWith("/app/platform");
+  return onPlatformPage ? ["platform", "school"] : ["school", "platform"];
+}
+
 let refreshInFlight: Promise<AuthResponse | null> | null = null;
 
 /**
- * POST /api/auth/refresh using the httpOnly cookie. Concurrent callers share one request:
- * the refresh token rotates, so two parallel refreshes would look like token reuse.
+ * POST /api/auth/refresh (or /api/platform/auth/refresh for a Super Admin) using the httpOnly cookie. Concurrent
+ * callers share one request: the refresh token rotates, so two parallel refreshes would look like token reuse.
+ * With `restore` (a page load, when the kind of session is not known yet) both cookies are tried in turn.
  * Resolves to null when there is no valid session.
  */
-export function refreshSession(): Promise<AuthResponse | null> {
+export function refreshSession(options: { restore?: boolean } = {}): Promise<AuthResponse | null> {
   if (!refreshInFlight) {
     const tokenAtStart = accessToken;
+    const kinds: SessionKind[] = sessionKind
+      ? [sessionKind]
+      : options.restore
+        ? restoreOrder()
+        : ["school"];
     refreshInFlight = (async () => {
       try {
-        const res = await fetch("/api/auth/refresh", {
-          method: "POST",
-          credentials: "include",
-          headers: { Accept: "application/json" },
-        });
-        // A sign-in or sign-out happened while this was in flight: its result is stale.
-        if (accessToken !== tokenAtStart) return null;
-        if (!res.ok) {
-          accessToken = null;
-          emitSession(null);
-          return null;
+        for (const kind of kinds) {
+          const res = await fetch(REFRESH_PATH[kind], {
+            method: "POST",
+            credentials: "include",
+            headers: { Accept: "application/json" },
+          });
+          // A sign-in or sign-out happened while this was in flight: its result is stale.
+          if (accessToken !== tokenAtStart) return null;
+          if (!res.ok) continue;
+          const session = (await res.json()) as AuthResponse;
+          accessToken = session.accessToken;
+          sessionKind = kindOf(session);
+          emitSession(session);
+          return session;
         }
-        const session = (await res.json()) as AuthResponse;
-        accessToken = session.accessToken;
-        emitSession(session);
-        return session;
+        accessToken = null;
+        sessionKind = null;
+        emitSession(null);
+        return null;
       } catch {
         // Network failure: keep whatever token we had, report no new session.
         return null;
@@ -178,6 +223,23 @@ export function refreshSession(): Promise<AuthResponse | null> {
     })();
   }
   return refreshInFlight;
+}
+
+/**
+ * Problem type the API answers (403) to a parent or student whose school's privacy notice has not been accepted
+ * (docs/api/phase-1-privacy.md). The privacy gate listens and shows the consent screen.
+ */
+export const CONSENT_REQUIRED_TYPE = "urn:akshara:problem:consent-required";
+
+type ConsentListener = () => void;
+const consentListeners = new Set<ConsentListener>();
+
+/** Subscribe to "consent required" answers from any API call. */
+export function onConsentRequired(listener: ConsentListener): () => void {
+  consentListeners.add(listener);
+  return () => {
+    consentListeners.delete(listener);
+  };
 }
 
 type RequestOptions = {
@@ -251,7 +313,13 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
     throw toApiError(error);
   }
 
-  if (!res.ok) throw await parseErrorResponse(res);
+  if (!res.ok) {
+    const error = await parseErrorResponse(res);
+    if (error.status === 403 && error.type === CONSENT_REQUIRED_TYPE) {
+      for (const listener of consentListeners) listener();
+    }
+    throw error;
+  }
   if (res.status === 204 || res.headers.get("content-length") === "0") return undefined as T;
   const text = await res.text();
   return (text ? JSON.parse(text) : undefined) as T;
@@ -281,7 +349,7 @@ export const api = {
     apiFetch<AuthResponse>("/api/auth/login", { method: "POST", body, auth: false }),
   platformLogin: (body: { email: string; password: string }) =>
     apiFetch<AuthResponse>("/api/platform/auth/login", { method: "POST", body, auth: false }),
-  logout: () => apiFetch<void>("/api/auth/logout", { method: "POST", auth: false }),
+  logout: () => apiFetch<void>(LOGOUT_PATH[sessionKind ?? "school"], { method: "POST", auth: false }),
 
   me: () => apiFetch<Me>("/api/me"),
   myPreferences: () => apiFetch<{ language: string | null }>("/api/me/preferences"),

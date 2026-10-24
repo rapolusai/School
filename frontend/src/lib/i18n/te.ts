@@ -3332,6 +3332,9 @@ export const te: Record<MessageKey, string> = {
     "నోటీసు ఇప్పుడే నవీకరించబడింది. కొత్త వెర్షన్ చదివి మళ్ళీ ఎంచుకోండి.",
   "privacy.gate.submit": "అంగీకరించి కొనసాగండి",
   "privacy.gate.instead": "ప్రశ్న లేదా ఫిర్యాదు ఉందా? బదులుగా అభ్యర్థన చేయండి",
+  "privacy.gate.studentTitle": "మీ తల్లిదండ్రుల కోసం వేచి ఉంది",
+  "privacy.gate.studentBody": "మీరు మీ యాప్‌ను ఉపయోగించే ముందు, మీ తల్లిదండ్రులు లేదా సంరక్షకులు వారి యాప్‌లో పాఠశాల గోప్యతా నోటీసును అంగీకరించాలి. సైన్ ఇన్ చేసి దాన్ని అంగీకరించమని వారిని అడగండి, తర్వాత మళ్లీ ప్రయత్నించండి.",
+  "privacy.gate.studentRetry": "మళ్లీ ప్రయత్నించండి",
   "privacy.public.eyebrow": "గోప్యతా నోటీసు",
   "privacy.public.notFoundTitle": "నోటీసు కనబడలేదు",
   "privacy.public.notFound":

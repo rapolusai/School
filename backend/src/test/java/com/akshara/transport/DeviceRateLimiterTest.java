@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
 import com.akshara.shared.ApiException;
+import com.akshara.shared.InMemoryRateLimitStore;
 
 /** Positions per vehicle per minute, wrong device tokens per IP, and the CSV downloads' format. */
 class DeviceRateLimiterTest {
@@ -45,7 +46,8 @@ class DeviceRateLimiterTest {
     @Test
     void eachVehicleSendsAtMostItsPositionsAMinute() {
         MovingClock clock = new MovingClock();
-        DeviceRateLimiter limiter = new DeviceRateLimiter(3, 5, Duration.ofMinutes(10), clock);
+        DeviceRateLimiter limiter = new DeviceRateLimiter(3, 5, Duration.ofMinutes(10), clock,
+                new InMemoryRateLimitStore());
         UUID bus = UUID.randomUUID();
         UUID other = UUID.randomUUID();
         for (int i = 0; i < 3; i++) {
@@ -63,7 +65,8 @@ class DeviceRateLimiterTest {
     @Test
     void wrongTokensFromOneAddressAreLimited() {
         MovingClock clock = new MovingClock();
-        DeviceRateLimiter limiter = new DeviceRateLimiter(12, 2, Duration.ofMinutes(10), clock);
+        DeviceRateLimiter limiter = new DeviceRateLimiter(12, 2, Duration.ofMinutes(10), clock,
+                new InMemoryRateLimitStore());
         limiter.checkFailures("10.0.0.1");
         limiter.recordFailure("10.0.0.1");
         limiter.recordFailure("10.0.0.1");
@@ -75,7 +78,6 @@ class DeviceRateLimiterTest {
         limiter.checkFailures("10.0.0.2");
         clock.now = clock.now.plus(Duration.ofMinutes(11));
         limiter.checkFailures("10.0.0.1");
-        assertThat(limiter.trackedKeys()).isZero();
     }
 
     @Test

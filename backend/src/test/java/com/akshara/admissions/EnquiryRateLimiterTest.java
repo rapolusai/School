@@ -1,6 +1,5 @@
 package com.akshara.admissions;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -13,6 +12,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 import com.akshara.shared.ApiException;
+import com.akshara.shared.InMemoryRateLimitStore;
 
 class EnquiryRateLimiterTest {
 
@@ -37,7 +37,8 @@ class EnquiryRateLimiterTest {
 
     @Test
     void limitsEnquiriesPerIpAndForgetsThemAfterTheWindow() {
-        EnquiryRateLimiter limiter = new EnquiryRateLimiter(10, 3, 100, Duration.ofHours(1), clock);
+        EnquiryRateLimiter limiter = new EnquiryRateLimiter(10, 3, 100, Duration.ofHours(1), clock,
+                new InMemoryRateLimitStore());
         for (int i = 0; i < 3; i++) {
             limiter.takeEnquiryFromIp("10.0.0.1");
         }
@@ -53,7 +54,8 @@ class EnquiryRateLimiterTest {
 
     @Test
     void limitsEnquiriesPerSchoolWhateverTheIp() {
-        EnquiryRateLimiter limiter = new EnquiryRateLimiter(10, 10, 2, Duration.ofHours(1), clock);
+        EnquiryRateLimiter limiter = new EnquiryRateLimiter(10, 10, 2, Duration.ofHours(1), clock,
+                new InMemoryRateLimitStore());
         UUID school = UUID.randomUUID();
         limiter.takeEnquiryForSchool(school);
         limiter.takeEnquiryForSchool(school);
@@ -63,24 +65,12 @@ class EnquiryRateLimiterTest {
 
     @Test
     void refusedAttemptsDoNotExtendTheWait() {
-        EnquiryRateLimiter limiter = new EnquiryRateLimiter(1, 10, 10, Duration.ofMinutes(10), clock);
+        EnquiryRateLimiter limiter = new EnquiryRateLimiter(1, 10, 10, Duration.ofMinutes(10), clock,
+                new InMemoryRateLimitStore());
         limiter.takeInfo("ip");
         now = now.plus(Duration.ofMinutes(9));
         assertThatThrownBy(() -> limiter.takeInfo("ip")).isInstanceOf(ApiException.class);
         now = now.plus(Duration.ofMinutes(2));
         assertThatCode(() -> limiter.takeInfo("ip")).doesNotThrowAnyException();
-    }
-
-    @Test
-    void forgetsIdleKeys() {
-        EnquiryRateLimiter limiter = new EnquiryRateLimiter(1000, 1000, 1000, Duration.ofMinutes(1), clock);
-        for (int i = 0; i < 499; i++) {
-            limiter.takeInfo("ip-" + i);
-        }
-        assertThat(limiter.trackedKeys()).isEqualTo(499);
-        now = now.plus(Duration.ofMinutes(2));
-        // Every 500th call drops keys whose window has passed.
-        limiter.takeInfo("fresh");
-        assertThat(limiter.trackedKeys()).isEqualTo(1);
     }
 }

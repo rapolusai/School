@@ -169,7 +169,8 @@ type PublicEnquiry = { parentName: string; relation: "MOTHER" | "FATHER" | "GUAR
 - The enquiry is stored as an `ENQUIRY` from `WEBSITE` with the parent as the primary guardian, the
   message, the consent text version and the moment of consent. The timeline entry has no person.
 - A filled-in honeypot answers the same `201` but stores nothing.
-- Rate limits, per API instance, in a sliding hour: 120 page loads and 20 enquiries per client IP, and
+- Rate limits, shared by every API instance (PostgreSQL `platform.rate_limit`), in an hour that starts with the
+  first request: 120 page loads and 20 enquiries per client IP, and
   100 enquiries per school (bot submissions count). Over the limit answers `429` "Too many requests".
   Configurable as `akshara.admissions.public-info-per-ip`, `enquiries-per-ip`, `enquiries-per-school`
   and `enquiry-window`.

@@ -3,13 +3,14 @@
 import { ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { FormAlert, LoadingRows } from "@/components/ui/states";
-import { toApiError } from "@/lib/api";
+import { onConsentRequired, toApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { errorMessage } from "@/lib/error-message";
 import { classLabel, formatDate } from "@/lib/format";
 import { localeFor, translateOr, useI18n } from "@/lib/i18n";
+import { isFamilyMember } from "@/lib/family";
 import { isParentUser } from "@/lib/permissions";
 import { privacyApi } from "@/lib/privacy-api";
 import { OPTIONAL_PURPOSES, type OptionalPurpose, type ParentPrivacy, type PrivacyNotice } from "@/lib/types";
@@ -28,23 +29,49 @@ export function gateExempt(pathname: string): boolean {
   return pathname === "/app/my-privacy" || pathname.startsWith("/app/my-privacy/");
 }
 
+/** How long after one consent check another "consent required" answer may start a new one. */
+const RECHECK_AFTER_MS = 2000;
+
 /**
- * For parents only: until they accept the school's current privacy notice for every child at
- * school, the app shows the notice and the consent choices instead of the page. Staff, students
- * and parents who have accepted see the page. If the check itself fails the page is shown: the
- * gate is a screen, not access control.
+ * For parents: until they accept the school's current privacy notice for every child at school,
+ * the app shows the notice and the consent choices instead of the page. The API enforces the same
+ * rule (403 consent-required from family endpoints), and such an answer makes the gate check
+ * again, so a notice published mid-visit brings the consent screen back. A student whose parent
+ * has not accepted yet sees a short explanation instead of the page. Staff and parents who have
+ * accepted see the page. If the check itself fails the page is shown.
  */
 export function PrivacyGate({ children }: { children: React.ReactNode }) {
   const { me } = useAuth();
   const pathname = usePathname() ?? "";
   const parent = isParentUser(me);
+  const studentOnly = !parent && isFamilyMember(me);
   const privacy = useApiData(parent && me ? `privacy:gate:${me.id}` : null, privacyApi.mine);
   const [accepted, setAccepted] = useState<ParentPrivacy | null>(null);
+  const [waitingForParent, setWaitingForParent] = useState(false);
   const value = useMemo(() => ({ accepted: (next: ParentPrivacy) => setAccepted(next) }), []);
   const data = accepted ?? privacy.data;
+  const lastCheck = useRef(0);
+  const reloadPrivacy = privacy.reload;
+
+  useEffect(() => {
+    if (!parent && !studentOnly) return;
+    return onConsentRequired(() => {
+      if (studentOnly) {
+        setWaitingForParent(true);
+        return;
+      }
+      const now = Date.now();
+      if (now - lastCheck.current < RECHECK_AFTER_MS) return;
+      lastCheck.current = now;
+      setAccepted(null);
+      reloadPrivacy();
+    });
+  }, [parent, studentOnly, reloadPrivacy]);
 
   let content: React.ReactNode = children;
-  if (parent && !gateExempt(pathname)) {
+  if (studentOnly && waitingForParent) {
+    content = <WaitingForParent />;
+  } else if (parent && !gateExempt(pathname)) {
     if (!data && !privacy.error) {
       content = (
         <section className="card" aria-busy="true">
@@ -66,6 +93,27 @@ export function PrivacyGate({ children }: { children: React.ReactNode }) {
     }
   }
   return <GateContext.Provider value={value}>{content}</GateContext.Provider>;
+}
+
+/** For a student whose parent has not accepted the school's privacy notice yet. */
+function WaitingForParent() {
+  const { t } = useI18n();
+  return (
+    <section className="card flex max-w-xl flex-col gap-3" data-testid="privacy-gate-student" aria-labelledby="gate-student-title">
+      <header className="flex items-start gap-3">
+        <span className="badge-ic" aria-hidden="true">
+          <ShieldCheck size={20} />
+        </span>
+        <h1 id="gate-student-title">{t("privacy.gate.studentTitle")}</h1>
+      </header>
+      <p className="text-[13.5px] text-ink-2">{t("privacy.gate.studentBody")}</p>
+      <div>
+        <button type="button" className="btn btn-ghost" onClick={() => window.location.reload()}>
+          {t("privacy.gate.studentRetry")}
+        </button>
+      </div>
+    </section>
+  );
 }
 
 type Choices = Record<string, Record<OptionalPurpose, boolean>>;
