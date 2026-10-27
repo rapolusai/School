@@ -61,10 +61,12 @@ public class BillingService {
     private final BillingProperties properties;
     private final AuditService audit;
     private final ApplicationEventPublisher events;
+    private final PlanChanges planChanges;
 
     BillingService(TenantDirectory tenants, SubscriptionRepository subscriptions, InvoiceRepository invoices,
             InvoicePaymentRepository payments, InvoiceIssuer issuer, BillingAccounts accounts,
-            BillingProperties properties, AuditService audit, ApplicationEventPublisher events) {
+            BillingProperties properties, AuditService audit, ApplicationEventPublisher events,
+            PlanChanges planChanges) {
         this.tenants = tenants;
         this.subscriptions = subscriptions;
         this.invoices = invoices;
@@ -74,6 +76,7 @@ public class BillingService {
         this.properties = properties;
         this.audit = audit;
         this.events = events;
+        this.planChanges = planChanges;
     }
 
     // ------------------------------------------------------------------ billing details
@@ -209,6 +212,13 @@ public class BillingService {
             details.put("previousPlan", school.plan().name());
             tenants.changePlan(tenantId, form.plan());
         }
+        if (subscription != null && subscription.getPendingPlan() != null
+                && (school.plan() != form.plan() || subscription.getPendingPlan() == form.plan())) {
+            // The Super Admin set the plan: the school's scheduled downgrade no longer applies.
+            details.put("pendingPlanCleared", subscription.getPendingPlan().name());
+            subscription.clearPendingPlan();
+            subscriptions.saveAndFlush(subscription);
+        }
         if (!details.isEmpty()) {
             audit.record(by, "subscription.changed", "school", tenantId, details);
         }
@@ -229,12 +239,22 @@ public class BillingService {
                 .orElseThrow(() -> conflict("Not paying", "Start a paid subscription for this school first."));
         TenantView school = school(tenantId);
         requireState(subscription, "Add the school's billing details (state) before invoicing it.");
+        boolean renewal = invoices.existsLiveForPeriod(subscription.getPeriodStart());
+        if (renewal && subscription.isCancelAtPeriodEnd()) {
+            throw conflict("Cancelled", "The school cancelled its subscription at the end of this period. It must "
+                    + "take the cancellation back (or be reactivated) before the next period is invoiced.");
+        }
+        if (renewal && !BillingDay.today().isBefore(subscription.nextRenewalOn()
+                .minusDays(properties.renewalWindowDays()))) {
+            // Moving into the next period: a downgrade the school scheduled applies from it.
+            school = planChanges.applyPendingPlan(subscription, school, by);
+        }
         PlanCatalog.PlanInfo plan = PlanCatalog.of(school.plan());
         if (!plan.covers(subscription.getBilledStudents())) {
             throw conflict("Over the plan's limit", "The " + label(school.plan()) + " plan covers up to "
                     + plan.maxStudents() + " students. Change the plan or the billed students first.");
         }
-        if (invoices.existsLiveForPeriod(subscription.getPeriodStart())) {
+        if (renewal) {
             LocalDate next = subscription.nextRenewalOn();
             LocalDate opensOn = next.minusDays(properties.renewalWindowDays());
             if (BillingDay.today().isBefore(opensOn)) {
@@ -451,6 +471,8 @@ public class BillingService {
         }
         TenantStatus back = subscription.lift();
         subscription.restartGrace(BillingDay.today());
+        // A school suspended because it cancelled and is reactivated carries on: it renews again.
+        subscription.resume();
         if (back == null) {
             // Suspended outside the console (no reason on file): paying schools go back to active, others to trial.
             back = !subscription.isPaid() && school.trialEndsAt() != null ? TenantStatus.TRIAL : TenantStatus.ACTIVE;
@@ -478,6 +500,12 @@ public class BillingService {
         if (subscription.getStateCode() == null) {
             throw ApiException.badRequest(message, "stateCode");
         }
+    }
+
+    /** Billed students on a plan: the same number, capped at the plan's limit (a downgrade to a smaller plan). */
+    static int billedStudentsOn(Plan plan, int billed) {
+        Integer max = PlanCatalog.of(plan).maxStudents();
+        return max == null ? billed : Math.min(billed, max);
     }
 
     private static void checkCovers(Plan plan, int students) {

@@ -13,6 +13,7 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
+import com.akshara.platform.Plan;
 import com.akshara.platform.TenantStatus;
 import com.akshara.shared.AssignedIdEntity;
 import com.akshara.shared.Ids;
@@ -61,6 +62,15 @@ class Subscription extends AssignedIdEntity {
     private LocalDate autoPastDueSince;
 
     private LocalDate graceRestartedOn;
+
+    @Enumerated(EnumType.STRING)
+    private Plan pendingPlan;
+
+    private Instant pendingPlanRequestedAt;
+
+    private boolean cancelAtPeriodEnd;
+
+    private Instant cancelRequestedAt;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
@@ -152,6 +162,45 @@ class Subscription extends AssignedIdEntity {
     /** The Super Admin reactivated the school on {@code day}: an automatic suspension waits a whole grace period. */
     void restartGrace(LocalDate day) {
         this.graceRestartedOn = day;
+    }
+
+    /** A downgrade the school chose, to take effect when the next period starts. */
+    void schedulePlan(Plan plan) {
+        this.pendingPlan = plan;
+        this.pendingPlanRequestedAt = Instant.now();
+    }
+
+    void clearPendingPlan() {
+        this.pendingPlan = null;
+        this.pendingPlanRequestedAt = null;
+    }
+
+    /** The school cancelled: no renewal, and the school is suspended when the current period ends. */
+    void cancelAtPeriodEnd() {
+        this.cancelAtPeriodEnd = true;
+        this.cancelRequestedAt = Instant.now();
+    }
+
+    /** The school took its cancellation back (or the Super Admin reactivated it). */
+    void resume() {
+        this.cancelAtPeriodEnd = false;
+        this.cancelRequestedAt = null;
+    }
+
+    Plan getPendingPlan() {
+        return pendingPlan;
+    }
+
+    Instant getPendingPlanRequestedAt() {
+        return pendingPlanRequestedAt;
+    }
+
+    boolean isCancelAtPeriodEnd() {
+        return cancelAtPeriodEnd;
+    }
+
+    Instant getCancelRequestedAt() {
+        return cancelRequestedAt;
     }
 
     LocalDate getAutoPastDueSince() {

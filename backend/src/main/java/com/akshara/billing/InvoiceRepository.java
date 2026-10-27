@@ -21,7 +21,8 @@ interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
     @Query("select i from Invoice i order by i.invoiceDate desc, i.financialYear desc, i.seq desc")
     List<Invoice> newestFirst();
 
-    @Query("select count(i) > 0 from Invoice i where i.periodStart = ?1 and i.status <> 'CANCELLED'")
+    @Query("select count(i) > 0 from Invoice i where i.periodStart = ?1 and i.status <> 'CANCELLED' "
+            + "and i.kind = 'PERIOD'")
     boolean existsLiveForPeriod(LocalDate periodStart);
 
     @Query("select i from Invoice i where i.status = 'ISSUED' order by i.dueDate")

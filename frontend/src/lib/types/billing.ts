@@ -48,8 +48,21 @@ export type SubscriptionView = {
   nextRenewalOn: PlainDate;
   paidSince: PlainDate;
   unitPricePaise: number;
+  /** At the plan of the next period (a scheduled downgrade's, if any), before GST. */
   nextInvoiceTaxablePaise: number;
+  /** A downgrade the school scheduled for nextRenewalOn (docs/api/phase-3-subscriptions.md, section 4). */
+  pendingPlan?: Plan | null;
+  pendingPlanRequestedAt?: string | null;
+  /** The school cancelled: no renewal, suspended after periodEnd. */
+  cancelAtPeriodEnd?: boolean;
+  cancelRequestedAt?: string | null;
+  /** The next invoice's price a student and billed students (they differ from now after a scheduled downgrade). */
+  nextUnitPricePaise?: number;
+  nextBilledStudents?: number;
 };
+
+/** PERIOD: a period's own invoice; UPGRADE: the prorated rest of a period after an upgrade from previousPlan. */
+export type InvoiceKind = "PERIOD" | "UPGRADE";
 
 export type Suspension = { suspendedAt: string; reason: string };
 
@@ -67,6 +80,8 @@ export type InvoiceSummary = {
   balancePaise: number;
   status: InvoiceStatus;
   overdue: boolean;
+  kind?: InvoiceKind;
+  previousPlan?: Plan | null;
 };
 
 export type Party = { name: string; address: string | null; stateCode: string; gstin: string | null };
@@ -118,6 +133,8 @@ export type Invoice = {
   cancelReason: string | null;
   payments: InvoicePayment[];
   sample: boolean;
+  kind?: InvoiceKind;
+  previousPlan?: Plan | null;
 };
 
 /** The banner for a school's admins. `kind` is null when there is nothing to say. */
@@ -261,6 +278,23 @@ export type PlanAccess = {
   lockedFeatures: string[];
   lockedModules: PlanModule[];
   /** Null: unlimited. */
+  maxStudents: number | null;
+  activeStudents: number;
+};
+
+/** What changing to a plan would do now (GET /api/billing/plan/quote). */
+export type PlanChangeQuote = {
+  plan: Plan;
+  kind: "SAME" | "TRIAL" | "UPGRADE" | "DOWNGRADE";
+  effectiveOn: PlainDate;
+  remainingDays: number;
+  periodDays: number;
+  unitPricePaise: number;
+  billedStudents: number;
+  taxablePaise: number;
+  totalPaise: number;
+  /** False when the plan does not cover the students on roll. */
+  allowed: boolean;
   maxStudents: number | null;
   activeStudents: number;
 };

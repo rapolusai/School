@@ -250,6 +250,9 @@ export const PLAN_FEATURE_TYPE = "urn:akshara:problem:plan-feature";
 /** Students added past the plan's limit (409, with `maxStudents`, `activeStudents` and `adding`). */
 export const PLAN_STUDENT_LIMIT_TYPE = "urn:akshara:problem:plan-student-limit";
 
+/** A downgrade to a plan that does not cover the students on roll (409, with `plan`, `maxStudents`, `activeStudents`). */
+export const PLAN_DOWNGRADE_TYPE = "urn:akshara:problem:plan-downgrade";
+
 type ConsentListener = () => void;
 const consentListeners = new Set<ConsentListener>();
 

@@ -57,7 +57,7 @@ and every change goes to that school's audit trail with the Super Admin's name.
 | GET | `/billing/schools/{id}` | | `200 SchoolAccount` |
 | PUT | `/billing/schools/{id}/details` | `DetailsForm` | `200 SchoolAccount` |
 | POST | `/billing/schools/{id}/subscription` | `StartForm` | `201 SchoolAccount`; issues the first invoice; `409` when already paying or suspended, or the state is not set |
-| PUT | `/billing/schools/{id}/subscription` | `ChangeForm` | `200 SchoolAccount`; applies from the next invoice, no proration |
+| PUT | `/billing/schools/{id}/subscription` | `ChangeForm` | `200 SchoolAccount`; applies from the next invoice, no proration (clears a downgrade the school scheduled; the school's own upgrades are prorated, see [phase-3-subscriptions.md](phase-3-subscriptions.md), section 4) |
 | POST | `/billing/schools/{id}/invoices` | | `201 InvoiceView`: the next invoice (see Renewals); `409` too early, not paying, over the plan's limit |
 | GET | `/billing/schools/{id}/invoices/{invoiceId}` | | `200 InvoiceView`; another school's invoice is `404` |
 | POST | `/billing/schools/{id}/invoices/{invoiceId}/payments` | `PaymentForm` | `200 InvoiceView`; `409` when paid or cancelled; `400 amountPaise` above the balance, `400 paidOn` in the future |

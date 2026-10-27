@@ -155,3 +155,77 @@ Web app: the shell fetches the plan access once per sign-in (and again after a p
 module shows a lock and "Upgrade" and leads to `/app/billing?upgrade=<module>` for someone who can see Billing (a
 School Admin), and is hidden from everyone else; the Billing page says why and shows students on roll against the
 limit. Both problem types have their own translated messages, so a refused request never reads as "no permission".
+
+## 4. Changing the plan (self-service)
+
+A School Admin (`billing.read` + `settings.manage`) changes the school's plan from its Billing page. Every change locks
+the school's subscription row, so a second click (or a second tab) finds the change made and does nothing more; every
+change is in the school's audit trail, and the Super Admin sees the result on the school's account
+(`SubscriptionView.pendingPlan`, `cancelAtPeriodEnd`, the `UPGRADE` invoice).
+
+| Method | Path | Body | Success |
+| --- | --- | --- | --- |
+| GET | `/api/billing/plan/quote?plan=GROWTH` | | `200 PlanChangeQuote`: what the change would do now, and cost; nothing changes |
+| POST | `/api/billing/plan` | `{ plan }` | `200 SchoolBilling`; `409` type `urn:akshara:problem:plan-downgrade` (with `plan`, `maxStudents`, `activeStudents`) when a downgrade does not fit; choosing the current plan withdraws a scheduled downgrade |
+| DELETE | `/api/billing/plan/pending` | | `200 SchoolBilling`: the scheduled downgrade withdrawn |
+| POST | `/api/billing/cancel` | `{ reason? }` (optional body) | `200 SchoolBilling`; `409` for a school that does not pay yet |
+| POST | `/api/billing/resume` | | `200 SchoolBilling`: the cancellation taken back |
+
+A suspended school can do none of these (`409`). Other roles get `403`; the platform console has no school plan.
+
+**Trial** (a school not paying yet): the plan changes at once, for nothing (a smaller plan must still cover the
+students on roll).
+
+**Upgrade** (a dearer plan) takes effect at once: the plan's features and student limit apply immediately. A paying
+school whose current period has a live invoice gets a second GST tax invoice for the rest of the period:
+
+- *Prorated by day.* `unit = round_half_up((new unit − old unit) × remainingDays / periodDays)`, where the units are
+  the two plans' per-student prices for one period of the school's cycle, `periodDays` counts the whole current period
+  and `remainingDays` counts from today (or the period's first day, if later) to its last day, both inclusive. Taxable
+  value = `unit × billedStudents`; GST at 18% as on any invoice (CGST + SGST within the seller's state, IGST otherwise).
+- *GST-compliant.* It is a full tax invoice of its own, not an amendment of the period's invoice (issued invoices
+  never change): the next number in Akshara's one gap-free series for the financial year, dated today, due after the
+  usual payment terms, with SAC 998315, the seller's and buyer's details and GSTINs, `periodStart`-`periodEnd` the part
+  of the period it covers, `kind: "UPGRADE"` and `previousPlan`; it prints as "upgrade from the Starter to the Growth
+  plan for the rest of the yearly period (prorated)". No credit note is needed because nothing already invoiced is
+  reduced.
+- It is paid like any other invoice (online or by bank transfer), counts for past due and suspension like any other,
+  and does not take the period's place: the "one live invoice per school and period" rule now counts `PERIOD`
+  invoices only. The next renewal is billed at the new plan.
+- A period whose own invoice was cancelled, or that has ended and waits for renewal, gets no upgrade invoice: it is
+  invoiced at the new plan when it is invoiced (again).
+
+**Downgrade** (a cheaper plan) is scheduled for the next renewal (`pendingPlan`; the next invoice shown is at its price)
+and changes nothing until then. It is refused while the school has more students on roll than the plan covers. When
+the next period starts (the renewal job, or the Super Admin's "Issue next invoice"), the plan changes and the billed
+students are capped at the plan's limit, audited as `subscription.downgraded`; if by then the school has more students
+on roll than the plan covers, the downgrade is dropped (`subscription.downgrade_dropped`) and the school renews on its
+plan. The Super Admin changing the plan clears a scheduled downgrade.
+
+**Cancel** stops the renewal: the school keeps working until the period's last day, and on the next run of the renewal
+job after it the school is suspended (`subscription.ended`, then `school.suspended` with `cancelled: true`) instead of
+renewed, with no new invoice. Until then the School Admin can take it back (`POST /resume`), and the Super Admin cannot
+issue the next period's invoice (`409`). A Super Admin who reactivates the school clears the cancellation, so it renews
+again. Invoices already issued stay due.
+
+```ts
+type PlanChangeQuote = { plan: Plan; kind: "SAME" | "TRIAL" | "UPGRADE" | "DOWNGRADE"; effectiveOn: string;
+  remainingDays: number; periodDays: number; unitPricePaise: number; billedStudents: number; taxablePaise: number;
+  totalPaise: number; allowed: boolean; maxStudents: number | null; activeStudents: number };
+// SubscriptionView gains: pendingPlan, pendingPlanRequestedAt, cancelAtPeriodEnd, cancelRequestedAt,
+//   nextUnitPricePaise, nextBilledStudents. InvoiceSummary and InvoiceView gain kind ("PERIOD" | "UPGRADE") and
+//   previousPlan.
+```
+
+Audit actions: `subscription.upgraded`, `subscription.downgrade_scheduled`, `subscription.downgrade_withdrawn`,
+`subscription.downgraded`, `subscription.downgrade_dropped`, `subscription.cancel_scheduled`,
+`subscription.cancel_withdrawn`, `subscription.ended`, and `subscription.changed` (with `selfService: true`) for a
+trial's change.
+
+Web app: each plan card on Billing has "Upgrade", "Downgrade" or (in the trial) "Switch to this plan", which shows the
+quote and asks to confirm; a scheduled downgrade shows "Keep <plan>", and "Cancel subscription" / "Keep subscription"
+sit under the plan summary. After a change the menu checks the plan again, so modules unlock at once.
+
+Data (`V34__subscription_plan_changes.sql`): `billing.invoice.kind` and `previous_plan`; `uq_invoice_period` for
+`PERIOD` invoices only; `billing.subscription.pending_plan`, `pending_plan_requested_at`, `cancel_at_period_end`,
+`cancel_requested_at`.

@@ -7,7 +7,9 @@ import type {
   InvoiceCheckoutResult,
   InvoiceOrder,
   InvoicePaymentRequest,
+  Plan,
   PlanAccess,
+  PlanChangeQuote,
   PlanView,
   PlatformHealth,
   RenewalRow,
@@ -27,6 +29,14 @@ const school = (tenantId: string) => `/api/platform/billing/schools/${id(tenantI
 export const billingApi = {
   mine: () => apiFetch<SchoolBilling>("/api/billing"),
   notice: () => apiFetch<BillingNotice>("/api/billing/notice"),
+  /** What changing to the plan would do now, and cost (billing.read + settings.manage). */
+  planQuote: (plan: Plan) => apiFetch<PlanChangeQuote>(`/api/billing/plan/quote?plan=${encodeURIComponent(plan)}`),
+  /** Upgrade at once (prorated invoice), downgrade at the next renewal, or keep the plan. */
+  changePlan: (plan: Plan) => apiFetch<SchoolBilling>("/api/billing/plan", { method: "POST", body: { plan } }),
+  withdrawDowngrade: () => apiFetch<SchoolBilling>("/api/billing/plan/pending", { method: "DELETE" }),
+  cancelSubscription: (reason: string | null) =>
+    apiFetch<SchoolBilling>("/api/billing/cancel", { method: "POST", body: { reason } }),
+  resumeSubscription: () => apiFetch<SchoolBilling>("/api/billing/resume", { method: "POST" }),
   /** What the school's plan allows now (any signed-in member of a school). */
   planAccess: () => apiFetch<PlanAccess>("/api/billing/plan-access"),
   invoice: (invoiceId: string) => apiFetch<Invoice>(`/api/billing/invoices/${id(invoiceId)}`),

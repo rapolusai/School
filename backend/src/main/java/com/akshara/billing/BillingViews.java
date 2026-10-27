@@ -42,17 +42,25 @@ public final class BillingViews {
      * {@code billedStudents × unitPricePaise} before GST ({@code nextInvoiceTaxablePaise}), at the current plan and
      * cycle.
      */
+    /**
+     * {@code pendingPlan}: a downgrade the school scheduled for {@code nextRenewalOn} (the next invoice is priced at
+     * it). {@code cancelAtPeriodEnd}: the school cancelled; it is not renewed and is suspended after
+     * {@code periodEnd}. The next invoice is {@code nextBilledStudents} at {@code nextUnitPricePaise}
+     * ({@code nextInvoiceTaxablePaise} before GST).
+     */
     public record SubscriptionView(BillingCycle billingCycle, int billedStudents, LocalDate periodStart,
             LocalDate periodEnd, LocalDate nextRenewalOn, LocalDate paidSince, long unitPricePaise,
-            long nextInvoiceTaxablePaise) {
+            long nextInvoiceTaxablePaise, Plan pendingPlan, Instant pendingPlanRequestedAt, boolean cancelAtPeriodEnd,
+            Instant cancelRequestedAt, long nextUnitPricePaise, int nextBilledStudents) {
     }
 
     public record Suspension(Instant suspendedAt, String reason) {
     }
 
+    /** {@code kind}: PERIOD (a period's own invoice) or UPGRADE (the rest of a period after an upgrade). */
     public record InvoiceSummary(UUID id, String invoiceNo, LocalDate invoiceDate, LocalDate dueDate,
             LocalDate periodStart, LocalDate periodEnd, Plan plan, BillingCycle billingCycle, long totalPaise,
-            long paidPaise, long balancePaise, String status, boolean overdue) {
+            long paidPaise, long balancePaise, String status, boolean overdue, String kind, Plan previousPlan) {
     }
 
     /** Seller or buyer on an invoice: name, address, two-digit GST state code and GSTIN (null when none). */
@@ -74,7 +82,7 @@ public final class BillingViews {
             int cgstRateBp, int sgstRateBp, int igstRateBp, long cgstPaise, long sgstPaise, long igstPaise,
             long totalPaise, String amountInWords, String status, long paidPaise, long balancePaise, LocalDate paidOn,
             boolean overdue, String issuedByName, Instant cancelledAt, String cancelledByName, String cancelReason,
-            List<PaymentView> payments, boolean sample) {
+            List<PaymentView> payments, boolean sample, String kind, Plan previousPlan) {
     }
 
     /**
@@ -154,5 +162,17 @@ public final class BillingViews {
      */
     public record PlanAccessView(Plan plan, TenantStatus status, boolean enforced, List<String> excludedFeatures,
             List<String> lockedFeatures, List<String> lockedModules, Integer maxStudents, long activeStudents) {
+    }
+
+    /**
+     * What changing to {@code plan} would do now (GET /api/billing/plan/quote). {@code kind}: SAME, TRIAL (a school
+     * not paying yet: at once, free), UPGRADE (at once; for a paying school with a live invoice for the period, an
+     * invoice for the rest of it: {@code remainingDays} of {@code periodDays}, {@code unitPricePaise} a student for
+     * {@code billedStudents}, {@code taxablePaise} plus GST = {@code totalPaise}) or DOWNGRADE (on {@code effectiveOn},
+     * the next renewal). {@code allowed} is false when the plan does not cover the students on roll.
+     */
+    public record PlanChangeQuote(Plan plan, String kind, LocalDate effectiveOn, long remainingDays, long periodDays,
+            long unitPricePaise, int billedStudents, long taxablePaise, long totalPaise, boolean allowed,
+            Integer maxStudents, long activeStudents) {
     }
 }

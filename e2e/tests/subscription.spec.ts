@@ -3,7 +3,7 @@ import { adminCredentials, loginViaApi, loginViaUi, mainNav, newSchool, signupVi
 
 /**
  * A School Admin manages the school's own subscription (docs/api/phase-3-subscriptions.md): pays an open invoice
- * online through the sandbox gateway. Needs the stack's bootstrap Super Admin (E2E_PLATFORM_EMAIL /
+ * online through the sandbox gateway, and changes the plan (upgrade, downgrade, cancellation). Needs the stack's bootstrap Super Admin (E2E_PLATFORM_EMAIL /
  * E2E_PLATFORM_PASSWORD) to start the paid subscription; skipped without them. The stack must run the billing
  * gateway in sandbox mode (the default).
  */
@@ -81,4 +81,69 @@ test("a failed sandbox payment charges nothing and can be tried again", async ({
   await expect(page.getByText("The payment failed. Nothing was charged.")).toBeVisible();
   await page.getByRole("link", { name: "Back to billing" }).click();
   await expect(page.getByTestId("invoices-table")).toContainText("Unpaid");
+});
+
+test("a Starter school upgrades from Billing: locked menu items open, with an invoice for the rest of the period", async ({
+  page,
+  request,
+}) => {
+  const { school, headers, base } = await payingSchool(request, "upgrade", "STARTER");
+  await loginViaUi(page, adminCredentials(school));
+  await expect(page).toHaveURL(/\/app\/dashboard$/);
+  // Starter leaves out transport, library and inventory: the menu offers an upgrade instead.
+  const locked = page.getByTestId("nav-locked-library");
+  await expect(locked).toContainText("Upgrade");
+  await locked.click();
+  await expect(page).toHaveURL(/\/app\/billing\?upgrade=library$/);
+  await expect(page.getByTestId("billing-upgrade-notice")).toContainText("Library is not in your current plan");
+
+  await page.getByRole("button", { name: "Upgrade: Growth plan" }).click();
+  const dialog = page.getByRole("dialog", { name: "Change to Growth" });
+  await expect(dialog.getByTestId("plan-change-quote")).toContainText("An invoice for the rest of this period");
+  await dialog.getByRole("button", { name: "Change plan" }).click();
+  await expect(page.getByText("The school is now on Growth.")).toBeVisible();
+  await expect(page.getByTestId("billing-plan-name")).toHaveText("Growth");
+  await expect(page.getByTestId("invoices-table").getByRole("row")).toHaveCount(3);
+  await expect(page.getByTestId("nav-locked-library")).toHaveCount(0);
+  await expect(mainNav(page).getByRole("link", { name: "Library", exact: true })).toBeVisible();
+
+  const account = (await (await request.get(base, { headers })).json()) as {
+    school: { plan: string };
+    invoices: { kind: string; previousPlan: string | null }[];
+  };
+  expect(account.school.plan).toBe("GROWTH");
+  expect(account.invoices[0]).toMatchObject({ kind: "UPGRADE", previousPlan: "STARTER" });
+});
+
+test("a School Admin schedules a downgrade and a cancellation, and takes both back", async ({ page, request }) => {
+  const { school, headers, base } = await payingSchool(request, "downgrade");
+  await loginViaUi(page, adminCredentials(school));
+  await expect(page).toHaveURL(/\/app\/dashboard$/);
+  await page.goto("/app/billing");
+
+  await page.getByRole("button", { name: "Downgrade: Starter plan" }).click();
+  const dialog = page.getByRole("dialog", { name: "Change to Starter" });
+  await expect(dialog.getByTestId("plan-change-quote")).toContainText("when the next period starts");
+  await dialog.getByRole("button", { name: "Change plan" }).click();
+  await expect(page.getByTestId("billing-pending-plan")).toContainText("Moving to Starter");
+  await expect(page.getByTestId("billing-plan-name")).toHaveText("Growth");
+  type Account = { subscription: { pendingPlan: string | null; cancelAtPeriodEnd: boolean } };
+  let account = (await (await request.get(base, { headers })).json()) as Account;
+  expect(account.subscription.pendingPlan).toBe("STARTER");
+  await page.getByRole("button", { name: "Keep Growth" }).click();
+  await expect(page.getByTestId("billing-pending-plan")).toHaveCount(0);
+
+  await page.getByTestId("billing-cancel").click();
+  const cancel = page.getByRole("dialog", { name: "Cancel the subscription" });
+  await cancel.getByLabel("Why are you cancelling? (optional)").fill("E2E check");
+  await cancel.getByRole("button", { name: "Cancel at period end" }).click();
+  await expect(page.getByTestId("billing-cancelled")).toContainText("will not renew");
+  account = (await (await request.get(base, { headers })).json()) as Account;
+  expect(account.subscription.cancelAtPeriodEnd).toBe(true);
+  await page.getByRole("button", { name: "Keep subscription" }).click();
+  await expect(page.getByTestId("billing-cancelled")).toHaveCount(0);
+  account = (await (await request.get(base, { headers })).json()) as Account;
+  // The API leaves out empty members.
+  expect(account.subscription.pendingPlan ?? null).toBeNull();
+  expect(account.subscription.cancelAtPeriodEnd).toBe(false);
 });

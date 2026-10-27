@@ -28,6 +28,7 @@ import {
 } from "./billing-ui";
 import { InvoiceDocument } from "./invoice-document";
 import { canPayOnline, invoiceHref, PayOnlineButton, usePayInvoice } from "./pay-online";
+import { PlanChangeButton, SubscriptionChanges } from "./plan-change";
 
 /** The trial or overdue notice as an alert, for the Billing page and the shell banner. */
 export function NoticeAlert({ notice, testId }: { notice: BillingNotice; testId?: string }) {
@@ -116,7 +117,15 @@ export function InvoiceTable({
   );
 }
 
-function PlanSummary({ billing }: { billing: SchoolBilling }) {
+function PlanSummary({
+  billing,
+  canChange = false,
+  onChanged,
+}: {
+  billing: SchoolBilling;
+  canChange?: boolean;
+  onChanged?: () => void;
+}) {
   const { t, lang } = useI18n();
   const locale = localeFor(lang);
   const sub = billing.subscription;
@@ -157,8 +166,8 @@ function PlanSummary({ billing }: { billing: SchoolBilling }) {
             <dd>
               {t("billing.subscription.nextInvoiceValue", {
                 amount: formatPaise(sub.nextInvoiceTaxablePaise),
-                students: sub.billedStudents.toLocaleString("en-IN"),
-                price: formatPaise(sub.unitPricePaise),
+                students: (sub.nextBilledStudents ?? sub.billedStudents).toLocaleString("en-IN"),
+                price: formatPaise(sub.nextUnitPricePaise ?? sub.unitPricePaise),
               })}
             </dd>
           </>
@@ -166,6 +175,7 @@ function PlanSummary({ billing }: { billing: SchoolBilling }) {
         <dt>{t("billing.school.activeStudents")}</dt>
         <dd data-testid="billing-active-students">{studentsOnRoll(t, billing)}</dd>
       </dl>
+      {onChanged ? <SubscriptionChanges billing={billing} canChange={canChange} onChanged={onChanged} /> : null}
       <p className="text-[13px] text-ink-3">{t("billing.school.contact")}</p>
     </section>
   );
@@ -218,7 +228,7 @@ export function SchoolBillingView({ upgrade = null }: { upgrade?: PlanModule | n
             </div>
           ) : null}
           <div className="grid gap-4 lg:grid-cols-2">
-            <PlanSummary billing={data} />
+            <PlanSummary billing={data} canChange={canEdit} onChanged={billing.reload} />
             <section className="card flex flex-col gap-3" aria-labelledby="billing-details-title">
               <div className="card-head mb-0">
                 <h2 id="billing-details-title">{t("billing.details.heading")}</h2>
@@ -261,7 +271,15 @@ export function SchoolBillingView({ upgrade = null }: { upgrade?: PlanModule | n
           </section>
           <section aria-labelledby="billing-plans" className="flex flex-col gap-3">
             <h2 id="billing-plans">{t("billing.plans.title")}</h2>
-            <PlanCards plans={data.plans} current={data.plan} />
+            <PlanCards
+              plans={data.plans}
+              current={data.plan}
+              action={
+                canEdit && data.status !== "SUSPENDED"
+                  ? (plan) => <PlanChangeButton billing={data} plan={plan} onChanged={billing.reload} />
+                  : undefined
+              }
+            />
             <p className="text-[13px] text-ink-3">{t("billing.plans.gstNote")}</p>
           </section>
         </div>

@@ -1,4 +1,10 @@
-import { NETWORK_ERROR_STATUS, PLAN_FEATURE_TYPE, PLAN_STUDENT_LIMIT_TYPE, type ApiError } from "./api";
+import {
+  NETWORK_ERROR_STATUS,
+  PLAN_DOWNGRADE_TYPE,
+  PLAN_FEATURE_TYPE,
+  PLAN_STUDENT_LIMIT_TYPE,
+  type ApiError,
+} from "./api";
 import { translate, translateOr, type MessageKey, type Translate, type TranslateVars } from "./i18n";
 
 /*
@@ -131,6 +137,14 @@ export function planLimitMessage(error: ApiError, t: Translate): string | null {
   }
   if (error.type === PLAN_STUDENT_LIMIT_TYPE) {
     return t("billing.limits.studentError", { max: String(props.maxStudents ?? ""), active: String(props.activeStudents ?? "") });
+  }
+  if (error.type === PLAN_DOWNGRADE_TYPE) {
+    const plan = typeof props.plan === "string" ? translateOr(t, `plan.${props.plan}`, props.plan) : "";
+    return t("billing.self.downgradeRefused", {
+      plan,
+      max: String(props.maxStudents ?? ""),
+      active: String(props.activeStudents ?? ""),
+    });
   }
   return null;
 }

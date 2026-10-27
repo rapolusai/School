@@ -127,7 +127,16 @@ export function noticeText(notice: BillingNotice, t: Translate, locale: string):
 /* ------------------------------------------------------------------ plans */
 
 /** The plan catalogue as cards. `current` marks the school's plan; `schools` counts show for the Super Admin. */
-export function PlanCards({ plans, current }: { plans: PlanView[]; current?: Plan }) {
+/** The plans side by side; `action` adds a control at the foot of each card (the School Admin's plan change). */
+export function PlanCards({
+  plans,
+  current,
+  action,
+}: {
+  plans: PlanView[];
+  current?: Plan;
+  action?: (plan: PlanView) => React.ReactNode;
+}) {
   const { t } = useI18n();
   return (
     <div className="grid gap-3 md:grid-cols-3" data-testid="plan-cards">
@@ -184,6 +193,7 @@ export function PlanCards({ plans, current }: { plans: PlanView[]; current?: Pla
             {plan.schools !== null ? (
               <p className="mt-auto pt-1 text-[13px] text-ink-2">{plural(t, "billing.plans.schools", plan.schools)}</p>
             ) : null}
+            {action ? action(plan) : null}
           </section>
         );
       })}

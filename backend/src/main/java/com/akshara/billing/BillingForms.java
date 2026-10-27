@@ -82,6 +82,14 @@ public final class BillingForms {
     }
 
     /** A manual status change: ACTIVE or PAST_DUE. Suspension has its own endpoints. */
+    /** A School Admin's plan change from the Billing page. */
+    public record PlanForm(@NotNull Plan plan) {
+    }
+
+    /** A School Admin's cancellation; the reason is optional. */
+    public record CancelForm(@Size(max = 500) String reason) {
+    }
+
     public record StatusForm(@NotNull TenantStatus status) {
     }
 }

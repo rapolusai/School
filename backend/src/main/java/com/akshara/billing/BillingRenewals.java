@@ -73,13 +73,14 @@ public class BillingRenewals {
     private final BillingService billing;
     private final BillingProperties properties;
     private final AuditService audit;
+    private final PlanChanges planChanges;
     private final TransactionTemplate tx;
     private final TransactionTemplate outer;
     private final JdbcTemplate jdbc;
 
     BillingRenewals(TenantDirectory tenants, SubscriptionRepository subscriptions, InvoiceRepository invoices,
             InvoiceIssuer issuer, BillingService billing, BillingProperties properties, AuditService audit,
-            PlatformTransactionManager transactions, JdbcTemplate jdbc) {
+            PlanChanges planChanges, PlatformTransactionManager transactions, JdbcTemplate jdbc) {
         this.tenants = tenants;
         this.subscriptions = subscriptions;
         this.invoices = invoices;
@@ -87,6 +88,7 @@ public class BillingRenewals {
         this.billing = billing;
         this.properties = properties;
         this.audit = audit;
+        this.planChanges = planChanges;
         this.tx = new TransactionTemplate(transactions);
         this.tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         this.outer = new TransactionTemplate(transactions);
@@ -156,9 +158,24 @@ public class BillingRenewals {
             return new Outcome(tenantId, false, null, before, before);
         }
 
+        // 0. A subscription the school cancelled ends with its period: suspended instead of renewed.
+        if (subscription != null && subscription.isPaid() && subscription.isCancelAtPeriodEnd()) {
+            if (today.isAfter(subscription.getPeriodEnd())) {
+                Map<String, Object> details = new LinkedHashMap<>();
+                details.put("periodEnd", subscription.getPeriodEnd().toString());
+                details.put("plan", school.plan().name());
+                audit.record(system, "subscription.ended", "school", tenantId, details);
+                billing.suspendNow(subscription, school, "The school cancelled its subscription; it ended on "
+                        + subscription.getPeriodEnd() + " (suspended automatically).", system,
+                        Map.of("automatic", true, "cancelled", true));
+                return new Outcome(tenantId, false, null, before, TenantStatus.SUSPENDED);
+            }
+        }
+
         // 1. Renewal.
         String invoiceNo = null;
-        if (subscription != null && subscription.isPaid() && subscription.getStateCode() != null) {
+        if (subscription != null && subscription.isPaid() && subscription.getStateCode() != null
+                && !subscription.isCancelAtPeriodEnd()) {
             LocalDate next = subscription.nextRenewalOn();
             boolean due = !today.isBefore(next.minusDays(properties.renewals().leadDays()));
             if (due && invoices.existsLiveForPeriod(subscription.getPeriodStart())) {
@@ -222,7 +239,9 @@ public class BillingRenewals {
     }
 
     /** Moves into the next period and issues its invoice, if the plan still covers the billed students. */
-    private String renew(Subscription subscription, TenantView school, Actor system, LocalDate today) {
+    private String renew(Subscription subscription, TenantView current, Actor system, LocalDate today) {
+        // A downgrade the school scheduled applies from the next period.
+        TenantView school = planChanges.applyPendingPlan(subscription, current, system);
         PlanCatalog.PlanInfo plan = PlanCatalog.of(school.plan());
         if (!plan.covers(subscription.getBilledStudents())) {
             log.warn("Not renewing school {}: its plan does not cover its billed students", school.id());
