@@ -150,6 +150,28 @@ akshara:
     payment-terms-days: 15
     renewal-window-days: 30
     trial-warning-days: 7
+    renewals:
+      # Every day at 02:15 India time: raise the renewal invoice when a paid period ends (lead-days before the next
+      # one starts), mark schools past due when an invoice is unpaid after its due date or a trial ended unpaid, and
+      # suspend them after a grace period. Safe on every API instance: one run at a time (advisory lock), and every
+      # step checks the school's current state first.
+      enabled: ${BILLING_RENEWALS_ENABLED:true}
+      cron: ${BILLING_RENEWALS_CRON:0 15 2 * * *}
+      lead-days: ${BILLING_RENEWAL_LEAD_DAYS:0}
+      grace-days: ${BILLING_GRACE_DAYS:15}
+      trial-grace-days: ${BILLING_TRIAL_GRACE_DAYS:7}
+    payments:
+      # Schools paying their subscription invoices online. The money is Akshara's, so this is Akshara's own gateway
+      # account, separate from the schools' fee gateway above: "sandbox" (default: no network calls, no real money)
+      # or "razorpay". Razorpay's keys come from Secrets Manager as environment variables; the API refuses to start
+      # with gateway "razorpay" and any of them missing. Webhooks: /api/public/billing/webhook/razorpay.
+      gateway: ${BILLING_PAYMENTS_GATEWAY:sandbox}
+      # The sandbox moves no money, so it falls back to the fee sandbox's shared secret (every API task needs the same).
+      sandbox-secret: ${BILLING_PAYMENTS_SANDBOX_SECRET:${PAYMENTS_SANDBOX_SECRET:}}
+      razorpay:
+        key-id: ${BILLING_RAZORPAY_KEY_ID:}
+        key-secret: ${BILLING_RAZORPAY_KEY_SECRET:}
+        webhook-secret: ${BILLING_RAZORPAY_WEBHOOK_SECRET:}
   # Shown on the Super Admin's platform health page. Maven fills in the project version; CI may pass the commit.
   build:
     version: ${APP_VERSION:@project.version@}
@@ -199,4 +221,7 @@ akshara:
       enabled: false
   privacy:
     export-cleanup:
+      enabled: false
+  billing:
+    renewals:
       enabled: false

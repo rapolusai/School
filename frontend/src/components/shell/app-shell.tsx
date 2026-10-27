@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth";
 import { useFamilyHostelNav } from "@/lib/family-hostel-nav";
 import { roleLabel, useI18n } from "@/lib/i18n";
 import { navFor } from "@/lib/permissions";
+import { applyPlanLocks, usePlanLocks } from "@/lib/plan-access";
 import { BottomBar } from "./bottom-bar";
 import { Sidebar } from "./sidebar";
 import { UserMenu } from "./user-menu";
@@ -36,6 +37,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { t } = useI18n();
   const signingOut = useRef(false);
   const hiddenNav = useFamilyHostelNav(auth.status === "authenticated" ? auth.me : null);
+  const planLocks = usePlanLocks(auth.status === "authenticated" ? auth.me : null);
 
   useEffect(() => {
     if (auth.status !== "anonymous") return;
@@ -49,7 +51,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (auth.status !== "authenticated") return <Splash />;
 
   const me = auth.me;
-  const items = navFor(me).filter((item) => !hiddenNav.has(item.key));
+  const items = applyPlanLocks(
+    navFor(me).filter((item) => !hiddenNav.has(item.key)),
+    planLocks,
+    me,
+  );
   const signOut = () => {
     signingOut.current = true;
     void auth.logout();

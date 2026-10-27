@@ -35,10 +35,17 @@ export function InvoiceDocument({ invoice }: { invoice: Invoice }) {
   const { t, lang } = useI18n();
   const locale = localeFor(lang);
   const cancelled = invoice.status === "CANCELLED";
-  const description = t("billing.invoice.line", {
-    plan: planLabel(t, invoice.plan),
-    cycle: cycleLabel(t, invoice.billingCycle).toLowerCase(),
-  });
+  const description =
+    invoice.kind === "UPGRADE" && invoice.previousPlan
+      ? t("billing.invoice.upgradeLine", {
+          previous: planLabel(t, invoice.previousPlan),
+          plan: planLabel(t, invoice.plan),
+          cycle: cycleLabel(t, invoice.billingCycle).toLowerCase(),
+        })
+      : t("billing.invoice.line", {
+          plan: planLabel(t, invoice.plan),
+          cycle: cycleLabel(t, invoice.billingCycle).toLowerCase(),
+        });
 
   return (
     <article

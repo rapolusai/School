@@ -46,7 +46,7 @@ describe("SchoolBillingView", () => {
     expect(screen.getByRole("region", { name: "Starter" })).toHaveTextContent("Current plan");
     expect(screen.getByTestId("billing-details")).toHaveTextContent("Sunrise Public School");
     expect(screen.getByTestId("billing-details")).toHaveTextContent("Not set");
-    // Schools never pay from here.
+    // Nothing to pay yet.
     expect(screen.queryByRole("button", { name: /pay/i })).not.toBeInTheDocument();
   });
 

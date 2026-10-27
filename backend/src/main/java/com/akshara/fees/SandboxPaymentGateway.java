@@ -12,6 +12,7 @@ import java.util.Map;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import tools.jackson.databind.JsonNode;
@@ -35,8 +36,12 @@ public class SandboxPaymentGateway implements PaymentGateway {
     private final SecureRandom random = new SecureRandom();
     private final JsonMapper json;
 
+    @Autowired
     SandboxPaymentGateway(PaymentProperties properties, JsonMapper json) {
-        String configured = properties.sandbox() == null ? "" : properties.sandbox().secret();
+        this(properties.sandbox() == null ? "" : properties.sandbox().secret(), json);
+    }
+
+    private SandboxPaymentGateway(String configured, JsonMapper json) {
         if (configured == null || configured.isBlank()) {
             byte[] generated = new byte[32];
             random.nextBytes(generated);
@@ -45,6 +50,14 @@ public class SandboxPaymentGateway implements PaymentGateway {
             this.secret = configured.getBytes(StandardCharsets.UTF_8);
         }
         this.json = json;
+    }
+
+    /**
+     * A sandbox gateway with a secret of its own (a random one when empty), for payments that are not school fees
+     * (Akshara's subscription invoices). Not a Spring bean.
+     */
+    public static SandboxPaymentGateway withSecret(String secret, JsonMapper json) {
+        return new SandboxPaymentGateway(secret, json);
     }
 
     @Override
@@ -93,17 +106,17 @@ public class SandboxPaymentGateway implements PaymentGateway {
     // ------------------------------------------------------------------ what the sandbox checkout does
 
     /** A new payment id, as the gateway would assign. */
-    String newPaymentId() {
+    public String newPaymentId() {
         return "pay_SBX" + randomId(14);
     }
 
     /** The checkout signature for a successful payment. */
-    String paymentSignature(String gatewayOrderId, String gatewayPaymentId) {
+    public String paymentSignature(String gatewayOrderId, String gatewayPaymentId) {
         return sign(gatewayOrderId + "|" + gatewayPaymentId);
     }
 
     /** A webhook body in Razorpay's shape. */
-    String webhookPayload(String eventId, String event, String gatewayOrderId, String gatewayPaymentId,
+    public String webhookPayload(String eventId, String event, String gatewayOrderId, String gatewayPaymentId,
             long amountPaise, String errorDescription) {
         Map<String, Object> entity = new LinkedHashMap<>();
         entity.put("id", gatewayPaymentId);
@@ -125,11 +138,11 @@ public class SandboxPaymentGateway implements PaymentGateway {
     }
 
     /** The webhook signature header value for a body. */
-    String webhookSignature(String payload) {
+    public String webhookSignature(String payload) {
         return sign(payload);
     }
 
-    String newEventId() {
+    public String newEventId() {
         return "evt_SBX" + randomId(14);
     }
 

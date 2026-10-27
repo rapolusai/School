@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -107,11 +108,12 @@ public class StudentService {
     private final AuditService audit;
     private final EntityManager entityManager;
     private final ApplicationEventPublisher events;
+    private final ObjectProvider<EnrolmentLimit> limit;
 
     public StudentService(StudentRepository students, GuardianRepository guardians, StudentGuardianRepository links,
             EnrollmentRepository enrollments, AcademicsDirectory academics, UserRepository users,
             UserService userService, AuditService audit, EntityManager entityManager,
-            ApplicationEventPublisher events) {
+            ApplicationEventPublisher events, ObjectProvider<EnrolmentLimit> limit) {
         this.students = students;
         this.guardians = guardians;
         this.links = links;
@@ -122,6 +124,7 @@ public class StudentService {
         this.audit = audit;
         this.entityManager = entityManager;
         this.events = events;
+        this.limit = limit;
     }
 
     // ------------------------------------------------------------------ list and detail
@@ -284,6 +287,11 @@ public class StudentService {
         return admit(form, year, actor);
     }
 
+    /** The school's plan limit on students on roll (see {@link EnrolmentLimit}); nothing when no limit is wired. */
+    void checkRoomFor(int adding) {
+        limit.ifAvailable(l -> l.checkRoomFor(adding));
+    }
+
     private StudentDetail admit(CreateStudent form, YearInfo year, Actor actor) {
         SectionInfo section = academics.section(form.sectionId())
                 .orElseThrow(() -> ApiException.badRequest("Pick a section.", "sectionId"));
@@ -293,6 +301,7 @@ public class StudentService {
         checkProfile(null, profile);
         List<CleanGuardian> cleanGuardians = cleanGuardians(form.guardians());
         checkSeat(year, section, 1, "sectionId");
+        checkRoomFor(1);
         if (form.rollNo() != null && enrollments.rollNoTaken(year.id(), section.id(), form.rollNo(), new UUID(0, 0))) {
             throw ApiException.conflict("Roll number " + form.rollNo() + " is already used in " + section.label() + ".",
                     "rollNo");

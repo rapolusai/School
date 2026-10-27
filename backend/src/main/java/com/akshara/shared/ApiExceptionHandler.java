@@ -59,6 +59,9 @@ public class ApiExceptionHandler {
         if (e.type() != null && response.getBody() != null) {
             response.getBody().setType(URI.create(e.type()));
         }
+        if (!e.properties().isEmpty() && response.getBody() != null) {
+            e.properties().forEach(response.getBody()::setProperty);
+        }
         return response;
     }
 

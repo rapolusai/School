@@ -102,6 +102,8 @@ class PlatformHealthIT extends IntegrationTest {
             }
             assertThat(rows).containsExactly(
                     "outbox_counts definer=true public=false app=true",
+                    // A webhook's school from its gateway order id (phase-3-subscriptions.md, section 1).
+                    "payment_order_tenant definer=true public=false app=true",
                     "tenant_student_counts definer=true public=false app=true",
                     "unpaid_invoice_totals definer=true public=false app=true");
         }

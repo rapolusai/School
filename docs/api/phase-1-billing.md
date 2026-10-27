@@ -8,10 +8,12 @@ ids of another school in a path, `400` with a field error, `409` for conflicts.
 - **Money is in paise** (₹1 = 100 paise) as whole numbers. Rates are in basis points (`900` = 9%).
 - Dates are `"YYYY-MM-DD"`; "today" is today in India (Asia/Kolkata). Periods are inclusive.
 - The **financial year** runs April to March (`2026-27`). Invoice numbers belong to a financial year.
-- **Nothing happens automatically.** No school is ever suspended, marked past due or invoiced by a job: the renewals
-  list only shows what needs the Super Admin's attention.
-- **No payment gateway.** Schools pay Akshara by bank transfer, UPI, cheque or card outside the app; the Super Admin
-  records what arrived. Schools never pay from their Billing page.
+- **Nothing happens automatically** in Phase 1: the renewals list only shows what needs the Super Admin's attention.
+  Phase 3 adds a daily renewal job (renewal invoices, past due, suspension after a grace period): see
+  [phase-3-subscriptions.md](phase-3-subscriptions.md).
+- **Payments.** Schools pay Akshara by bank transfer, UPI, cheque or card outside the app and the Super Admin records
+  what arrived; since Phase 3 a School Admin can also pay an open invoice online through Akshara's own payment gateway
+  ([phase-3-subscriptions.md](phase-3-subscriptions.md)).
 
 ## Permissions
 
@@ -37,7 +39,9 @@ Prices are before GST and kept in code (`PlanCatalog`). They follow the prototyp
 ₹14,999 a month for a school of 300 students billed yearly (a year = ten months), and are placeholders until the owner
 sets real ones. Yearly billing gets two months free: a month costs a tenth of the yearly price, rounded half up to whole
 paise. An invoice is `billedStudents × unit price` for one period; the Super Admin chooses the billed students (the
-console suggests the students on roll) and a plan's student limit is enforced.
+console suggests the students on roll) and a plan's student limit is enforced. Once a school pays, the plan's student
+limit and the features it leaves out are also enforced when the school works
+([phase-3-subscriptions.md](phase-3-subscriptions.md), "Plan limits").
 
 ## Super Admin — `/api/platform`
 
@@ -53,7 +57,7 @@ and every change goes to that school's audit trail with the Super Admin's name.
 | GET | `/billing/schools/{id}` | | `200 SchoolAccount` |
 | PUT | `/billing/schools/{id}/details` | `DetailsForm` | `200 SchoolAccount` |
 | POST | `/billing/schools/{id}/subscription` | `StartForm` | `201 SchoolAccount`; issues the first invoice; `409` when already paying or suspended, or the state is not set |
-| PUT | `/billing/schools/{id}/subscription` | `ChangeForm` | `200 SchoolAccount`; applies from the next invoice, no proration |
+| PUT | `/billing/schools/{id}/subscription` | `ChangeForm` | `200 SchoolAccount`; applies from the next invoice, no proration (clears a downgrade the school scheduled; the school's own upgrades are prorated, see [phase-3-subscriptions.md](phase-3-subscriptions.md), section 4) |
 | POST | `/billing/schools/{id}/invoices` | | `201 InvoiceView`: the next invoice (see Renewals); `409` too early, not paying, over the plan's limit |
 | GET | `/billing/schools/{id}/invoices/{invoiceId}` | | `200 InvoiceView`; another school's invoice is `404` |
 | POST | `/billing/schools/{id}/invoices/{invoiceId}/payments` | `PaymentForm` | `200 InvoiceView`; `409` when paid or cancelled; `400 amountPaise` above the balance, `400 paidOn` in the future |

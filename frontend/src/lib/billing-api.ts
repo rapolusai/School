@@ -4,10 +4,16 @@ import type {
   BillingNotice,
   ChangeSubscriptionRequest,
   Invoice,
+  InvoiceCheckoutResult,
+  InvoiceOrder,
   InvoicePaymentRequest,
+  Plan,
+  PlanAccess,
+  PlanChangeQuote,
   PlanView,
   PlatformHealth,
   RenewalRow,
+  SandboxInvoiceCheckout,
   SchoolAccount,
   SchoolBilling,
   StartSubscriptionRequest,
@@ -23,9 +29,32 @@ const school = (tenantId: string) => `/api/platform/billing/schools/${id(tenantI
 export const billingApi = {
   mine: () => apiFetch<SchoolBilling>("/api/billing"),
   notice: () => apiFetch<BillingNotice>("/api/billing/notice"),
+  /** What changing to the plan would do now, and cost (billing.read + settings.manage). */
+  planQuote: (plan: Plan) => apiFetch<PlanChangeQuote>(`/api/billing/plan/quote?plan=${encodeURIComponent(plan)}`),
+  /** Upgrade at once (prorated invoice), downgrade at the next renewal, or keep the plan. */
+  changePlan: (plan: Plan) => apiFetch<SchoolBilling>("/api/billing/plan", { method: "POST", body: { plan } }),
+  withdrawDowngrade: () => apiFetch<SchoolBilling>("/api/billing/plan/pending", { method: "DELETE" }),
+  cancelSubscription: (reason: string | null) =>
+    apiFetch<SchoolBilling>("/api/billing/cancel", { method: "POST", body: { reason } }),
+  resumeSubscription: () => apiFetch<SchoolBilling>("/api/billing/resume", { method: "POST" }),
+  /** What the school's plan allows now (any signed-in member of a school). */
+  planAccess: () => apiFetch<PlanAccess>("/api/billing/plan-access"),
   invoice: (invoiceId: string) => apiFetch<Invoice>(`/api/billing/invoices/${id(invoiceId)}`),
   updateDetails: (body: BillingDetailsRequest) =>
     apiFetch<SchoolBilling>("/api/billing/details", { method: "PUT", body }),
+  /** Starts (or reuses) an online payment of the invoice's whole balance (billing.read + settings.manage). */
+  payOnline: (invoiceId: string) =>
+    apiFetch<InvoiceOrder>(`/api/billing/invoices/${id(invoiceId)}/orders`, { method: "POST" }),
+  order: (orderId: string) => apiFetch<InvoiceOrder>(`/api/billing/orders/${id(orderId)}`),
+  verify: (orderId: string, body: { gatewayPaymentId: string; signature: string }) =>
+    apiFetch<Invoice>(`/api/billing/orders/${id(orderId)}/verify`, { method: "POST", body }),
+  sandboxCheckout: (gatewayOrderId: string) =>
+    apiFetch<SandboxInvoiceCheckout>(`/api/billing/sandbox/orders/${id(gatewayOrderId)}`),
+  sandboxComplete: (gatewayOrderId: string, outcome: "SUCCESS" | "FAILURE") =>
+    apiFetch<InvoiceCheckoutResult>(`/api/billing/sandbox/orders/${id(gatewayOrderId)}/complete`, {
+      method: "POST",
+      body: { outcome },
+    }),
 };
 
 /** The Super Admin's console (platform.admin). */

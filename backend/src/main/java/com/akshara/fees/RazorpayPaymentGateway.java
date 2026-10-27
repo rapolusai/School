@@ -19,6 +19,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
@@ -51,14 +52,33 @@ public class RazorpayPaymentGateway implements PaymentGateway {
     private final JsonMapper json;
     private final HttpClient http;
 
+    @Autowired
     RazorpayPaymentGateway(PaymentProperties properties, JsonMapper json) {
-        this.config = properties.razorpay();
-        this.json = json;
-        this.http = HttpClient.newBuilder().connectTimeout(config.timeout()).build();
+        this(properties.razorpay(), json);
         if (NAME.equals(properties.gateway()) && !config.configured()) {
             throw new IllegalStateException("akshara.payments.gateway is razorpay but RAZORPAY_KEY_ID, "
                     + "RAZORPAY_KEY_SECRET or RAZORPAY_WEBHOOK_SECRET is not set");
         }
+    }
+
+    private RazorpayPaymentGateway(PaymentProperties.Razorpay config, JsonMapper json) {
+        this.config = config;
+        this.json = json;
+        this.http = HttpClient.newBuilder().connectTimeout(config.timeout()).build();
+    }
+
+    /**
+     * A Razorpay client with keys of its own, for another Razorpay account than the schools' fee payments (Akshara's
+     * own account, which collects the schools' subscription invoices). Not a Spring bean; the caller checks that the
+     * keys are set when it needs them.
+     */
+    public static RazorpayPaymentGateway withKeys(PaymentProperties.Razorpay keys, JsonMapper json) {
+        return new RazorpayPaymentGateway(keys, json);
+    }
+
+    /** Whether the key id, key secret and webhook secret are all set. */
+    public boolean configured() {
+        return config.configured();
     }
 
     @Override

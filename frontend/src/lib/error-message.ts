@@ -1,5 +1,11 @@
-import { NETWORK_ERROR_STATUS, type ApiError } from "./api";
-import { translate, type MessageKey, type Translate, type TranslateVars } from "./i18n";
+import {
+  NETWORK_ERROR_STATUS,
+  PLAN_DOWNGRADE_TYPE,
+  PLAN_FEATURE_TYPE,
+  PLAN_STUDENT_LIMIT_TYPE,
+  type ApiError,
+} from "./api";
+import { translate, translateOr, type MessageKey, type Translate, type TranslateVars } from "./i18n";
 
 /*
  * The API writes its problem details in English. In English the server's own sentence is shown (it is the most
@@ -121,9 +127,33 @@ function firstFieldMessage(error: ApiError, t: Translate): string | null {
   return first ? fieldErrorMessage(first, t) : null;
 }
 
+/** The school's plan refused the request: a feature it leaves out, or students past its limit. Exported for tests. */
+export function planLimitMessage(error: ApiError, t: Translate): string | null {
+  const props = error.properties ?? {};
+  if (error.type === PLAN_FEATURE_TYPE) {
+    const code = typeof props.feature === "string" ? props.feature : "";
+    const feature = code ? translateOr(t, `billing.feature.${code}`, "") : "";
+    return t("billing.limits.featureError", { feature: feature || t("billing.limits.thisFeature") });
+  }
+  if (error.type === PLAN_STUDENT_LIMIT_TYPE) {
+    return t("billing.limits.studentError", { max: String(props.maxStudents ?? ""), active: String(props.activeStudents ?? "") });
+  }
+  if (error.type === PLAN_DOWNGRADE_TYPE) {
+    const plan = typeof props.plan === "string" ? translateOr(t, `plan.${props.plan}`, props.plan) : "";
+    return t("billing.self.downgradeRefused", {
+      plan,
+      max: String(props.maxStudents ?? ""),
+      active: String(props.activeStudents ?? ""),
+    });
+  }
+  return null;
+}
+
 /** A user-facing sentence for an API failure, in the user's language. */
 export function errorMessage(error: ApiError, t: Translate): string {
   if (error.status === NETWORK_ERROR_STATUS) return t("common.error.network");
+  const plan = planLimitMessage(error, t);
+  if (plan) return plan;
   if (error.status === 403) return t("common.error.forbidden");
   if (error.status === 429) return t("login.error.tooMany");
   // "Some fields need attention." where the page shows no field: say what the field's problem is.

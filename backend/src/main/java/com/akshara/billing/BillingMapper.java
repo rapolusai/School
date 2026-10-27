@@ -34,8 +34,13 @@ final class BillingMapper {
             return null;
         }
         long unit = PlanCatalog.of(plan).unitPricePaise(s.getBillingCycle());
+        Plan next = s.getPendingPlan() != null ? s.getPendingPlan() : plan;
+        long nextUnit = PlanCatalog.of(next).unitPricePaise(s.getBillingCycle());
+        int nextStudents = BillingService.billedStudentsOn(next, s.getBilledStudents());
         return new SubscriptionView(s.getBillingCycle(), s.getBilledStudents(), s.getPeriodStart(), s.getPeriodEnd(),
-                s.nextRenewalOn(), s.getPaidSince(), unit, Math.multiplyExact(unit, s.getBilledStudents()));
+                s.nextRenewalOn(), s.getPaidSince(), unit, Math.multiplyExact(nextUnit, nextStudents),
+                s.getPendingPlan(), s.getPendingPlanRequestedAt(), s.isCancelAtPeriodEnd(), s.getCancelRequestedAt(),
+                nextUnit, nextStudents);
     }
 
     static BillingDetails details(Subscription s) {
@@ -53,7 +58,7 @@ final class BillingMapper {
     static InvoiceSummary summary(Invoice i, LocalDate today) {
         return new InvoiceSummary(i.getId(), i.getInvoiceNo(), i.getInvoiceDate(), i.getDueDate(), i.getPeriodStart(),
                 i.getPeriodEnd(), i.getPlan(), i.getBillingCycle(), i.getTotalPaise(), i.getPaidPaise(),
-                i.balancePaise(), i.getStatus(), i.isOverdue(today));
+                i.balancePaise(), i.getStatus(), i.isOverdue(today), i.getKind(), i.getPreviousPlan());
     }
 
     static InvoiceView view(Invoice i, List<InvoicePayment> payments, LocalDate today) {
@@ -72,7 +77,8 @@ final class BillingMapper {
                 intraState ? 0 : GstMath.GST_RATE_BP, i.getCgstPaise(), i.getSgstPaise(), i.getIgstPaise(),
                 i.getTotalPaise(), AmountInWords.rupees(i.getTotalPaise()), i.getStatus(), i.getPaidPaise(),
                 i.balancePaise(), i.getPaidOn(), i.isOverdue(today), i.getIssuedByName(), i.getCancelledAt(),
-                i.getCancelledByName(), i.getCancelReason(), paid, !Gstin.isValid(i.getSellerGstin()));
+                i.getCancelledByName(), i.getCancelReason(), paid, !Gstin.isValid(i.getSellerGstin()), i.getKind(),
+                i.getPreviousPlan());
     }
 
     /** Whole days of trial left (0 on the last day and after it ends), or null for a school not on trial. */

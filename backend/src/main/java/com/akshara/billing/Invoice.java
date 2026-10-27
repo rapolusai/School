@@ -21,7 +21,8 @@ import com.akshara.shared.AssignedIdEntity;
 import com.akshara.shared.Ids;
 
 /**
- * A GST tax invoice from Akshara to a school for one period of its subscription. Immutable once issued: the database
+ * A GST tax invoice from Akshara to a school for one period of its subscription ({@link #PERIOD}), or for the rest of
+ * a period after the school upgraded its plan ({@link #UPGRADE}: the prorated price difference). Immutable once issued: the database
  * lets the API change only the payment and cancellation columns, so this class only ever updates those. The seller's
  * and the buyer's details are copied in, so a reprint shows exactly what was issued.
  */
@@ -34,11 +35,16 @@ class Invoice extends AssignedIdEntity {
     static final String PAID = "PAID";
     static final String CANCELLED = "CANCELLED";
 
+    /** A period's own invoice: at most one live one per school and period. */
+    static final String PERIOD = "PERIOD";
+    /** The prorated difference for the rest of a period after an upgrade from {@code previousPlan}. */
+    static final String UPGRADE = "UPGRADE";
+
     /** Everything printed on an invoice, fixed when it is issued. */
     record Issue(String invoiceNo, String financialYear, int seq, LocalDate invoiceDate, LocalDate dueDate, Plan plan,
             BillingCycle cycle, LocalDate periodStart, LocalDate periodEnd, int billedStudents, long unitPricePaise,
             GstMath.Tax tax, String sacCode, BillingProperties.Seller seller, String buyerName, String buyerAddress,
-            String buyerStateCode, String buyerGstin, String issuedByName) {
+            String buyerStateCode, String buyerGstin, String issuedByName, String kind, Plan previousPlan) {
     }
 
     @Id
@@ -66,6 +72,13 @@ class Invoice extends AssignedIdEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, updatable = false)
     private Plan plan;
+
+    @Column(nullable = false, updatable = false)
+    private String kind;
+
+    @Enumerated(EnumType.STRING)
+    @Column(updatable = false)
+    private Plan previousPlan;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, updatable = false)
@@ -187,6 +200,8 @@ class Invoice extends AssignedIdEntity {
         this.buyerStateCode = issue.buyerStateCode();
         this.buyerGstin = issue.buyerGstin();
         this.issuedByName = issue.issuedByName();
+        this.kind = issue.kind();
+        this.previousPlan = issue.previousPlan();
         this.status = ISSUED;
         this.createdAt = Instant.now();
         this.updatedAt = createdAt;
@@ -257,6 +272,15 @@ class Invoice extends AssignedIdEntity {
 
     Plan getPlan() {
         return plan;
+    }
+
+    String getKind() {
+        return kind;
+    }
+
+    /** The plan before the upgrade this invoice bills, or null for a period's own invoice. */
+    Plan getPreviousPlan() {
+        return previousPlan;
     }
 
     BillingCycle getBillingCycle() {

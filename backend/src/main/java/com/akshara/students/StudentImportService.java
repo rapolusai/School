@@ -208,6 +208,7 @@ public class StudentImportService {
         if (!batch.clean()) {
             throw new IllegalStateException("A batch with problems cannot be imported");
         }
+        studentService.checkRoomFor(batch.rows.size());
         Map<String, Guardian> cache = new HashMap<>();
         List<String> phones = batch.rows.stream().map(p -> p.guardian().phone()).distinct().toList();
         for (Guardian g : phones.isEmpty() ? List.<Guardian>of() : guardians.findByPhoneIn(phones)) {

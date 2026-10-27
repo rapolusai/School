@@ -13,6 +13,7 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 
+import com.akshara.platform.Plan;
 import com.akshara.platform.TenantStatus;
 import com.akshara.shared.AssignedIdEntity;
 import com.akshara.shared.Ids;
@@ -57,6 +58,19 @@ class Subscription extends AssignedIdEntity {
 
     @Enumerated(EnumType.STRING)
     private TenantStatus statusBeforeSuspension;
+
+    private LocalDate autoPastDueSince;
+
+    private LocalDate graceRestartedOn;
+
+    @Enumerated(EnumType.STRING)
+    private Plan pendingPlan;
+
+    private Instant pendingPlanRequestedAt;
+
+    private boolean cancelAtPeriodEnd;
+
+    private Instant cancelRequestedAt;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
@@ -133,6 +147,68 @@ class Subscription extends AssignedIdEntity {
         this.suspensionReason = null;
         this.suspendedAt = null;
         return before;
+    }
+
+    /** The renewal job marked the school past due on {@code day}. */
+    void markedPastDueAutomatically(LocalDate day) {
+        this.autoPastDueSince = day;
+    }
+
+    /** The school is no longer past due because of the renewal job (it paid, or someone changed its status). */
+    void clearAutoPastDue() {
+        this.autoPastDueSince = null;
+    }
+
+    /** The Super Admin reactivated the school on {@code day}: an automatic suspension waits a whole grace period. */
+    void restartGrace(LocalDate day) {
+        this.graceRestartedOn = day;
+    }
+
+    /** A downgrade the school chose, to take effect when the next period starts. */
+    void schedulePlan(Plan plan) {
+        this.pendingPlan = plan;
+        this.pendingPlanRequestedAt = Instant.now();
+    }
+
+    void clearPendingPlan() {
+        this.pendingPlan = null;
+        this.pendingPlanRequestedAt = null;
+    }
+
+    /** The school cancelled: no renewal, and the school is suspended when the current period ends. */
+    void cancelAtPeriodEnd() {
+        this.cancelAtPeriodEnd = true;
+        this.cancelRequestedAt = Instant.now();
+    }
+
+    /** The school took its cancellation back (or the Super Admin reactivated it). */
+    void resume() {
+        this.cancelAtPeriodEnd = false;
+        this.cancelRequestedAt = null;
+    }
+
+    Plan getPendingPlan() {
+        return pendingPlan;
+    }
+
+    Instant getPendingPlanRequestedAt() {
+        return pendingPlanRequestedAt;
+    }
+
+    boolean isCancelAtPeriodEnd() {
+        return cancelAtPeriodEnd;
+    }
+
+    Instant getCancelRequestedAt() {
+        return cancelRequestedAt;
+    }
+
+    LocalDate getAutoPastDueSince() {
+        return autoPastDueSince;
+    }
+
+    LocalDate getGraceRestartedOn() {
+        return graceRestartedOn;
     }
 
     /** The day the next period starts, or null before the school pays. */

@@ -67,7 +67,29 @@ public final class BillingForms {
     public record ReasonForm(@NotBlank(message = "Give a reason.") @Size(max = 500) String reason) {
     }
 
+    /** What the gateway's checkout handed the browser after an online payment: checked against the order. */
+    public record VerifyForm(
+            @NotBlank @Size(max = 64) String gatewayPaymentId,
+            @NotBlank @Size(max = 200) String signature) {
+    }
+
+    /** The sandbox checkout's two buttons. */
+    public enum SandboxOutcome {
+        SUCCESS, FAILURE
+    }
+
+    public record SandboxForm(@NotNull SandboxOutcome outcome) {
+    }
+
     /** A manual status change: ACTIVE or PAST_DUE. Suspension has its own endpoints. */
+    /** A School Admin's plan change from the Billing page. */
+    public record PlanForm(@NotNull Plan plan) {
+    }
+
+    /** A School Admin's cancellation; the reason is optional. */
+    public record CancelForm(@Size(max = 500) String reason) {
+    }
+
     public record StatusForm(@NotNull TenantStatus status) {
     }
 }

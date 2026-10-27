@@ -6,8 +6,9 @@ import type { PlainDate } from "./school";
 export const BILLING_CYCLES = ["YEARLY", "MONTHLY"] as const;
 export type BillingCycle = (typeof BILLING_CYCLES)[number];
 
+/** Modes the Super Admin records by hand. ONLINE payments are recorded only by Akshara's payment gateway. */
 export const INVOICE_PAYMENT_MODES = ["BANK_TRANSFER", "UPI", "CHEQUE", "CARD"] as const;
-export type InvoicePaymentMode = (typeof INVOICE_PAYMENT_MODES)[number];
+export type InvoicePaymentMode = (typeof INVOICE_PAYMENT_MODES)[number] | "ONLINE";
 
 export type InvoiceStatus = "ISSUED" | "PAID" | "CANCELLED";
 
@@ -47,8 +48,21 @@ export type SubscriptionView = {
   nextRenewalOn: PlainDate;
   paidSince: PlainDate;
   unitPricePaise: number;
+  /** At the plan of the next period (a scheduled downgrade's, if any), before GST. */
   nextInvoiceTaxablePaise: number;
+  /** A downgrade the school scheduled for nextRenewalOn (docs/api/phase-3-subscriptions.md, section 4). */
+  pendingPlan?: Plan | null;
+  pendingPlanRequestedAt?: string | null;
+  /** The school cancelled: no renewal, suspended after periodEnd. */
+  cancelAtPeriodEnd?: boolean;
+  cancelRequestedAt?: string | null;
+  /** The next invoice's price a student and billed students (they differ from now after a scheduled downgrade). */
+  nextUnitPricePaise?: number;
+  nextBilledStudents?: number;
 };
+
+/** PERIOD: a period's own invoice; UPGRADE: the prorated rest of a period after an upgrade from previousPlan. */
+export type InvoiceKind = "PERIOD" | "UPGRADE";
 
 export type Suspension = { suspendedAt: string; reason: string };
 
@@ -66,6 +80,8 @@ export type InvoiceSummary = {
   balancePaise: number;
   status: InvoiceStatus;
   overdue: boolean;
+  kind?: InvoiceKind;
+  previousPlan?: Plan | null;
 };
 
 export type Party = { name: string; address: string | null; stateCode: string; gstin: string | null };
@@ -117,6 +133,8 @@ export type Invoice = {
   cancelReason: string | null;
   payments: InvoicePayment[];
   sample: boolean;
+  kind?: InvoiceKind;
+  previousPlan?: Plan | null;
 };
 
 /** The banner for a school's admins. `kind` is null when there is nothing to say. */
@@ -180,6 +198,46 @@ export type PlatformHealth = {
   app: { version: string; startedAt: string; uptimeSeconds: number };
 };
 
+export type InvoiceOrderStatus = "CREATED" | "PAID" | "FAILED";
+
+/**
+ * An online payment of an invoice's whole balance (docs/api/phase-3-subscriptions.md). `checkoutKey` is Razorpay's
+ * public key for the browser's checkout; null for the sandbox, whose checkout is a page of this app.
+ */
+export type InvoiceOrder = {
+  id: string;
+  invoiceId: string;
+  invoiceNo: string;
+  gateway: string;
+  gatewayOrderId: string;
+  amountPaise: number;
+  currency: string;
+  status: InvoiceOrderStatus;
+  failureReason: string | null;
+  checkoutKey: string | null;
+  payeeName: string;
+};
+
+export type SandboxInvoiceCheckout = {
+  gatewayOrderId: string;
+  orderId: string;
+  invoiceId: string;
+  invoiceNo: string;
+  amountPaise: number;
+  currency: string;
+  payeeName: string;
+  schoolName: string;
+  status: InvoiceOrderStatus;
+};
+
+export type InvoiceCheckoutResult = {
+  orderId: string;
+  gatewayOrderId: string;
+  status: "SUCCESS" | "FAILED";
+  gatewayPaymentId: string | null;
+  signature: string | null;
+};
+
 export type BillingDetailsRequest = {
   legalName: string | null;
   address: string | null;
@@ -205,6 +263,40 @@ export type InvoicePaymentRequest = {
   mode: InvoicePaymentMode;
   reference: string;
   paidOn: PlainDate;
+};
+
+/** A menu module a plan can leave out (backend PlanFeatures). */
+export type PlanModule = "transport" | "library" | "inventory" | "report_cards";
+
+/** What the signed-in school's plan allows now (GET /api/billing/plan-access). */
+export type PlanAccess = {
+  plan: Plan;
+  status: TenantStatus;
+  /** False during the trial: nothing is locked and the student limit does not apply. */
+  enforced: boolean;
+  excludedFeatures: string[];
+  lockedFeatures: string[];
+  lockedModules: PlanModule[];
+  /** Null: unlimited. */
+  maxStudents: number | null;
+  activeStudents: number;
+};
+
+/** What changing to a plan would do now (GET /api/billing/plan/quote). */
+export type PlanChangeQuote = {
+  plan: Plan;
+  kind: "SAME" | "TRIAL" | "UPGRADE" | "DOWNGRADE";
+  effectiveOn: PlainDate;
+  remainingDays: number;
+  periodDays: number;
+  unitPricePaise: number;
+  billedStudents: number;
+  taxablePaise: number;
+  totalPaise: number;
+  /** False when the plan does not cover the students on roll. */
+  allowed: boolean;
+  maxStudents: number | null;
+  activeStudents: number;
 };
 
 /** GST state codes (first two digits of a GSTIN), with names in billing.state.<code>. */

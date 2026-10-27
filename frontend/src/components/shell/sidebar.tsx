@@ -61,6 +61,8 @@ export function Sidebar({
                 item={item}
                 label={t(item.labelKey)}
                 active={isActivePath(pathname, item.href)}
+                lockedLabel={t("billing.limits.lockedLabel", { module: t(item.labelKey) })}
+                upgradeLabel={t("billing.limits.upgrade")}
               />
             ))}
           </div>

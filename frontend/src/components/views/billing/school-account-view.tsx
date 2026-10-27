@@ -356,14 +356,27 @@ export function SchoolAccountView({ id }: { id: string }) {
                 <dd>{periodLabel(sub.periodStart, sub.periodEnd, locale)}</dd>
                 <dt>{t("billing.subscription.renewal")}</dt>
                 <dd data-testid="account-renewal">{formatPlainDate(sub.nextRenewalOn, locale)}</dd>
+                {sub.pendingPlan ? (
+                  <dd className="col-span-2 text-[13px] text-warn" data-testid="account-pending-plan">
+                    {t("billing.account.pendingPlan", {
+                      plan: planLabel(t, sub.pendingPlan),
+                      date: formatPlainDate(sub.nextRenewalOn, locale),
+                    })}
+                  </dd>
+                ) : null}
+                {sub.cancelAtPeriodEnd ? (
+                  <dd className="col-span-2 text-[13px] text-bad" data-testid="account-cancelling">
+                    {t("billing.account.cancelling", { date: formatPlainDate(sub.periodEnd, locale) })}
+                  </dd>
+                ) : null}
                 <dt>{t("billing.subscription.paidSince")}</dt>
                 <dd>{formatPlainDate(sub.paidSince, locale)}</dd>
                 <dt>{t("billing.subscription.nextInvoice")}</dt>
                 <dd>
                   {t("billing.subscription.nextInvoiceValue", {
                     amount: formatPaise(sub.nextInvoiceTaxablePaise),
-                    students: sub.billedStudents.toLocaleString("en-IN"),
-                    price: formatPaise(sub.unitPricePaise),
+                    students: (sub.nextBilledStudents ?? sub.billedStudents).toLocaleString("en-IN"),
+                    price: formatPaise(sub.nextUnitPricePaise ?? sub.unitPricePaise),
                   })}
                 </dd>
               </>

@@ -179,6 +179,30 @@ describe("SchoolAccountView", () => {
     expect(screen.getByRole("button", { name: "Mark past due" })).toBeInTheDocument();
   });
 
+  it("shows the changes the school scheduled itself: a downgrade and a cancellation", async () => {
+    api.account.mockResolvedValue(
+      account({
+        school: { ...SUNRISE_SUMMARY, status: "ACTIVE", plan: "GROWTH" },
+        subscription: {
+          ...PAYING,
+          pendingPlan: "STARTER",
+          pendingPlanRequestedAt: "2026-10-20T05:00:00Z",
+          cancelAtPeriodEnd: true,
+          cancelRequestedAt: "2026-10-21T05:00:00Z",
+          nextUnitPricePaise: 83_00,
+          nextBilledStudents: 250,
+          nextInvoiceTaxablePaise: 20_750_00,
+        },
+      }),
+    );
+    renderAsSuperAdmin(<SchoolAccountView id="t1" />);
+    expect(await screen.findByTestId("account-pending-plan")).toHaveTextContent(
+      "Moving to Starter on 9 Oct 2027 (chosen by the school)",
+    );
+    expect(screen.getByTestId("account-cancelling")).toHaveTextContent("Cancelled by the school: ends on 8 Oct 2027");
+    expect(screen.getByText("₹20,750 + GST (250 students × ₹83)")).toBeInTheDocument();
+  });
+
   it("says when the school does not exist", async () => {
     api.account.mockRejectedValue(new ApiError({ status: 404, title: "Not found" }));
     renderAsSuperAdmin(<SchoolAccountView id="nope" />);

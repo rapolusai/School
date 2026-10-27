@@ -11,6 +11,7 @@ public class ApiException extends RuntimeException {
     private final String title;
     private final Map<String, String> errors;
     private final String type;
+    private final Map<String, Object> properties;
 
     public ApiException(HttpStatus status, String title, String detail) {
         this(status, title, detail, Map.of());
@@ -24,11 +25,26 @@ public class ApiException extends RuntimeException {
      * @param type the problem type URI the web app can recognise (RFC 9457), or null for {@code about:blank}
      */
     public ApiException(HttpStatus status, String title, String detail, Map<String, String> errors, String type) {
+        this(status, title, detail, errors, type, Map.of());
+    }
+
+    /**
+     * @param properties extra members of the problem body (RFC 9457 extensions), such as the plan feature a request
+     *        needs
+     */
+    public ApiException(HttpStatus status, String title, String detail, Map<String, String> errors, String type,
+            Map<String, Object> properties) {
         super(detail);
         this.status = status;
         this.title = title;
         this.errors = errors;
         this.type = type;
+        this.properties = properties;
+    }
+
+    /** Extra members of the problem body; empty for most problems. */
+    public Map<String, Object> properties() {
+        return properties;
     }
 
     /** The problem type URI, or null for {@code about:blank}. */

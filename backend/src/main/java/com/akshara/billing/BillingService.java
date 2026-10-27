@@ -1,7 +1,9 @@
 package com.akshara.billing;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -59,10 +61,12 @@ public class BillingService {
     private final BillingProperties properties;
     private final AuditService audit;
     private final ApplicationEventPublisher events;
+    private final PlanChanges planChanges;
 
     BillingService(TenantDirectory tenants, SubscriptionRepository subscriptions, InvoiceRepository invoices,
             InvoicePaymentRepository payments, InvoiceIssuer issuer, BillingAccounts accounts,
-            BillingProperties properties, AuditService audit, ApplicationEventPublisher events) {
+            BillingProperties properties, AuditService audit, ApplicationEventPublisher events,
+            PlanChanges planChanges) {
         this.tenants = tenants;
         this.subscriptions = subscriptions;
         this.invoices = invoices;
@@ -72,6 +76,7 @@ public class BillingService {
         this.properties = properties;
         this.audit = audit;
         this.events = events;
+        this.planChanges = planChanges;
     }
 
     // ------------------------------------------------------------------ billing details
@@ -153,8 +158,12 @@ public class BillingService {
         if (school.plan() != form.plan()) {
             updated = tenants.changePlan(tenantId, form.plan());
         }
-        if (school.status() == TenantStatus.TRIAL) {
+        if (school.status() == TenantStatus.TRIAL
+                || (school.status() == TenantStatus.PAST_DUE && subscription.getAutoPastDueSince() != null)) {
+            // A trial, or a school the renewal job marked past due when its trial ended unpaid, starts paying.
             updated = tenants.changeStatus(tenantId, TenantStatus.ACTIVE);
+            subscription.clearAutoPastDue();
+            subscriptions.saveAndFlush(subscription);
         }
         Map<String, Object> details = new LinkedHashMap<>();
         details.put("plan", form.plan().name());
@@ -203,6 +212,13 @@ public class BillingService {
             details.put("previousPlan", school.plan().name());
             tenants.changePlan(tenantId, form.plan());
         }
+        if (subscription != null && subscription.getPendingPlan() != null
+                && (school.plan() != form.plan() || subscription.getPendingPlan() == form.plan())) {
+            // The Super Admin set the plan: the school's scheduled downgrade no longer applies.
+            details.put("pendingPlanCleared", subscription.getPendingPlan().name());
+            subscription.clearPendingPlan();
+            subscriptions.saveAndFlush(subscription);
+        }
         if (!details.isEmpty()) {
             audit.record(by, "subscription.changed", "school", tenantId, details);
         }
@@ -223,12 +239,22 @@ public class BillingService {
                 .orElseThrow(() -> conflict("Not paying", "Start a paid subscription for this school first."));
         TenantView school = school(tenantId);
         requireState(subscription, "Add the school's billing details (state) before invoicing it.");
+        boolean renewal = invoices.existsLiveForPeriod(subscription.getPeriodStart());
+        if (renewal && subscription.isCancelAtPeriodEnd()) {
+            throw conflict("Cancelled", "The school cancelled its subscription at the end of this period. It must "
+                    + "take the cancellation back (or be reactivated) before the next period is invoiced.");
+        }
+        if (renewal && !BillingDay.today().isBefore(subscription.nextRenewalOn()
+                .minusDays(properties.renewalWindowDays()))) {
+            // Moving into the next period: a downgrade the school scheduled applies from it.
+            school = planChanges.applyPendingPlan(subscription, school, by);
+        }
         PlanCatalog.PlanInfo plan = PlanCatalog.of(school.plan());
         if (!plan.covers(subscription.getBilledStudents())) {
             throw conflict("Over the plan's limit", "The " + label(school.plan()) + " plan covers up to "
                     + plan.maxStudents() + " students. Change the plan or the billed students first.");
         }
-        if (invoices.existsLiveForPeriod(subscription.getPeriodStart())) {
+        if (renewal) {
             LocalDate next = subscription.nextRenewalOn();
             LocalDate opensOn = next.minusDays(properties.renewalWindowDays());
             if (BillingDay.today().isBefore(opensOn)) {
@@ -245,8 +271,11 @@ public class BillingService {
 
     /** Records money that reached Akshara for an invoice; the invoice is PAID once nothing is left. */
     public InvoiceView recordPayment(UUID invoiceId, PaymentForm form, Actor actor) {
-        UUID tenantId = TenantContext.require();
+        TenantContext.require();
         Actor by = actor(actor);
+        if (form.mode() == PaymentMode.ONLINE) {
+            throw ApiException.badRequest("Online payments are recorded by the payment gateway.", "mode");
+        }
         Invoice invoice = invoices.lock(invoiceId).orElseThrow(() -> ApiException.notFound("Invoice"));
         if (invoice.isCancelled()) {
             throw conflict("Cancelled", "Invoice " + invoice.getInvoiceNo() + " is cancelled.");
@@ -262,25 +291,87 @@ public class BillingService {
         if (form.paidOn().isAfter(BillingDay.today())) {
             throw ApiException.badRequest("The payment date cannot be in the future.", "paidOn");
         }
-        String reference = form.reference().trim();
-        payments.save(new InvoicePayment(invoice.getId(), amount, form.mode(), reference, form.paidOn(), by.id(),
-                by.name()));
-        invoice.pay(amount, form.paidOn());
+        applyPayment(invoice, amount, form.mode(), form.reference().trim(), form.paidOn(), by, by.id(), by.name(),
+                Map.of());
+        return accounts.view(invoice);
+    }
+
+    /**
+     * Records a payment on an invoice the caller has locked and checked (not cancelled, the amount no more than the
+     * balance): the payment row, the invoice's paid amount, the audit entry ({@code invoice.payment_recorded}, with
+     * {@code extra} details) and, once nothing is left, {@link SubscriptionInvoicePaid}. Shared by the Super Admin's
+     * manual payments and online payments.
+     */
+    InvoicePayment applyPayment(Invoice invoice, long amount, PaymentMode mode, String reference, LocalDate paidOn,
+            Actor by, UUID recordedById, String recordedByName, Map<String, Object> extra) {
+        UUID tenantId = TenantContext.require();
+        InvoicePayment payment = payments.save(new InvoicePayment(invoice.getId(), amount, mode, reference, paidOn,
+                recordedById, recordedByName));
+        invoice.pay(amount, paidOn);
         invoices.saveAndFlush(invoice);
         payments.flush();
         Map<String, Object> details = new LinkedHashMap<>();
         details.put("invoiceNo", invoice.getInvoiceNo());
         details.put("amountPaise", amount);
-        details.put("mode", form.mode().name());
+        details.put("mode", mode.name());
         details.put("reference", reference);
-        details.put("paidOn", form.paidOn().toString());
+        details.put("paidOn", paidOn.toString());
         details.put("balancePaise", invoice.balancePaise());
+        details.putAll(extra);
         audit.record(by, "invoice.payment_recorded", "invoice", invoice.getId(), details);
         if (invoice.isPaid()) {
             events.publishEvent(new SubscriptionInvoicePaid(tenantId, invoice.getId(), invoice.getInvoiceNo(),
                     invoice.getTotalPaise(), invoice.getPaidOn()));
+            restoreIfSettled(tenantId, by, BillingDay.today(), Instant.now());
         }
-        return accounts.view(invoice);
+        return payment;
+    }
+
+    /**
+     * A school the renewal job marked past due goes back to active once nothing is overdue and its trial has not
+     * lapsed unpaid. A school the Super Admin marked past due by hand is left as it is. Returns whether it changed.
+     */
+    boolean restoreIfSettled(UUID tenantId, Actor by, LocalDate today, Instant now) {
+        Subscription subscription = subscriptions.lockByTenantId(tenantId).orElse(null);
+        if (subscription == null || subscription.getAutoPastDueSince() == null) {
+            return false;
+        }
+        TenantView school = school(tenantId);
+        if (school.status() == TenantStatus.SUSPENDED) {
+            // Reactivation brings it back to past due; it is made active once it is reactivated and settled.
+            return false;
+        }
+        if (school.status() != TenantStatus.PAST_DUE) {
+            subscription.clearAutoPastDue();
+            subscriptions.saveAndFlush(subscription);
+            return false;
+        }
+        if (overdueSince(today) != null || trialLapsed(subscription, school, now)) {
+            return false;
+        }
+        subscription.clearAutoPastDue();
+        subscriptions.saveAndFlush(subscription);
+        tenants.changeStatus(tenantId, TenantStatus.ACTIVE);
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("previousStatus", TenantStatus.PAST_DUE.name());
+        details.put("status", TenantStatus.ACTIVE.name());
+        details.put("reason", "settled");
+        details.put("automatic", true);
+        audit.record(by, "school.status_changed", "school", tenantId, details);
+        return true;
+    }
+
+    /** The due date of the school's oldest unpaid invoice that is overdue on {@code today}, or null. */
+    LocalDate overdueSince(LocalDate today) {
+        return invoices.unpaid().stream().filter(i -> i.isOverdue(today)).map(Invoice::getDueDate)
+                .min(Comparator.naturalOrder()).orElse(null);
+    }
+
+    /** A trial that ended without a paid subscription. */
+    static boolean trialLapsed(Subscription subscription, TenantView school, Instant now) {
+        boolean paying = subscription != null && subscription.isPaid();
+        return !paying && school.trialEndsAt() != null && !now.isBefore(school.trialEndsAt())
+                && (school.status() == TenantStatus.TRIAL || school.status() == TenantStatus.PAST_DUE);
     }
 
     /** Cancels an invoice with nothing paid on it. Its number is never reused; the period can be invoiced again. */
@@ -324,6 +415,11 @@ public class BillingService {
         }
         if (school.status() != status) {
             tenants.changeStatus(tenantId, status);
+            subscriptions.findByTenantId(tenantId).filter(s -> s.getAutoPastDueSince() != null).ifPresent(s -> {
+                // The Super Admin decides from now on: the job no longer makes this school active by itself.
+                s.clearAutoPastDue();
+                subscriptions.saveAndFlush(s);
+            });
             audit.record(by, "school.status_changed", "school", tenantId,
                     Map.of("previousStatus", school.status().name(), "status", status.name()));
         }
@@ -342,15 +438,26 @@ public class BillingService {
         if (school.status() == TenantStatus.SUSPENDED) {
             throw conflict("Already suspended", "This school is already suspended.");
         }
-        subscription.suspend(school.status(), reason.trim());
+        suspendNow(subscription, school, reason.trim(), by, Map.of());
+        return accounts.account();
+    }
+
+    /**
+     * Suspends a school whose subscription row the caller has locked: the reason is kept, the school is SUSPENDED,
+     * {@code school.suspended} is audited (with {@code extra} details) and {@link SchoolSuspended} is published. The
+     * Super Admin's suspension and the renewal job's both come here.
+     */
+    void suspendNow(Subscription subscription, TenantView school, String reason, Actor by, Map<String, Object> extra) {
+        UUID tenantId = school.id();
+        subscription.suspend(school.status(), reason);
         subscriptions.saveAndFlush(subscription);
         tenants.changeStatus(tenantId, TenantStatus.SUSPENDED);
         Map<String, Object> details = new LinkedHashMap<>();
-        details.put("reason", reason.trim());
+        details.put("reason", reason);
         details.put("previousStatus", school.status().name());
+        details.putAll(extra);
         audit.record(by, "school.suspended", "school", tenantId, details);
         events.publishEvent(new SchoolSuspended(tenantId, subscription.getSuspendedAt()));
-        return accounts.account();
     }
 
     /** Lifts a suspension: the school goes back to the status it had before. */
@@ -363,6 +470,9 @@ public class BillingService {
             throw conflict("Not suspended", "This school is not suspended.");
         }
         TenantStatus back = subscription.lift();
+        subscription.restartGrace(BillingDay.today());
+        // A school suspended because it cancelled and is reactivated carries on: it renews again.
+        subscription.resume();
         if (back == null) {
             // Suspended outside the console (no reason on file): paying schools go back to active, others to trial.
             back = !subscription.isPaid() && school.trialEndsAt() != null ? TenantStatus.TRIAL : TenantStatus.ACTIVE;
@@ -390,6 +500,12 @@ public class BillingService {
         if (subscription.getStateCode() == null) {
             throw ApiException.badRequest(message, "stateCode");
         }
+    }
+
+    /** Billed students on a plan: the same number, capped at the plan's limit (a downgrade to a smaller plan). */
+    static int billedStudentsOn(Plan plan, int billed) {
+        Integer max = PlanCatalog.of(plan).maxStudents();
+        return max == null ? billed : Math.min(billed, max);
     }
 
     private static void checkCovers(Plan plan, int students) {
