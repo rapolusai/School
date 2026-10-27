@@ -20,6 +20,9 @@ akshara:
     sandbox:
       secret: test-only-sandbox-secret-not-for-real-use
   billing:
+    renewals:
+      # Tests run the renewal job themselves, for their own school only.
+      enabled: false
     payments:
       gateway: sandbox
       sandbox-secret: test-only-billing-sandbox-secret-not-for-real-use

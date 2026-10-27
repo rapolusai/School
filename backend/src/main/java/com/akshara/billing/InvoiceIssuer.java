@@ -44,8 +44,12 @@ class InvoiceIssuer {
      * subscription and checked the school's billing state and the plan's student limit, in its transaction.
      */
     Invoice issue(Subscription subscription, TenantView school, Actor by) {
+        return issue(subscription, school, by, BillingDay.today());
+    }
+
+    /** As {@link #issue(Subscription, TenantView, Actor)}, dated {@code today} (the renewal job's day). */
+    Invoice issue(Subscription subscription, TenantView school, Actor by, LocalDate today) {
         TenantContext.require();
-        LocalDate today = BillingDay.today();
         String financialYear = GstMath.financialYear(today);
         long unit = PlanCatalog.of(school.plan()).unitPricePaise(subscription.getBillingCycle());
         long taxable = Math.multiplyExact(unit, subscription.getBilledStudents());

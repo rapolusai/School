@@ -150,6 +150,16 @@ akshara:
     payment-terms-days: 15
     renewal-window-days: 30
     trial-warning-days: 7
+    renewals:
+      # Every day at 02:15 India time: raise the renewal invoice when a paid period ends (lead-days before the next
+      # one starts), mark schools past due when an invoice is unpaid after its due date or a trial ended unpaid, and
+      # suspend them after a grace period. Safe on every API instance: one run at a time (advisory lock), and every
+      # step checks the school's current state first.
+      enabled: ${BILLING_RENEWALS_ENABLED:true}
+      cron: ${BILLING_RENEWALS_CRON:0 15 2 * * *}
+      lead-days: ${BILLING_RENEWAL_LEAD_DAYS:0}
+      grace-days: ${BILLING_GRACE_DAYS:15}
+      trial-grace-days: ${BILLING_TRIAL_GRACE_DAYS:7}
     payments:
       # Schools paying their subscription invoices online. The money is Akshara's, so this is Akshara's own gateway
       # account, separate from the schools' fee gateway above: "sandbox" (default: no network calls, no real money)
@@ -211,4 +221,7 @@ akshara:
       enabled: false
   privacy:
     export-cleanup:
+      enabled: false
+  billing:
+    renewals:
       enabled: false

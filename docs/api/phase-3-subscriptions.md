@@ -63,3 +63,42 @@ Audit actions: `invoice_order.created`, `invoice_order.failed`, `invoice_order.r
 Data (`V32__subscription_online_payments.sql`): `billing.payment_order` and `billing.gateway_event` with `tenant_id`,
 the `tenant_isolation` policy and composite keys; `billing.payment_order_tenant(gateway, gatewayOrderId)` (security
 definer) finds a webhook's school; `invoice_payment.mode` allows `ONLINE`.
+
+## 2. Automatic renewals and suspension
+
+`BillingRenewalJob` runs `BillingRenewals` once a day (`akshara.billing.renewals.cron`, default `0 15 2 * * *` India
+time; `BILLING_RENEWALS_ENABLED=false` switches it off, and the `migrate` profile and tests switch it off). A round
+takes `pg_try_advisory_xact_lock('billing.renewals')`, so with several API instances only one runs it and the others
+skip; each school is then handled in its own transaction, as that school, with its subscription row locked, and every
+step re-reads the current state, so a second run on the same day changes nothing. Suspended schools are left alone.
+For each school, in order:
+
+1. **Renewal.** A paying school whose next period starts within `renewals.lead-days` (default `0`: the day after the
+   current period ends) and whose current period has a live invoice moves into the next period and gets its invoice
+   from the same `InvoiceIssuer` as the Super Admin's "Issue next invoice" (dated the job's day, issued by
+   "Akshara billing"), audited as `subscription.renewed` and `invoice.issued`. A period whose invoice was cancelled,
+   or billed students the plan no longer covers, are left to the Super Admin.
+2. **Past due.** An `ACTIVE` or `TRIAL` school with an unpaid invoice past its due date, or whose trial ended without
+   a paid subscription, becomes `PAST_DUE` (`school.status_changed` with `reason` `invoice_overdue` or `trial_ended`
+   and `automatic: true`). A school the job marked past due becomes `ACTIVE` again as soon as nothing is overdue
+   (`reason: "settled"`): when the last overdue invoice is paid (by hand or online), when a lapsed trial starts paying,
+   or at the next run. A school the Super Admin marked past due by hand is never made active by the job.
+3. **Suspension.** A `PAST_DUE` school is suspended through the same path as the Super Admin's suspension
+   (`school.suspended` with `automatic: true`, `SchoolSuspended`) once its oldest overdue invoice is more than
+   `renewals.grace-days` (default `15`) past its due date, or its trial ended more than `renewals.trial-grace-days`
+   (default `7`) ago. The grace period also counts from the school's last reactivation, so a school the Super Admin
+   reactivates gets a whole new grace period; it goes back to `PAST_DUE` and is made active once it pays.
+
+| Property (env) | Default |
+| --- | --- |
+| `akshara.billing.renewals.enabled` (`BILLING_RENEWALS_ENABLED`) | `true` |
+| `akshara.billing.renewals.cron` (`BILLING_RENEWALS_CRON`) | `0 15 2 * * *` |
+| `akshara.billing.renewals.lead-days` (`BILLING_RENEWAL_LEAD_DAYS`) | `0` (at most `renewal-window-days`) |
+| `akshara.billing.renewals.grace-days` (`BILLING_GRACE_DAYS`) | `15` |
+| `akshara.billing.renewals.trial-grace-days` (`BILLING_TRIAL_GRACE_DAYS`) | `7` |
+
+The job's clock is injectable (`BillingRenewalJob(renewals, Clock)`), and `BillingRenewals.runFor(school, day,
+instant)` runs one school as of a given day; tests use fixed dates.
+
+Data (`V33__subscription_renewals.sql`): `billing.subscription.auto_past_due_since` (the job marked the school past
+due) and `grace_restarted_on` (the last reactivation).

@@ -58,6 +58,10 @@ class Subscription extends AssignedIdEntity {
     @Enumerated(EnumType.STRING)
     private TenantStatus statusBeforeSuspension;
 
+    private LocalDate autoPastDueSince;
+
+    private LocalDate graceRestartedOn;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -133,6 +137,29 @@ class Subscription extends AssignedIdEntity {
         this.suspensionReason = null;
         this.suspendedAt = null;
         return before;
+    }
+
+    /** The renewal job marked the school past due on {@code day}. */
+    void markedPastDueAutomatically(LocalDate day) {
+        this.autoPastDueSince = day;
+    }
+
+    /** The school is no longer past due because of the renewal job (it paid, or someone changed its status). */
+    void clearAutoPastDue() {
+        this.autoPastDueSince = null;
+    }
+
+    /** The Super Admin reactivated the school on {@code day}: an automatic suspension waits a whole grace period. */
+    void restartGrace(LocalDate day) {
+        this.graceRestartedOn = day;
+    }
+
+    LocalDate getAutoPastDueSince() {
+        return autoPastDueSince;
+    }
+
+    LocalDate getGraceRestartedOn() {
+        return graceRestartedOn;
     }
 
     /** The day the next period starts, or null before the school pays. */

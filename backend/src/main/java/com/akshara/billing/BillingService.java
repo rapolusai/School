@@ -1,7 +1,9 @@
 package com.akshara.billing;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -153,8 +155,12 @@ public class BillingService {
         if (school.plan() != form.plan()) {
             updated = tenants.changePlan(tenantId, form.plan());
         }
-        if (school.status() == TenantStatus.TRIAL) {
+        if (school.status() == TenantStatus.TRIAL
+                || (school.status() == TenantStatus.PAST_DUE && subscription.getAutoPastDueSince() != null)) {
+            // A trial, or a school the renewal job marked past due when its trial ended unpaid, starts paying.
             updated = tenants.changeStatus(tenantId, TenantStatus.ACTIVE);
+            subscription.clearAutoPastDue();
+            subscriptions.saveAndFlush(subscription);
         }
         Map<String, Object> details = new LinkedHashMap<>();
         details.put("plan", form.plan().name());
@@ -296,8 +302,56 @@ public class BillingService {
         if (invoice.isPaid()) {
             events.publishEvent(new SubscriptionInvoicePaid(tenantId, invoice.getId(), invoice.getInvoiceNo(),
                     invoice.getTotalPaise(), invoice.getPaidOn()));
+            restoreIfSettled(tenantId, by, BillingDay.today(), Instant.now());
         }
         return payment;
+    }
+
+    /**
+     * A school the renewal job marked past due goes back to active once nothing is overdue and its trial has not
+     * lapsed unpaid. A school the Super Admin marked past due by hand is left as it is. Returns whether it changed.
+     */
+    boolean restoreIfSettled(UUID tenantId, Actor by, LocalDate today, Instant now) {
+        Subscription subscription = subscriptions.lockByTenantId(tenantId).orElse(null);
+        if (subscription == null || subscription.getAutoPastDueSince() == null) {
+            return false;
+        }
+        TenantView school = school(tenantId);
+        if (school.status() == TenantStatus.SUSPENDED) {
+            // Reactivation brings it back to past due; it is made active once it is reactivated and settled.
+            return false;
+        }
+        if (school.status() != TenantStatus.PAST_DUE) {
+            subscription.clearAutoPastDue();
+            subscriptions.saveAndFlush(subscription);
+            return false;
+        }
+        if (overdueSince(today) != null || trialLapsed(subscription, school, now)) {
+            return false;
+        }
+        subscription.clearAutoPastDue();
+        subscriptions.saveAndFlush(subscription);
+        tenants.changeStatus(tenantId, TenantStatus.ACTIVE);
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("previousStatus", TenantStatus.PAST_DUE.name());
+        details.put("status", TenantStatus.ACTIVE.name());
+        details.put("reason", "settled");
+        details.put("automatic", true);
+        audit.record(by, "school.status_changed", "school", tenantId, details);
+        return true;
+    }
+
+    /** The due date of the school's oldest unpaid invoice that is overdue on {@code today}, or null. */
+    LocalDate overdueSince(LocalDate today) {
+        return invoices.unpaid().stream().filter(i -> i.isOverdue(today)).map(Invoice::getDueDate)
+                .min(Comparator.naturalOrder()).orElse(null);
+    }
+
+    /** A trial that ended without a paid subscription. */
+    static boolean trialLapsed(Subscription subscription, TenantView school, Instant now) {
+        boolean paying = subscription != null && subscription.isPaid();
+        return !paying && school.trialEndsAt() != null && !now.isBefore(school.trialEndsAt())
+                && (school.status() == TenantStatus.TRIAL || school.status() == TenantStatus.PAST_DUE);
     }
 
     /** Cancels an invoice with nothing paid on it. Its number is never reused; the period can be invoiced again. */
@@ -341,6 +395,11 @@ public class BillingService {
         }
         if (school.status() != status) {
             tenants.changeStatus(tenantId, status);
+            subscriptions.findByTenantId(tenantId).filter(s -> s.getAutoPastDueSince() != null).ifPresent(s -> {
+                // The Super Admin decides from now on: the job no longer makes this school active by itself.
+                s.clearAutoPastDue();
+                subscriptions.saveAndFlush(s);
+            });
             audit.record(by, "school.status_changed", "school", tenantId,
                     Map.of("previousStatus", school.status().name(), "status", status.name()));
         }
@@ -359,15 +418,26 @@ public class BillingService {
         if (school.status() == TenantStatus.SUSPENDED) {
             throw conflict("Already suspended", "This school is already suspended.");
         }
-        subscription.suspend(school.status(), reason.trim());
+        suspendNow(subscription, school, reason.trim(), by, Map.of());
+        return accounts.account();
+    }
+
+    /**
+     * Suspends a school whose subscription row the caller has locked: the reason is kept, the school is SUSPENDED,
+     * {@code school.suspended} is audited (with {@code extra} details) and {@link SchoolSuspended} is published. The
+     * Super Admin's suspension and the renewal job's both come here.
+     */
+    void suspendNow(Subscription subscription, TenantView school, String reason, Actor by, Map<String, Object> extra) {
+        UUID tenantId = school.id();
+        subscription.suspend(school.status(), reason);
         subscriptions.saveAndFlush(subscription);
         tenants.changeStatus(tenantId, TenantStatus.SUSPENDED);
         Map<String, Object> details = new LinkedHashMap<>();
-        details.put("reason", reason.trim());
+        details.put("reason", reason);
         details.put("previousStatus", school.status().name());
+        details.putAll(extra);
         audit.record(by, "school.suspended", "school", tenantId, details);
         events.publishEvent(new SchoolSuspended(tenantId, subscription.getSuspendedAt()));
-        return accounts.account();
     }
 
     /** Lifts a suspension: the school goes back to the status it had before. */
@@ -380,6 +450,7 @@ public class BillingService {
             throw conflict("Not suspended", "This school is not suspended.");
         }
         TenantStatus back = subscription.lift();
+        subscription.restartGrace(BillingDay.today());
         if (back == null) {
             // Suspended outside the console (no reason on file): paying schools go back to active, others to trial.
             back = !subscription.isPaid() && school.trialEndsAt() != null ? TenantStatus.TRIAL : TenantStatus.ACTIVE;
