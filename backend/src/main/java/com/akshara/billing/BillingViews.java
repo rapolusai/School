@@ -110,6 +110,26 @@ public final class BillingViews {
             LocalDate date, long days, Long amountPaise, Integer invoices) {
     }
 
+    /**
+     * An online payment of an invoice's whole balance. {@code checkoutKey} is the public key the browser's Razorpay
+     * checkout needs (null for the sandbox, whose checkout is a page of this app). {@code failureReason} also says when
+     * a payment arrived for an invoice that was no longer due (to be refunded at the gateway).
+     */
+    public record InvoiceOrderView(UUID id, UUID invoiceId, String invoiceNo, String gateway, String gatewayOrderId,
+            long amountPaise, String currency, String status, String failureReason, String checkoutKey,
+            String payeeName) {
+    }
+
+    /** What the sandbox checkout page shows for an invoice order. */
+    public record SandboxInvoiceCheckout(String gatewayOrderId, UUID orderId, UUID invoiceId, String invoiceNo,
+            long amountPaise, String currency, String payeeName, String schoolName, String status) {
+    }
+
+    /** What a gateway's checkout hands back to the browser: verify it with the order. */
+    public record InvoiceCheckoutResult(UUID orderId, String gatewayOrderId, String status, String gatewayPaymentId,
+            String signature) {
+    }
+
     /** The Super Admin's platform health page. Counts are null when the database could not be reached. */
     public record PlatformHealth(Instant checkedAt, Schools schools, Long users, Long activeStudents, Outbox outbox,
             Database database, App app) {

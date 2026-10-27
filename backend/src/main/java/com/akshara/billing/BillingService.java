@@ -245,8 +245,11 @@ public class BillingService {
 
     /** Records money that reached Akshara for an invoice; the invoice is PAID once nothing is left. */
     public InvoiceView recordPayment(UUID invoiceId, PaymentForm form, Actor actor) {
-        UUID tenantId = TenantContext.require();
+        TenantContext.require();
         Actor by = actor(actor);
+        if (form.mode() == PaymentMode.ONLINE) {
+            throw ApiException.badRequest("Online payments are recorded by the payment gateway.", "mode");
+        }
         Invoice invoice = invoices.lock(invoiceId).orElseThrow(() -> ApiException.notFound("Invoice"));
         if (invoice.isCancelled()) {
             throw conflict("Cancelled", "Invoice " + invoice.getInvoiceNo() + " is cancelled.");
@@ -262,25 +265,39 @@ public class BillingService {
         if (form.paidOn().isAfter(BillingDay.today())) {
             throw ApiException.badRequest("The payment date cannot be in the future.", "paidOn");
         }
-        String reference = form.reference().trim();
-        payments.save(new InvoicePayment(invoice.getId(), amount, form.mode(), reference, form.paidOn(), by.id(),
-                by.name()));
-        invoice.pay(amount, form.paidOn());
+        applyPayment(invoice, amount, form.mode(), form.reference().trim(), form.paidOn(), by, by.id(), by.name(),
+                Map.of());
+        return accounts.view(invoice);
+    }
+
+    /**
+     * Records a payment on an invoice the caller has locked and checked (not cancelled, the amount no more than the
+     * balance): the payment row, the invoice's paid amount, the audit entry ({@code invoice.payment_recorded}, with
+     * {@code extra} details) and, once nothing is left, {@link SubscriptionInvoicePaid}. Shared by the Super Admin's
+     * manual payments and online payments.
+     */
+    InvoicePayment applyPayment(Invoice invoice, long amount, PaymentMode mode, String reference, LocalDate paidOn,
+            Actor by, UUID recordedById, String recordedByName, Map<String, Object> extra) {
+        UUID tenantId = TenantContext.require();
+        InvoicePayment payment = payments.save(new InvoicePayment(invoice.getId(), amount, mode, reference, paidOn,
+                recordedById, recordedByName));
+        invoice.pay(amount, paidOn);
         invoices.saveAndFlush(invoice);
         payments.flush();
         Map<String, Object> details = new LinkedHashMap<>();
         details.put("invoiceNo", invoice.getInvoiceNo());
         details.put("amountPaise", amount);
-        details.put("mode", form.mode().name());
+        details.put("mode", mode.name());
         details.put("reference", reference);
-        details.put("paidOn", form.paidOn().toString());
+        details.put("paidOn", paidOn.toString());
         details.put("balancePaise", invoice.balancePaise());
+        details.putAll(extra);
         audit.record(by, "invoice.payment_recorded", "invoice", invoice.getId(), details);
         if (invoice.isPaid()) {
             events.publishEvent(new SubscriptionInvoicePaid(tenantId, invoice.getId(), invoice.getInvoiceNo(),
                     invoice.getTotalPaise(), invoice.getPaidOn()));
         }
-        return accounts.view(invoice);
+        return payment;
     }
 
     /** Cancels an invoice with nothing paid on it. Its number is never reused; the period can be invoiced again. */

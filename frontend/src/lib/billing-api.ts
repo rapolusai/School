@@ -4,10 +4,13 @@ import type {
   BillingNotice,
   ChangeSubscriptionRequest,
   Invoice,
+  InvoiceCheckoutResult,
+  InvoiceOrder,
   InvoicePaymentRequest,
   PlanView,
   PlatformHealth,
   RenewalRow,
+  SandboxInvoiceCheckout,
   SchoolAccount,
   SchoolBilling,
   StartSubscriptionRequest,
@@ -26,6 +29,19 @@ export const billingApi = {
   invoice: (invoiceId: string) => apiFetch<Invoice>(`/api/billing/invoices/${id(invoiceId)}`),
   updateDetails: (body: BillingDetailsRequest) =>
     apiFetch<SchoolBilling>("/api/billing/details", { method: "PUT", body }),
+  /** Starts (or reuses) an online payment of the invoice's whole balance (billing.read + settings.manage). */
+  payOnline: (invoiceId: string) =>
+    apiFetch<InvoiceOrder>(`/api/billing/invoices/${id(invoiceId)}/orders`, { method: "POST" }),
+  order: (orderId: string) => apiFetch<InvoiceOrder>(`/api/billing/orders/${id(orderId)}`),
+  verify: (orderId: string, body: { gatewayPaymentId: string; signature: string }) =>
+    apiFetch<Invoice>(`/api/billing/orders/${id(orderId)}/verify`, { method: "POST", body }),
+  sandboxCheckout: (gatewayOrderId: string) =>
+    apiFetch<SandboxInvoiceCheckout>(`/api/billing/sandbox/orders/${id(gatewayOrderId)}`),
+  sandboxComplete: (gatewayOrderId: string, outcome: "SUCCESS" | "FAILURE") =>
+    apiFetch<InvoiceCheckoutResult>(`/api/billing/sandbox/orders/${id(gatewayOrderId)}/complete`, {
+      method: "POST",
+      body: { outcome },
+    }),
 };
 
 /** The Super Admin's console (platform.admin). */

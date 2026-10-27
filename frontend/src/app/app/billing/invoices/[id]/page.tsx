@@ -5,11 +5,12 @@ import { PERMISSIONS } from "@/lib/permissions";
 
 export const metadata: Metadata = { title: "Invoice" };
 
-export default async function Page({ params }: PageProps<"/app/billing/invoices/[id]">) {
+export default async function Page({ params, searchParams }: PageProps<"/app/billing/invoices/[id]">) {
   const { id } = await params;
+  const query = await searchParams;
   return (
     <RequirePermission permission={PERMISSIONS.billingRead}>
-      <SchoolInvoiceView key={id} id={id} />
+      <SchoolInvoiceView key={id} id={id} paid={query.paid === "1"} />
     </RequirePermission>
   );
 }

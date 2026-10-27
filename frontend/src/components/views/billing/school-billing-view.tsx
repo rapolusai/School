@@ -4,7 +4,7 @@ import { ArrowLeft, CalendarClock, CircleAlert, Pencil } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { Pill, statusTone } from "@/components/ui/pill";
-import { ErrorState, LoadingRows, PageHead } from "@/components/ui/states";
+import { ErrorState, FormAlert, LoadingRows, PageHead } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
 import type { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -26,6 +26,7 @@ import {
   planLabel,
 } from "./billing-ui";
 import { InvoiceDocument } from "./invoice-document";
+import { canPayOnline, invoiceHref, PayOnlineButton, usePayInvoice } from "./pay-online";
 
 /** The trial or overdue notice as an alert, for the Billing page and the shell banner. */
 export function NoticeAlert({ notice, testId }: { notice: BillingNotice; testId?: string }) {
@@ -42,8 +43,16 @@ export function NoticeAlert({ notice, testId }: { notice: BillingNotice; testId?
   );
 }
 
-/** Invoices with links to their printable page. */
-export function InvoiceTable({ invoices, hrefFor }: { invoices: InvoiceSummary[]; hrefFor: (id: string) => string }) {
+/** Invoices with links to their printable page; `action` adds a last column (the School Admin's "Pay online"). */
+export function InvoiceTable({
+  invoices,
+  hrefFor,
+  action,
+}: {
+  invoices: InvoiceSummary[];
+  hrefFor: (id: string) => string;
+  action?: (invoice: InvoiceSummary) => React.ReactNode;
+}) {
   const { t, lang } = useI18n();
   const locale = localeFor(lang);
   if (invoices.length === 0) {
@@ -72,6 +81,7 @@ export function InvoiceTable({ invoices, hrefFor }: { invoices: InvoiceSummary[]
               {t("billing.invoices.col.balance")}
             </th>
             <th scope="col">{t("billing.invoices.col.status")}</th>
+            {action ? <th scope="col" className="r"><span className="sr-only">{t("billing.pay.button")}</span></th> : null}
           </tr>
         </thead>
         <tbody>
@@ -96,6 +106,7 @@ export function InvoiceTable({ invoices, hrefFor }: { invoices: InvoiceSummary[]
               <td>
                 <InvoiceStatusPill status={invoice.status} overdue={invoice.overdue} />
               </td>
+              {action ? <td className="r">{action(invoice)}</td> : null}
             </tr>
           ))}
         </tbody>
@@ -165,7 +176,12 @@ export function SchoolBillingView() {
   const { me } = useAuth();
   const { toast } = useToast();
   const canEdit = hasPermission(me, PERMISSIONS.settingsManage);
+  const canPay = canPayOnline(me);
   const billing = useApiData("billing:mine", billingApi.mine);
+  const payment = usePayInvoice((number) => {
+    billing.reload();
+    toast(t("billing.pay.done", { number }));
+  });
   const [editing, setEditing] = useState(false);
   const data = billing.data;
   const schoolName = me?.tenant?.name ?? "";
@@ -204,7 +220,27 @@ export function SchoolBillingView() {
             <div className="card-head">
               <h2 id="billing-invoices">{t("billing.invoices.title")}</h2>
             </div>
-            <InvoiceTable invoices={data.invoices} hrefFor={(id) => `/app/billing/invoices/${encodeURIComponent(id)}`} />
+            <FormAlert message={payment.error} />
+            <InvoiceTable
+              invoices={data.invoices}
+              hrefFor={(id) => invoiceHref(id)}
+              action={
+                canPay
+                  ? (invoice) =>
+                      isPayable(invoice) ? (
+                        <PayOnlineButton
+                          invoiceId={invoice.id}
+                          invoiceNo={invoice.invoiceNo}
+                          payingId={payment.payingId}
+                          onPay={payment.pay}
+                        />
+                      ) : null
+                  : undefined
+              }
+            />
+            {canPay && data.invoices.some(isPayable) ? (
+              <p className="mt-3 text-[13px] text-ink-3">{t("billing.pay.note")}</p>
+            ) : null}
           </section>
           <section aria-labelledby="billing-plans" className="flex flex-col gap-3">
             <h2 id="billing-plans">{t("billing.plans.title")}</h2>
@@ -260,10 +296,21 @@ export function InvoicePageState({
   );
 }
 
-/** /app/billing/invoices/[id]: one of the school's invoices, ready to print. */
-export function SchoolInvoiceView({ id }: { id: string }) {
+/** An invoice the school can still pay online: issued, with something left to pay. */
+export function isPayable(invoice: Pick<InvoiceSummary, "status" | "balancePaise">): boolean {
+  return invoice.status === "ISSUED" && invoice.balancePaise > 0;
+}
+
+/** /app/billing/invoices/[id]: one of the school's invoices, ready to print, with "Pay online" while it is open. */
+export function SchoolInvoiceView({ id, paid = false }: { id: string; paid?: boolean }) {
   const { t } = useI18n();
+  const { me } = useAuth();
+  const { toast } = useToast();
   const invoice = useApiData(`billing:invoice:${id}`, () => billingApi.invoice(id));
+  const payment = usePayInvoice((number) => {
+    invoice.reload();
+    toast(t("billing.pay.done", { number }));
+  });
   const back = (
     <Link href="/app/billing" className="link no-print inline-flex items-center gap-1 text-[13.5px]">
       <ArrowLeft size={16} aria-hidden="true" />
@@ -283,9 +330,24 @@ export function SchoolInvoiceView({ id }: { id: string }) {
           <h1 className="mt-1">{t("billing.invoice.titleNo", { number: data.invoiceNo })}</h1>
         </div>
         <div className="flex flex-wrap gap-2">
+          {canPayOnline(me) && isPayable(data) ? (
+            <PayOnlineButton
+              invoiceId={data.id}
+              invoiceNo={data.invoiceNo}
+              payingId={payment.payingId}
+              onPay={payment.pay}
+              size="md"
+            />
+          ) : null}
           <PrintButton label={t("billing.invoice.print")} />
         </div>
       </div>
+      <FormAlert message={payment.error} />
+      {paid && data.status === "PAID" ? (
+        <p className="alert alert-good no-print" role="status" data-testid="invoice-paid-banner">
+          {t("billing.pay.paidBanner")}
+        </p>
+      ) : null}
       <section className="card">
         <InvoiceDocument invoice={data} />
       </section>

@@ -185,8 +185,9 @@ test("a School Admin sees the plan, renewal date and invoices, and no other scho
   const table = page.getByTestId("invoices-table");
   await expect(table.getByRole("link", { name: invoice.invoiceNo })).toBeVisible();
   await expect(table).toContainText("Unpaid");
-  // Schools never pay from here.
-  await expect(page.getByRole("button", { name: /pay/i })).toHaveCount(0);
+  // A School Admin may pay online (subscription.spec.ts), but never records payments by hand.
+  await expect(table.getByRole("button", { name: `Pay invoice ${invoice.invoiceNo} online` })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Record payment" })).toHaveCount(0);
 
   await table.getByRole("link", { name: invoice.invoiceNo }).click();
   await expect(page.getByTestId("invoice")).toContainText("E2E Education Trust");

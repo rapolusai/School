@@ -6,8 +6,9 @@ import type { PlainDate } from "./school";
 export const BILLING_CYCLES = ["YEARLY", "MONTHLY"] as const;
 export type BillingCycle = (typeof BILLING_CYCLES)[number];
 
+/** Modes the Super Admin records by hand. ONLINE payments are recorded only by Akshara's payment gateway. */
 export const INVOICE_PAYMENT_MODES = ["BANK_TRANSFER", "UPI", "CHEQUE", "CARD"] as const;
-export type InvoicePaymentMode = (typeof INVOICE_PAYMENT_MODES)[number];
+export type InvoicePaymentMode = (typeof INVOICE_PAYMENT_MODES)[number] | "ONLINE";
 
 export type InvoiceStatus = "ISSUED" | "PAID" | "CANCELLED";
 
@@ -178,6 +179,46 @@ export type PlatformHealth = {
   outbox: { queued: number; failed: number } | null;
   database: { reachable: boolean; latencyMs: number | null };
   app: { version: string; startedAt: string; uptimeSeconds: number };
+};
+
+export type InvoiceOrderStatus = "CREATED" | "PAID" | "FAILED";
+
+/**
+ * An online payment of an invoice's whole balance (docs/api/phase-3-subscriptions.md). `checkoutKey` is Razorpay's
+ * public key for the browser's checkout; null for the sandbox, whose checkout is a page of this app.
+ */
+export type InvoiceOrder = {
+  id: string;
+  invoiceId: string;
+  invoiceNo: string;
+  gateway: string;
+  gatewayOrderId: string;
+  amountPaise: number;
+  currency: string;
+  status: InvoiceOrderStatus;
+  failureReason: string | null;
+  checkoutKey: string | null;
+  payeeName: string;
+};
+
+export type SandboxInvoiceCheckout = {
+  gatewayOrderId: string;
+  orderId: string;
+  invoiceId: string;
+  invoiceNo: string;
+  amountPaise: number;
+  currency: string;
+  payeeName: string;
+  schoolName: string;
+  status: InvoiceOrderStatus;
+};
+
+export type InvoiceCheckoutResult = {
+  orderId: string;
+  gatewayOrderId: string;
+  status: "SUCCESS" | "FAILED";
+  gatewayPaymentId: string | null;
+  signature: string | null;
 };
 
 export type BillingDetailsRequest = {

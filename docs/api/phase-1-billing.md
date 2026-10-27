@@ -8,10 +8,12 @@ ids of another school in a path, `400` with a field error, `409` for conflicts.
 - **Money is in paise** (₹1 = 100 paise) as whole numbers. Rates are in basis points (`900` = 9%).
 - Dates are `"YYYY-MM-DD"`; "today" is today in India (Asia/Kolkata). Periods are inclusive.
 - The **financial year** runs April to March (`2026-27`). Invoice numbers belong to a financial year.
-- **Nothing happens automatically.** No school is ever suspended, marked past due or invoiced by a job: the renewals
-  list only shows what needs the Super Admin's attention.
-- **No payment gateway.** Schools pay Akshara by bank transfer, UPI, cheque or card outside the app; the Super Admin
-  records what arrived. Schools never pay from their Billing page.
+- **Nothing happens automatically** in Phase 1: the renewals list only shows what needs the Super Admin's attention.
+  Phase 3 adds a daily renewal job (renewal invoices, past due, suspension after a grace period): see
+  [phase-3-subscriptions.md](phase-3-subscriptions.md).
+- **Payments.** Schools pay Akshara by bank transfer, UPI, cheque or card outside the app and the Super Admin records
+  what arrived; since Phase 3 a School Admin can also pay an open invoice online through Akshara's own payment gateway
+  ([phase-3-subscriptions.md](phase-3-subscriptions.md)).
 
 ## Permissions
 
