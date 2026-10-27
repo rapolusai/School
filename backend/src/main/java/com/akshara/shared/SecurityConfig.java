@@ -6,6 +6,7 @@ import java.util.List;
 
 import jakarta.servlet.http.HttpServletResponse;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -52,7 +53,9 @@ public class SecurityConfig {
     /** Checks a certificate by the token in its QR code (no sign-in; rate-limited by the certificates module). */
     static final String PUBLIC_VERIFY = "/api/public/verify/*";
 
+    /** Web only: the one-off "migrate" task runs without a web server, so there is no HttpSecurity to build from. */
     @Bean
+    @ConditionalOnWebApplication
     SecurityFilterChain api(HttpSecurity http, JwtService jwtService) throws Exception {
         http
                 .csrf(csrf -> csrf.disable()) // bearer tokens; the refresh cookie is SameSite=Strict and Origin-checked

@@ -290,9 +290,8 @@ container by hand (as `--drill` does) and copy the rows over with `psql`.
   spoofing the header (tested). Put CloudFront + WAF in front later if abuse appears.
 - The API process holds the database owner password (it runs the migrations at start-up), as in local
   development. In AWS a separate `api-migrate` task holds it. The app still connects as `akshara_app`, so
-  row-level security applies to every request. At e3c22fa the `migrate` profile itself exits with an error
-  after migrating (`SecurityConfig` needs an `HttpSecurity` bean, which a non-web application does not have),
-  so the AWS pipeline's api-migrate step would report a failure too: fix that before using `infra/terraform`.
+  row-level security applies to every request. (The `migrate` profile used by the AWS pipeline's
+  api-migrate step was fixed on SCH3 after e3c22fa: it now exits 0 after migrating.)
 - Secrets are in `.env` (mode 600) on the encrypted disk and in your password manager; never in git.
 - Keep SSH limited to your IP (or closed, with Session Manager) and keep `unattended-upgrades` on.
 - `/actuator/*` answers 404 from outside; the containers check their health internally.
@@ -304,7 +303,7 @@ during deploys or a server failure is no longer acceptable (the single server ha
 data loss (daily dumps) is too much (RDS gives 5-minute point-in-time recovery); or the number of schools needs
 more than one API instance.
 
-1. Fix the `migrate` profile (section 9), approve and apply `infra/terraform` for prod (its README), with
+1. Approve and apply `infra/terraform` for prod (its README), with
    `email_enabled` and `payments_gateway` as on the server. Do not start the services yet, or keep them at 0.
 2. Lower the TTL of `app.rapolu.in` to 60 s a day before.
 3. Maintenance window: `compose.sh stop web api` (Caddy keeps serving an error page), `backup/backup.sh`.
