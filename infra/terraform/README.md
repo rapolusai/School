@@ -4,6 +4,10 @@ Infrastructure for the Akshara school management SaaS in **ap-south-1 (Mumbai)**
 each environment is a `*.tfvars` file plus a `*.backend.hcl` file (its own state key): `staging` and
 `prod`.
 
+> **Not the starting setup.** The owner decided on 2026-10-27 to launch production on a single server instead
+> (`infra/single-server/`, runbook `docs/runbooks/single-server.md`). This directory is kept unchanged for the move
+> to managed infrastructure later; that runbook's last section describes the migration (pg_dump/restore into RDS).
+
 > **Approval gate.** Nothing in this directory has been planned or applied. It was written and
 > checked with `terraform fmt` and `terraform validate` only, without AWS credentials.
 > Nobody runs `terraform plan` or `apply` against an AWS account until the owner has reviewed

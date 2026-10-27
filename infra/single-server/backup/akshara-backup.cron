@@ -1,0 +1,5 @@
+# Alternative to the systemd timer (use one, not both): copy to /etc/cron.d/akshara-backup (owner root, mode 644).
+# Every day at 21:30 UTC (03:00 India time). Runs as "ubuntu" (docker group, owns .env and /var/backups/akshara); output to /var/backups/akshara/backup.log.
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+30 21 * * * ubuntu /opt/akshara/infra/single-server/backup/backup.sh >> /var/backups/akshara/backup.log 2>&1

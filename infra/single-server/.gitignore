@@ -1,0 +1,4 @@
+# Written on the server, never committed
+.env
+release.env
+.deploy-history

@@ -1,0 +1,25 @@
+{
+  "agent": {
+    "metrics_collection_interval": 300,
+    "run_as_user": "cwagent"
+  },
+  "metrics": {
+    "namespace": "Akshara/SingleServer",
+    "append_dimensions": {
+      "InstanceId": "${aws:InstanceId}"
+    },
+    "metrics_collected": {
+      "disk": {
+        "measurement": ["used_percent"],
+        "resources": ["/"],
+        "drop_device": true
+      },
+      "mem": {
+        "measurement": ["mem_used_percent"]
+      },
+      "swap": {
+        "measurement": ["swap_used_percent"]
+      }
+    }
+  }
+}
