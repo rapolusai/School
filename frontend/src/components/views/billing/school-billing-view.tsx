@@ -83,7 +83,7 @@ export function InvoiceTable({
               {t("billing.invoices.col.balance")}
             </th>
             <th scope="col">{t("billing.invoices.col.status")}</th>
-            {action ? <th scope="col" className="r"><span className="sr-only">{t("billing.pay.button")}</span></th> : null}
+            {action ? <th scope="col" className="r relative"><span className="sr-only">{t("billing.pay.button")}</span></th> : null}
           </tr>
         </thead>
         <tbody>

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { RequirePermission } from "@/components/access";
 import { SchoolBillingView } from "@/components/views/billing/school-billing-view";
 import { PERMISSIONS } from "@/lib/permissions";
-import { planModule } from "@/lib/plan-access";
+import { planModule } from "@/lib/plan-modules";
 
 export const metadata: Metadata = { title: "Billing" };
 

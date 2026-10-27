@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { billingApi } from "./billing-api";
-import type { MessageKey } from "./i18n/en";
 import { hasPermission, PERMISSIONS, type NavItem, type NavSubject } from "./permissions";
 import type { PlanModule } from "./types";
 
@@ -11,18 +10,7 @@ import type { PlanModule } from "./types";
  * is decided by the API (backend PlanFeatures, the one mapping); the menu only knows each item's module.
  */
 
-/** How each plan module is named on the Billing page's "not in your plan" notice. */
-export const PLAN_MODULE_LABELS: Record<PlanModule, MessageKey> = {
-  transport: "nav.transport",
-  library: "nav.library",
-  inventory: "nav.inventory",
-  report_cards: "billing.feature.report_cards",
-};
-
-/** The plan module a Billing link names (`?upgrade=library`), or null. */
-export function planModule(value: unknown): PlanModule | null {
-  return typeof value === "string" && Object.hasOwn(PLAN_MODULE_LABELS, value) ? (value as PlanModule) : null;
-}
+export { PLAN_MODULE_LABELS, planModule } from "./plan-modules";
 
 /** Window event that asks the shell to fetch the plan again (after the plan changes). */
 export const PLAN_CHANGED_EVENT = "akshara:plan-changed";
