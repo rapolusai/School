@@ -1,0 +1,45 @@
+# Caddy in front of the web app and the API, with automatic HTTPS (Let's Encrypt, ZeroSSL as fallback).
+# APP_DOMAIN and CADDY_TLS come from the compose file (.env). CADDY_TLS is the ACME account email in production,
+# or "internal" for a self-signed certificate in local tests. HTTP is redirected to HTTPS automatically.
+# Same routing as the AWS load balancer: /api/* to the API, /actuator* refused, everything else to the web app.
+{
+	# Admin API only inside the container (health check, `caddy reload`).
+	admin localhost:2019
+}
+
+{$APP_DOMAIN} {
+	tls {$CADDY_TLS}
+
+	encode zstd gzip
+
+	# The API caps uploads itself (26 MB per request); refuse anything larger at the edge.
+	request_body {
+		max_size 30MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+
+	# Health and metrics stay internal (the containers' own health checks call them directly).
+	handle /actuator* {
+		respond 404
+	}
+
+	# Caddy replaces X-Forwarded-For with the real client address (it trusts no proxy in front of it),
+	# and the API (profile "aws") trusts that header from private addresses, so sign-in rate limits see the client.
+	handle /api/* {
+		reverse_proxy api:8080
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+
+	# Access log as JSON on stdout (rotated by Docker's json-file driver). Cookie and Authorization are redacted.
+	log {
+		output stdout
+		format json
+	}
+}

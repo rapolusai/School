@@ -1,0 +1,20 @@
+# Daily database backup (backup/backup.sh). Install: docs/runbooks/single-server.md, "Backups".
+#   sudo cp systemd/akshara-backup.* /etc/systemd/system/ && sudo systemctl daemon-reload
+#   sudo systemctl enable --now akshara-backup.timer
+# Adjust the path and the user if the repository is not checked out at /opt/akshara by "ubuntu". The user must be
+# in the docker group, own .env and /var/backups/akshara (deploy.sh writes its pre-deploy dump there too).
+[Unit]
+Description=Akshara database backup (pg_dump to /var/backups/akshara and S3)
+Wants=network-online.target docker.service
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=docker
+ExecStart=/opt/akshara/infra/single-server/backup/backup.sh
+# Low priority so a running school day is not slowed down.
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+TimeoutStartSec=2h

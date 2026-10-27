@@ -3,6 +3,25 @@
 Tick every line before the first real school goes on production. "Built" means the code or configuration is in
 this repository; "To do" needs someone with the accounts, or a run against AWS.
 
+> **Starting setup (owner decision, 2026-10-27): one server.** Production launches on a single EC2 server
+> (t4g.medium, 4 GB, 30 GB gp3, ap-south-1, about $30-40 a month) with Docker Compose, Caddy for HTTPS on
+> `app.rapolu.in`, daily `pg_dump` backups to S3: `infra/single-server/` and
+> [`single-server.md`](single-server.md). The managed setup in `infra/terraform` (ECS, RDS, ALB, WAF) stays for
+> later; the tables further down describe it. For the single server, tick this list instead of the
+> "Infrastructure and delivery" table:
+>
+> | | Item | Status |
+> |-|------|--------|
+> | ☐ | EC2 instance, Elastic IP, security group (22 from the owner's IP only), IAM role, IMDSv2 hop limit 2 | To do (console) |
+> | ☐ | Backup bucket (30-day expiry) and files bucket (versioned) | To do (console) |
+> | ☐ | DNS: `app.rapolu.in` A record; SES DKIM, MAIL FROM and DMARC records for `rapolu.in` | To do |
+> | ☐ | `.env` generated, REQUIRED values filled, a copy in the password manager | To do |
+> | ☐ | First deploy healthy; Let's Encrypt certificate; Super Admin password changed | Built (`deploy.sh`); to do |
+> | ☐ | Backup timer enabled; first dump in S3; restore drill done and timed (`restore.sh --drill`) | Built; to do |
+> | ☐ | Uptime check, disk alarm, instance recovery alarm, billing budget | To do |
+> | ☐ | A deploy and a `deploy.sh --rollback` rehearsed outside school hours | Built; to do |
+> | ☑ | Compose stack tested locally: HTTPS, sign-in, Secure cookies, DB not exposed, backup and restore, memory under the e2e suite | Done 2026-10-27 |
+
 ## Accounts and decisions (owner)
 
 | | Item | Status |

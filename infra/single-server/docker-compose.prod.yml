@@ -1,0 +1,196 @@
+# Production on ONE server (4 GB RAM, 30 GB disk): PostgreSQL, the API, the web app and Caddy (automatic HTTPS).
+# Runbook: docs/runbooks/single-server.md. Always run it through ./compose.sh, which adds .env and release.env:
+#   ./compose.sh build && ./compose.sh up -d
+# Only Caddy publishes ports (80 and 443). The database, API and web app are reachable only on the internal network.
+#
+# Memory limits: db 768 MB + api 1024 MB + web 384 MB + caddy 128 MB = 2.3 GB, leaving ~1.5 GB of a 4 GB server
+# for the OS, Docker, backups and image builds, plus a 2 GB swap file (runbook).
+#
+# Migrations: the API runs Flyway at start-up as akshara_owner (like the local docker-compose.yml), then serves as
+# akshara_app, which row-level security always applies to. The separate api-migrate step the AWS setup uses
+# (profile "migrate") is not used here: at e3c22fa that profile exits with an error after migrating
+# (SecurityConfig needs a web application), see the runbook.
+name: akshara
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: akshara
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      DB_OWNER_PASSWORD: ${DB_OWNER_PASSWORD:?Set DB_OWNER_PASSWORD in .env}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}
+    # Sized for a 768 MB container. max_connections covers the API pool (DB_POOL_SIZE, 10) plus Flyway, the old and
+    # new API overlapping briefly during a deploy, pg_dump, a restore drill and a few admin sessions.
+    command:
+      - postgres
+      - -c
+      - max_connections=40
+      - -c
+      - shared_buffers=192MB
+      - -c
+      - effective_cache_size=1GB
+      - -c
+      - work_mem=4MB
+      - -c
+      - maintenance_work_mem=64MB
+      - -c
+      - max_parallel_workers_per_gather=1
+      - -c
+      - random_page_cost=1.1
+      - -c
+      - effective_io_concurrency=200
+      - -c
+      - checkpoint_completion_target=0.9
+      - -c
+      - max_wal_size=1GB
+      - -c
+      - log_min_duration_statement=1000
+      - -c
+      - log_lock_waits=on
+    shm_size: 128m
+    mem_limit: 768m
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./postgres/init-roles.sh:/docker-entrypoint-initdb.d/10-roles.sh:ro
+      - ../terraform/bootstrap/db-roles.sql:/akshara/db-roles.sql:ro
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d akshara"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    logging: *logging
+
+  api:
+    image: akshara-api:${APP_TAG:-latest}
+    build:
+      context: ../../backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/akshara
+      DB_APP_USER: akshara_app
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:?Set DB_APP_PASSWORD in .env}
+      DB_OWNER_USER: akshara_owner
+      DB_OWNER_PASSWORD: ${DB_OWNER_PASSWORD:?Set DB_OWNER_PASSWORD in .env}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      COOKIE_SECURE: "true"
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://${APP_DOMAIN}}
+      APP_BASE_URL: ${APP_BASE_URL:-https://${APP_DOMAIN}}
+      APP_VERSION: ${APP_TAG:-latest}
+      # Caddy is the only way in: trust its X-Forwarded-For (from private addresses) so rate limits see the client.
+      SERVER_FORWARD_HEADERS_STRATEGY: native
+      PLATFORM_ADMIN_EMAIL: ${PLATFORM_ADMIN_EMAIL:-}
+      PLATFORM_ADMIN_PASSWORD: ${PLATFORM_ADMIN_PASSWORD:-}
+      PLATFORM_ADMIN_NAME: ${PLATFORM_ADMIN_NAME:-Platform Admin}
+      DEMO_ENABLED: "false"
+      SHOW_SIMULATED_SECRETS: "false"
+      AWS_REGION: ${AWS_REGION:-ap-south-1}
+      FILES_STORE: ${FILES_STORE:-database}
+      FILES_S3_BUCKET: ${FILES_S3_BUCKET:-}
+      FILES_COPY_TO_S3: ${FILES_COPY_TO_S3:-false}
+      EMAIL_SENDER: ${EMAIL_SENDER:-simulated}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      EMAIL_SES_CONFIGURATION_SET: ${EMAIL_SES_CONFIGURATION_SET:-}
+      PAYMENTS_GATEWAY: ${PAYMENTS_GATEWAY:-sandbox}
+      PAYMENTS_SANDBOX_SECRET: ${PAYMENTS_SANDBOX_SECRET:?Set PAYMENTS_SANDBOX_SECRET in .env}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
+      RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET:-}
+      BILLING_PAYMENTS_GATEWAY: ${BILLING_PAYMENTS_GATEWAY:-sandbox}
+      BILLING_RAZORPAY_KEY_ID: ${BILLING_RAZORPAY_KEY_ID:-}
+      BILLING_RAZORPAY_KEY_SECRET: ${BILLING_RAZORPAY_KEY_SECRET:-}
+      BILLING_RAZORPAY_WEBHOOK_SECRET: ${BILLING_RAZORPAY_WEBHOOK_SECRET:-}
+      BILLING_SELLER_NAME: ${BILLING_SELLER_NAME:-Akshara School Cloud (sample seller)}
+      BILLING_SELLER_ADDRESS: ${BILLING_SELLER_ADDRESS:-Sample address - set BILLING_SELLER_ADDRESS}
+      BILLING_SELLER_STATE_CODE: ${BILLING_SELLER_STATE_CODE:-36}
+      BILLING_SELLER_GSTIN: ${BILLING_SELLER_GSTIN:-36XXXXX0000X1ZX}
+      BILLING_INVOICE_PREFIX: ${BILLING_INVOICE_PREFIX:-AKS}
+      # Replaces the image's -XX:MaxRAMPercentage=75: 75% of 1 GB would leave only ~256 MB for metaspace, code
+      # cache, threads and buffers. 60% gives a ~600 MB heap and ~400 MB for the rest. Serial GC: smallest footprint.
+      JAVA_TOOL_OPTIONS: >-
+        -XX:MaxRAMPercentage=60 -XX:MaxMetaspaceSize=256m -XX:ReservedCodeCacheSize=96m
+        -XX:+UseSerialGC -XX:+ExitOnOutOfMemoryError
+    mem_limit: 1024m
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/actuator/health/readiness > /dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 180s
+    logging: *logging
+
+  web:
+    image: akshara-web:${APP_TAG:-latest}
+    build:
+      context: ../../frontend
+      args:
+        # Caddy sends /api/* straight to the API; this rewrite target is only a fallback inside the network.
+        API_URL: http://api:8080
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      NODE_OPTIONS: --max-old-space-size=256
+    mem_limit: 384m
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/login || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging: *logging
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?Set APP_DOMAIN in .env}
+      # The ACME account email in production; "internal" (self-signed certificate) only for local tests.
+      CADDY_TLS: ${CADDY_TLS:-${ACME_EMAIL:?Set ACME_EMAIL in .env}}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      - "${HTTPS_PORT:-443}:443/udp"
+    mem_limit: 128m
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:2019/config/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging: *logging
+
+networks:
+  internal:
+    # A fixed private range (the API trusts X-Forwarded-For only from private addresses; Caddy has one).
+    ipam:
+      config:
+        - subnet: ${DOCKER_SUBNET:-172.28.0.0/24}
+
+volumes:
+  db-data:
+  caddy-data:
+  caddy-config:
