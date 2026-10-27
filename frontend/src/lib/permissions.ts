@@ -47,7 +47,7 @@ import {
 } from "lucide-react";
 import { isFamilyMember } from "./family";
 import type { MessageKey } from "./i18n/en";
-import type { Me } from "./types";
+import type { Me, PlanModule } from "./types";
 
 /** Permission codes from docs/api/phase-0.md, phase-1.md, phase-1-attendance.md, phase-1-staff.md,
  * phase-1-communication.md, phase-1-timetable-homework.md, phase-1-billing.md, phase-2-library.md,
@@ -145,6 +145,10 @@ export type NavItem = {
   group: NavGroup;
   /** Shown only to parents (child.view without staff access), not to staff who also hold child.view. */
   parentOnly?: boolean;
+  /** The plan module it belongs to: locked when the school's plan leaves it out (docs/api/phase-3-subscriptions.md). */
+  module?: PlanModule;
+  /** Set by the shell on an item the plan locks: it leads to Billing with an "Upgrade" hint. */
+  locked?: boolean;
 };
 
 /** Each module's report permission: holding any of them opens the reports hub (docs/api/phase-1-reports.md). */
@@ -268,6 +272,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
     icon: LibraryBig,
     permission: PERMISSIONS.libraryRead,
     group: "academics",
+    module: "library",
   },
   {
     key: "transport",
@@ -277,6 +282,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
     icon: Bus,
     permission: PERMISSIONS.transportRead,
     group: "academics",
+    module: "transport",
   },
   {
     key: "setup",
@@ -336,6 +342,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
     permission: PERMISSIONS.inventoryRead,
     anyOf: [PERMISSIONS.inventoryManage, PERMISSIONS.purchaseApprove],
     group: "finance",
+    module: "inventory",
   },
   {
     key: "staff",
@@ -365,6 +372,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
     icon: Navigation,
     permission: PERMISSIONS.transportTrip,
     group: "staff",
+    module: "transport",
   },
   {
     key: "leave",
@@ -682,6 +690,7 @@ export const FAMILY_NAV_ITEMS: readonly NavItem[] = [
     icon: LibraryBig,
     permission: PERMISSIONS.dashboardView,
     group: "academics",
+    module: "library",
   },
   {
     key: "family-results",
@@ -710,6 +719,7 @@ export const FAMILY_NAV_ITEMS: readonly NavItem[] = [
     icon: Bus,
     permission: PERMISSIONS.dashboardView,
     group: "academics",
+    module: "transport",
   },
   {
     // A boarding child's hostel: the bed, the warden, outing and home-leave passes (docs/api/phase-3-hostel.md).

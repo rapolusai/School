@@ -23,6 +23,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import com.akshara.reports.Xlsx;
+import com.akshara.support.BillingFixtures;
 import com.akshara.support.IntegrationTest;
 import com.akshara.support.SchoolFixtures;
 import com.akshara.support.TestApi;
@@ -399,7 +400,7 @@ class SchoolImportIT extends IntegrationTest {
         for (int i = 0; i < 2_501; i++) {
             rows.add(studentRow("BIG/" + i, i));
         }
-        byte[] tooMany = workbook(studentSheet("Class 5 - A", rows.toArray(Object[][]::new)),
+        byte[] tooMany = workbook(studentSheet("Class 6 - A", rows.toArray(Object[][]::new)),
                 studentSheet("Class 5 - B", rows.stream().map(r -> {
                     Object[] copy = r.clone();
                     copy[0] = "BIGB/" + copy[0];
@@ -447,6 +448,29 @@ class SchoolImportIT extends IntegrationTest {
         api.get("/api/academics/classes", admin.accessToken())
                 .andExpect(jsonPath("$.length()").value(6))
                 .andExpect(jsonPath("$[*].name", not(hasItem("1"))));
+    }
+
+    @Test
+    void aPayingStarterSchoolCannotImportPastItsPlansStudentLimit() throws Exception {
+        List<Object[]> rows = new ArrayList<>();
+        for (int n = 1; n <= 300; n++) {
+            rows.add(studentRow("CAP/" + n, n));
+        }
+        // In the trial the limit does not apply.
+        upload(admin, workbook(staffSheet(), studentSheet("Class 6 - A", rows.toArray(Object[][]::new))), false, true)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.studentsCreated").value(300));
+        BillingFixtures billing = new BillingFixtures(api);
+        Session root = billing.root();
+        billing.details(root, school.tenantId(), "36", null);
+        billing.start(root, school.tenantId(), "STARTER", "YEARLY", 300, null);
+
+        byte[] one = workbook(staffSheet(), studentSheet("Class 6 - A", studentRow("CAP/301", 301)));
+        upload(admin, one, true, true).andExpect(jsonPath("$.ready").value(true));
+        upload(admin, one, false, true)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.type").value("urn:akshara:problem:plan-student-limit"))
+                .andExpect(jsonPath("$.maxStudents").value(300));
+        api.get("/api/students?size=1", admin.accessToken()).andExpect(jsonPath("$.total").value(300));
     }
 
     // ------------------------------------------------------------------ helpers

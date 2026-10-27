@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutGrid, LogOut } from "lucide-react";
+import { LayoutGrid, Lock, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { Dialog } from "@/components/ui/dialog";
@@ -23,7 +23,9 @@ export function BottomBar({
   const { t } = useI18n();
   const [moreOpen, setMoreOpen] = useState(false);
   const primary = items.slice(0, PRIMARY_TABS);
-  const moreActive = items.slice(PRIMARY_TABS).some((item) => isActivePath(pathname, item.href));
+  const moreActive = items
+    .slice(PRIMARY_TABS)
+    .some((item) => !item.locked && isActivePath(pathname, item.href));
 
   return (
     <>
@@ -34,12 +36,13 @@ export function BottomBar({
         style={{ "--tabs": primary.length + 1 } as React.CSSProperties}
       >
         {primary.map((item) => {
-          const Icon = item.icon;
+          const Icon = item.locked ? Lock : item.icon;
           return (
             <Link
               key={item.key}
               href={item.href}
-              aria-current={isActivePath(pathname, item.href) ? "page" : undefined}
+              aria-current={!item.locked && isActivePath(pathname, item.href) ? "page" : undefined}
+              aria-label={item.locked ? t("billing.limits.lockedLabel", { module: t(item.labelKey) }) : undefined}
             >
               <Icon size={20} strokeWidth={1.8} aria-hidden="true" />
               <span>{t(item.shortLabelKey)}</span>
@@ -66,12 +69,13 @@ export function BottomBar({
       >
         <div className="sheet-grid">
           {items.map((item) => {
-            const Icon = item.icon;
+            const Icon = item.locked ? Lock : item.icon;
             return (
               <Link
                 key={item.key}
                 href={item.href}
-                aria-current={isActivePath(pathname, item.href) ? "page" : undefined}
+                aria-current={!item.locked && isActivePath(pathname, item.href) ? "page" : undefined}
+                aria-label={item.locked ? t("billing.limits.lockedLabel", { module: t(item.labelKey) }) : undefined}
                 onClick={() => setMoreOpen(false)}
               >
                 <Icon size={20} strokeWidth={1.8} aria-hidden="true" />

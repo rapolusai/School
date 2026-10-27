@@ -12,7 +12,8 @@ import { billingApi } from "@/lib/billing-api";
 import { formatDate, formatPaise, formatPlainDate } from "@/lib/format";
 import { localeFor, plural, translateOr, useI18n } from "@/lib/i18n";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import type { BillingNotice, InvoiceSummary, SchoolBilling } from "@/lib/types";
+import { PLAN_MODULE_LABELS } from "@/lib/plan-access";
+import type { BillingNotice, InvoiceSummary, PlanModule, SchoolBilling } from "@/lib/types";
 import { useApiData } from "@/lib/use-api-data";
 import { PrintButton } from "../fees/receipt-document";
 import {
@@ -163,15 +164,25 @@ function PlanSummary({ billing }: { billing: SchoolBilling }) {
           </>
         ) : null}
         <dt>{t("billing.school.activeStudents")}</dt>
-        <dd>{billing.activeStudents.toLocaleString("en-IN")}</dd>
+        <dd data-testid="billing-active-students">{studentsOnRoll(t, billing)}</dd>
       </dl>
       <p className="text-[13px] text-ink-3">{t("billing.school.contact")}</p>
     </section>
   );
 }
 
-/** /app/billing: a School Admin's view of the school's plan, trial, renewal, invoices and billing details. */
-export function SchoolBillingView() {
+/** Students on roll, against the plan's limit when it has one ("280 of 300"). */
+function studentsOnRoll(t: ReturnType<typeof useI18n>["t"], billing: SchoolBilling): string {
+  const active = billing.activeStudents.toLocaleString("en-IN");
+  const max = billing.plans.find((p) => p.plan === billing.plan)?.maxStudents ?? null;
+  return max === null ? active : t("billing.limits.students", { active, max: max.toLocaleString("en-IN") });
+}
+
+/**
+ * /app/billing: a School Admin's view of the school's plan, trial, renewal, invoices and billing details. `upgrade`
+ * names the menu module a locked item led here from.
+ */
+export function SchoolBillingView({ upgrade = null }: { upgrade?: PlanModule | null } = {}) {
   const { t } = useI18n();
   const { me } = useAuth();
   const { toast } = useToast();
@@ -200,6 +211,12 @@ export function SchoolBillingView() {
       ) : (
         <div className="flex flex-col gap-4">
           <NoticeAlert notice={data.notice} testId="billing-notice" />
+          {upgrade ? (
+            <div className="alert alert-warn" role="status" data-testid="billing-upgrade-notice">
+              <CircleAlert size={18} aria-hidden="true" className="mt-0.5 flex-none" />
+              <span>{t("billing.limits.lockedNotice", { module: t(PLAN_MODULE_LABELS[upgrade]) })}</span>
+            </div>
+          ) : null}
           <div className="grid gap-4 lg:grid-cols-2">
             <PlanSummary billing={data} />
             <section className="card flex flex-col gap-3" aria-labelledby="billing-details-title">

@@ -44,6 +44,8 @@ export class ApiError extends Error {
   readonly detail?: string;
   readonly errors?: Record<string, string>;
   readonly type?: string;
+  /** Extra members of the problem (RFC 9457 extensions), such as a plan limit's numbers. */
+  readonly properties?: Record<string, unknown>;
 
   constructor(init: {
     status: number;
@@ -51,6 +53,7 @@ export class ApiError extends Error {
     detail?: string;
     errors?: Record<string, string>;
     type?: string;
+    properties?: Record<string, unknown>;
   }) {
     super(init.detail ?? init.title);
     this.name = "ApiError";
@@ -59,6 +62,7 @@ export class ApiError extends Error {
     this.detail = init.detail;
     this.errors = init.errors;
     this.type = init.type;
+    this.properties = init.properties;
   }
 }
 
@@ -106,7 +110,16 @@ export async function parseErrorResponse(res: Response): Promise<ApiError> {
     detail: typeof problem.detail === "string" ? problem.detail : undefined,
     errors: stringRecord(problem.errors),
     type: typeof problem.type === "string" ? problem.type : undefined,
+    properties: extensions(problem),
   });
+}
+
+const STANDARD_PROBLEM_MEMBERS = new Set(["type", "title", "status", "detail", "instance", "errors"]);
+
+/** The problem's own members beyond the standard ones, or undefined when there are none. */
+function extensions(problem: ProblemDetails): Record<string, unknown> | undefined {
+  const entries = Object.entries(problem as Record<string, unknown>).filter(([k]) => !STANDARD_PROBLEM_MEMBERS.has(k));
+  return entries.length ? Object.fromEntries(entries) : undefined;
 }
 
 /* ------------------------------------------------------------------ */
@@ -230,6 +243,12 @@ export function refreshSession(options: { restore?: boolean } = {}): Promise<Aut
  * (docs/api/phase-1-privacy.md). The privacy gate listens and shows the consent screen.
  */
 export const CONSENT_REQUIRED_TYPE = "urn:akshara:problem:consent-required";
+
+/** A request for a feature the school's plan leaves out (403, with `feature`); docs/api/phase-3-subscriptions.md. */
+export const PLAN_FEATURE_TYPE = "urn:akshara:problem:plan-feature";
+
+/** Students added past the plan's limit (409, with `maxStudents`, `activeStudents` and `adding`). */
+export const PLAN_STUDENT_LIMIT_TYPE = "urn:akshara:problem:plan-student-limit";
 
 type ConsentListener = () => void;
 const consentListeners = new Set<ConsentListener>();

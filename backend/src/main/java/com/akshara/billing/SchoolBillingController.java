@@ -22,6 +22,7 @@ import com.akshara.billing.BillingViews.InvoiceCheckoutResult;
 import com.akshara.billing.BillingViews.InvoiceOrderView;
 import com.akshara.billing.BillingViews.InvoiceView;
 import com.akshara.billing.BillingViews.Notice;
+import com.akshara.billing.BillingViews.PlanAccessView;
 import com.akshara.billing.BillingViews.SandboxInvoiceCheckout;
 import com.akshara.billing.BillingViews.SchoolBilling;
 
@@ -40,11 +41,21 @@ public class SchoolBillingController {
     private final BillingAccounts accounts;
     private final BillingService billing;
     private final OnlineInvoicePayments online;
+    private final PlanLimits limits;
 
-    SchoolBillingController(BillingAccounts accounts, BillingService billing, OnlineInvoicePayments online) {
+    SchoolBillingController(BillingAccounts accounts, BillingService billing, OnlineInvoicePayments online,
+            PlanLimits limits) {
         this.accounts = accounts;
         this.billing = billing;
         this.online = online;
+        this.limits = limits;
+    }
+
+    /** What the school's plan allows now (any signed-in member of the school: the web app's menu uses it). */
+    @GetMapping("/plan-access")
+    @PreAuthorize("isAuthenticated()")
+    public PlanAccessView planAccess() {
+        return limits.current();
     }
 
     @GetMapping

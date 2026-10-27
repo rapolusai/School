@@ -146,4 +146,13 @@ public final class BillingViews {
         public record App(String version, Instant startedAt, long uptimeSeconds) {
         }
     }
+
+    /**
+     * What the signed-in school's plan allows, for the web app's menu: {@code excludedFeatures} are the gated features
+     * the plan leaves out, {@code lockedFeatures} and {@code lockedModules} those locked now (none during the trial,
+     * when {@code enforced} is false), and the students on roll against {@code maxStudents} (null: unlimited).
+     */
+    public record PlanAccessView(Plan plan, TenantStatus status, boolean enforced, List<String> excludedFeatures,
+            List<String> lockedFeatures, List<String> lockedModules, Integer maxStudents, long activeStudents) {
+    }
 }

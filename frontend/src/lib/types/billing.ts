@@ -248,6 +248,23 @@ export type InvoicePaymentRequest = {
   paidOn: PlainDate;
 };
 
+/** A menu module a plan can leave out (backend PlanFeatures). */
+export type PlanModule = "transport" | "library" | "inventory" | "report_cards";
+
+/** What the signed-in school's plan allows now (GET /api/billing/plan-access). */
+export type PlanAccess = {
+  plan: Plan;
+  status: TenantStatus;
+  /** False during the trial: nothing is locked and the student limit does not apply. */
+  enforced: boolean;
+  excludedFeatures: string[];
+  lockedFeatures: string[];
+  lockedModules: PlanModule[];
+  /** Null: unlimited. */
+  maxStudents: number | null;
+  activeStudents: number;
+};
+
 /** GST state codes (first two digits of a GSTIN), with names in billing.state.<code>. */
 export const GST_STATE_CODES = [
   "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18",

@@ -7,6 +7,7 @@ import type {
   InvoiceCheckoutResult,
   InvoiceOrder,
   InvoicePaymentRequest,
+  PlanAccess,
   PlanView,
   PlatformHealth,
   RenewalRow,
@@ -26,6 +27,8 @@ const school = (tenantId: string) => `/api/platform/billing/schools/${id(tenantI
 export const billingApi = {
   mine: () => apiFetch<SchoolBilling>("/api/billing"),
   notice: () => apiFetch<BillingNotice>("/api/billing/notice"),
+  /** What the school's plan allows now (any signed-in member of a school). */
+  planAccess: () => apiFetch<PlanAccess>("/api/billing/plan-access"),
   invoice: (invoiceId: string) => apiFetch<Invoice>(`/api/billing/invoices/${id(invoiceId)}`),
   updateDetails: (body: BillingDetailsRequest) =>
     apiFetch<SchoolBilling>("/api/billing/details", { method: "PUT", body }),

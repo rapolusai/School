@@ -39,7 +39,9 @@ Prices are before GST and kept in code (`PlanCatalog`). They follow the prototyp
 ₹14,999 a month for a school of 300 students billed yearly (a year = ten months), and are placeholders until the owner
 sets real ones. Yearly billing gets two months free: a month costs a tenth of the yearly price, rounded half up to whole
 paise. An invoice is `billedStudents × unit price` for one period; the Super Admin chooses the billed students (the
-console suggests the students on roll) and a plan's student limit is enforced.
+console suggests the students on roll) and a plan's student limit is enforced. Once a school pays, the plan's student
+limit and the features it leaves out are also enforced when the school works
+([phase-3-subscriptions.md](phase-3-subscriptions.md), "Plan limits").
 
 ## Super Admin — `/api/platform`
 

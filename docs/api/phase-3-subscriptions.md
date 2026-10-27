@@ -102,3 +102,56 @@ instant)` runs one school as of a given day; tests use fixed dates.
 
 Data (`V33__subscription_renewals.sql`): `billing.subscription.auto_past_due_since` (the job marked the school past
 due) and `grace_restarted_on` (the last reactivation).
+
+## 3. Plan limits
+
+The plans' limits ([phase-1-billing.md](phase-1-billing.md), "Plans") are enforced by the API, not only shown on the
+Billing page. **They apply once the school pays** (status `ACTIVE` or `PAST_DUE`): a school in its trial can try every
+module and load its whole roll before choosing a plan.
+
+**Student limit.** Adding students that would take the school's students on roll (status `ACTIVE`) past the plan's
+`maxStudents` is refused with `409` and problem type `urn:akshara:problem:plan-student-limit`, whichever way they are
+added: one by hand (`POST /api/students`), admitted from admissions (`POST /api/admissions/applications/{id}/admit`),
+imported from CSV (`POST /api/students/import`) or from the school workbook (`POST /api/school-import`). An import is
+all or nothing, so a file that does not fit writes nothing. A student who leaves frees a place. One school's additions
+are counted one at a time (an advisory lock to the end of the transaction), so two at once cannot both take the last
+place. The students module asks through its `EnrolmentLimit` interface, which the billing module implements.
+
+```json
+{ "type": "urn:akshara:problem:plan-student-limit", "title": "Student limit reached", "status": 409,
+  "detail": "The STARTER plan covers up to 300 students on roll. …", "plan": "STARTER", "maxStudents": 300,
+  "activeStudents": 300, "adding": 1 }
+```
+
+**Features.** A plan's `notIncluded` features that switch something off are mapped, in one place
+(`billing.PlanFeatures`), to app modules (the web app's menu keys) and API paths:
+
+| Feature | Modules | API paths |
+| --- | --- | --- |
+| `transport_library` | `transport`, `library`, `inventory` | `/api/transport/**`, `/api/me/transport`, `/api/library/**`, `/api/me/library`, `/api/inventory/**` |
+| `report_cards` | `report_cards` | `/api/exams/report-cards/**`, `/api/me/report-card`, `/api/me/children/*/report-card` |
+
+`api_access` has no switch yet (there is no public API to turn off); branches (`maxBranches`) are not enforced, since
+the app has no branches. Bus devices (`/api/public/transport/…`) are never gated. A request to a gated path from a
+school whose plan leaves the feature out is refused before the endpoint's own permission check:
+
+```json
+{ "type": "urn:akshara:problem:plan-feature", "title": "Not in your plan", "status": 403,
+  "detail": "The school's STARTER plan does not include this. …", "feature": "transport_library", "plan": "STARTER" }
+```
+
+| Method | Path | Permission | Success |
+| --- | --- | --- | --- |
+| GET | `/api/billing/plan-access` | any signed-in member of a school | `200 PlanAccessView`; the platform console `404` |
+
+```ts
+type PlanAccessView = { plan: Plan; status: TenantStatus; enforced: boolean /* false in the trial */;
+  excludedFeatures: string[] /* gated features the plan leaves out */; lockedFeatures: string[] /* locked now */;
+  lockedModules: ("transport" | "library" | "inventory" | "report_cards")[]; maxStudents: number | null;
+  activeStudents: number };
+```
+
+Web app: the shell fetches the plan access once per sign-in (and again after a plan change). A menu item of a locked
+module shows a lock and "Upgrade" and leads to `/app/billing?upgrade=<module>` for someone who can see Billing (a
+School Admin), and is hidden from everyone else; the Billing page says why and shows students on roll against the
+limit. Both problem types have their own translated messages, so a refused request never reads as "no permission".
