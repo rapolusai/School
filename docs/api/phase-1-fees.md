@@ -249,7 +249,9 @@ type PaymentOrder = { id; gateway; gatewayOrderId; amountPaise; currency: "INR";
   `webhook_secret`; see infra/terraform/README.md, "Payments"), injected by ECS as `RAZORPAY_KEY_ID`,
   `RAZORPAY_KEY_SECRET` and `RAZORPAY_WEBHOOK_SECRET`. With the gateway set to `razorpay` and any of them
   missing, the API refuses to start. The bean exists either way, so Razorpay orders can still be verified after
-  switching back to the sandbox.
+  switching back to the sandbox. The other way round, the sandbox checkout (`/api/payments/sandbox/orders/…`)
+  answers `404` while the live gateway is not the sandbox, so a sandbox order left open from before the switch
+  cannot be "paid" without money.
 - `createOrder` → `POST https://api.razorpay.com/v1/orders` with `{ amount, currency, receipt: <our order id>,
   notes }` and HTTP Basic `key_id:key_secret`, 10-second timeouts. A refusal, an answer for another amount, or no
   answer is `502 Payment gateway unavailable`; nothing about the request or the keys is logged.

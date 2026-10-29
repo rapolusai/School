@@ -311,7 +311,14 @@ public class OnlineInvoicePayments {
         return new InvoiceCheckoutResult(order.getId(), order.getGatewayOrderId(), "FAILED", null, null);
     }
 
+    /**
+     * A sandbox order of the school. Only while the sandbox is the live gateway: once Akshara switches to Razorpay, a
+     * sandbox order left open must not be "paid" without money.
+     */
     private InvoiceOrder sandboxOrder(String gatewayOrderId) {
+        if (!SandboxPaymentGateway.NAME.equals(gateways.active().name())) {
+            throw ApiException.notFound("Payment order");
+        }
         return orders.findByGatewayAndGatewayOrderId(SandboxPaymentGateway.NAME, gatewayOrderId)
                 .orElseThrow(() -> ApiException.notFound("Payment order"));
     }
