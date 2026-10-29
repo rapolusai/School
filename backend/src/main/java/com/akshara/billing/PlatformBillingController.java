@@ -21,6 +21,7 @@ import com.akshara.audit.AuditService.Actor;
 import com.akshara.billing.BillingForms.ChangeForm;
 import com.akshara.billing.BillingForms.DetailsForm;
 import com.akshara.billing.BillingForms.PaymentForm;
+import com.akshara.billing.BillingForms.PlatformCancelForm;
 import com.akshara.billing.BillingForms.ReasonForm;
 import com.akshara.billing.BillingForms.StartForm;
 import com.akshara.billing.BillingForms.StatusForm;
@@ -49,13 +50,15 @@ public class PlatformBillingController {
     private final BillingService billing;
     private final PlatformHealthService health;
     private final TenantDirectory tenants;
+    private final PlanChanges planChanges;
 
     PlatformBillingController(BillingAccounts accounts, BillingService billing, PlatformHealthService health,
-            TenantDirectory tenants) {
+            TenantDirectory tenants, PlanChanges planChanges) {
         this.accounts = accounts;
         this.billing = billing;
         this.health = health;
         this.tenants = tenants;
+        this.planChanges = planChanges;
     }
 
     @GetMapping("/health")
@@ -125,6 +128,19 @@ public class PlatformBillingController {
     @PostMapping("/billing/schools/{id}/suspend")
     public SchoolAccount suspend(@PathVariable UUID id, @Valid @RequestBody ReasonForm request) {
         return asSchool(id, () -> billing.suspend(request.reason(), superAdmin()));
+    }
+
+    /** Cancels the school's subscription for it: at the end of its period (or trial), or now ({@code immediate}). */
+    @PostMapping("/billing/schools/{id}/cancel")
+    public SchoolAccount cancelSubscription(@PathVariable UUID id, @Valid @RequestBody PlatformCancelForm request) {
+        return asSchool(id, () -> request.immediate() ? billing.endSubscription(request.reason(), superAdmin())
+                : planChanges.cancelOnBehalf(request.reason(), superAdmin()));
+    }
+
+    /** Takes the school's cancellation back, before it takes effect. */
+    @PostMapping("/billing/schools/{id}/resume")
+    public SchoolAccount resumeSubscription(@PathVariable UUID id) {
+        return asSchool(id, () -> planChanges.resumeOnBehalf(superAdmin()));
     }
 
     @PostMapping("/billing/schools/{id}/reactivate")

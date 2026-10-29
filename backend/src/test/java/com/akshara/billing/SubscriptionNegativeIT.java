@@ -263,8 +263,8 @@ class SubscriptionNegativeIT extends IntegrationTest {
         api.post("/api/billing/plan", admin.accessToken(), """
                 {"plan":null}""").andExpect(status().isBadRequest());
         api.post("/api/billing/plan", admin.accessToken(), "[]").andExpect(status().isBadRequest());
-        // The trial cannot be cancelled; resume and withdraw with nothing to take back are harmless.
-        api.post("/api/billing/cancel", admin.accessToken(), null).andExpect(status().isConflict());
+        // Resume and withdraw with nothing to take back are harmless. (A trial can be cancelled: see
+        // SubscriptionCancellationIT.)
         api.post("/api/billing/resume", admin.accessToken(), null).andExpect(status().isOk());
         api.delete("/api/billing/plan/pending", admin.accessToken()).andExpect(status().isOk());
         // The Super Admin has no school plan to change.
@@ -274,15 +274,23 @@ class SubscriptionNegativeIT extends IntegrationTest {
         // Upgrade on the last day of a monthly period, one student: a small, correctly rounded invoice.
         billing.details(root, school.tenantId(), "36", null);
         LocalDate today = BillingDay.today();
-        LocalDate start = today.minusMonths(1).plusDays(1);
+        // The monthly period that ends soonest on or after today: its last day is today when the month lengths
+        // allow one (31 October: 1-31 October), otherwise a day or two later (30 October: 1-31 October).
+        LocalDate start = today.minusDays(40);
+        while (BillingCycle.MONTHLY.periodEnd(start).isBefore(today)) {
+            start = start.plusDays(1);
+        }
+        LocalDate periodEnd = BillingCycle.MONTHLY.periodEnd(start);
+        long remainingDays = java.time.temporal.ChronoUnit.DAYS.between(today, periodEnd) + 1;
+        assertThat(remainingDays).isBetween(1L, 3L);
         billing.start(root, school.tenantId(), "STARTER", "MONTHLY", 1, start.toString());
         api.get("/api/billing/plan/quote?plan=GROWTH", admin.accessToken())
-                .andExpect(jsonPath("$.remainingDays").value(1));
+                .andExpect(jsonPath("$.remainingDays").value((int) remainingDays));
         String body = api.post("/api/billing/plan", admin.accessToken(), """
                 {"plan":"GROWTH"}""").andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         assertThat((Integer) JsonPath.read(body, "$.invoices.length()")).isEqualTo(2);
-        long periodDays = java.time.temporal.ChronoUnit.DAYS.between(start, today) + 1;
-        long unit = Math.round((2000 - 830) / (double) periodDays);
+        long periodDays = java.time.temporal.ChronoUnit.DAYS.between(start, periodEnd) + 1;
+        long unit = Math.round((2000 - 830) * remainingDays / (double) periodDays);
         String upgrade = JsonPath.read(body, "$.invoices[0].id");
         api.get("/api/billing/invoices/" + upgrade, admin.accessToken())
                 .andExpect(jsonPath("$.kind").value("UPGRADE"))

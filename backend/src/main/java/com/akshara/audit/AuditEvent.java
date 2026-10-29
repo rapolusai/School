@@ -72,6 +72,10 @@ public class AuditEvent extends AssignedIdEntity {
         return at;
     }
 
+    public UUID getActorId() {
+        return actorId;
+    }
+
     public String getActorName() {
         return actorName;
     }

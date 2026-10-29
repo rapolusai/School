@@ -7,6 +7,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import com.akshara.billing.BillingViews.BillingDetails;
+import com.akshara.billing.BillingViews.Cancellation;
 import com.akshara.billing.BillingViews.InvoiceSummary;
 import com.akshara.billing.BillingViews.InvoiceView;
 import com.akshara.billing.BillingViews.Notice;
@@ -48,6 +49,17 @@ final class BillingMapper {
             return BillingDetails.NONE;
         }
         return new BillingDetails(s.getLegalName(), s.getBillingAddress(), s.getStateCode(), s.getGstin());
+    }
+
+    /** The cancellation waiting to take effect, or null. */
+    static Cancellation cancellation(Subscription s, Instant trialEndsAt) {
+        if (s == null || !s.isCancelAtPeriodEnd()) {
+            return null;
+        }
+        boolean trial = !s.isPaid();
+        LocalDate endsOn = trial ? (trialEndsAt == null ? null : BillingDay.of(trialEndsAt))
+                : s.getPeriodEnd();
+        return new Cancellation(endsOn, s.getCancelRequestedAt(), s.getCancelReason(), s.getCancelledByName(), trial);
     }
 
     static Suspension suspension(Subscription s) {

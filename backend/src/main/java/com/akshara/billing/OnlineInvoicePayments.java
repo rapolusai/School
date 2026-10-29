@@ -96,6 +96,10 @@ public class OnlineInvoicePayments {
     @Transactional
     public InvoiceOrderView createOrder(UUID invoiceId) {
         TenantContext.require();
+        if (!gateways.enabled()) {
+            throw conflict("Online payment is off", "Online payment is not available yet. Pay this invoice by bank "
+                    + "transfer to Akshara; the payment is recorded when it arrives.");
+        }
         Actor by = signedIn();
         // One invoice's orders are made one at a time, so two tabs paying it share one order.
         jdbc.queryForObject("select 1 from (select pg_advisory_xact_lock(hashtextextended(?, 0))) l", Integer.class,
@@ -316,7 +320,7 @@ public class OnlineInvoicePayments {
      * sandbox order left open must not be "paid" without money.
      */
     private InvoiceOrder sandboxOrder(String gatewayOrderId) {
-        if (!SandboxPaymentGateway.NAME.equals(gateways.active().name())) {
+        if (gateways.active() == null || !SandboxPaymentGateway.NAME.equals(gateways.active().name())) {
             throw ApiException.notFound("Payment order");
         }
         return orders.findByGatewayAndGatewayOrderId(SandboxPaymentGateway.NAME, gatewayOrderId)

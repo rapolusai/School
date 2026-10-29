@@ -58,6 +58,10 @@ describe("visitToday", () => {
     expect(visitToday(record(), "2026-10-12")?.id).toBe("v1");
     expect(visitToday(record(), "2026-10-13")).toBeUndefined();
     expect(visitToday(undefined, "2026-10-12")).toBeUndefined();
+    // Just after midnight in India the instant is still the day before in UTC.
+    const lateNight = { ...record(), visits: [{ ...record().visits[0], timeIn: "2026-10-29T19:42:00Z", timeOut: null }] };
+    expect(visitToday(lateNight, "2026-10-30")?.id).toBe("v1");
+    expect(visitToday(lateNight, "2026-10-29")).toBeUndefined();
   });
 });
 

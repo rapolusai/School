@@ -90,6 +90,15 @@ public final class BillingForms {
     public record CancelForm(@Size(max = 500) String reason) {
     }
 
+    /**
+     * The Super Admin cancels a school's subscription for it: at the end of its period (or trial), or at once
+     * ({@code immediate}: the school is suspended now). The reason is required.
+     */
+    public record PlatformCancelForm(
+            @NotBlank(message = "Give a reason.") @Size(max = 500) String reason,
+            boolean immediate) {
+    }
+
     public record StatusForm(@NotNull TenantStatus status) {
     }
 }

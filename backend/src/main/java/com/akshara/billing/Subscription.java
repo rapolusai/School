@@ -72,6 +72,10 @@ class Subscription extends AssignedIdEntity {
 
     private Instant cancelRequestedAt;
 
+    private String cancelReason;
+
+    private String cancelledByName;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -175,16 +179,23 @@ class Subscription extends AssignedIdEntity {
         this.pendingPlanRequestedAt = null;
     }
 
-    /** The school cancelled: no renewal, and the school is suspended when the current period ends. */
-    void cancelAtPeriodEnd() {
+    /**
+     * The school cancelled (or the Super Admin cancelled for it): no renewal, and the school is suspended when the
+     * current period ends, or its trial does.
+     */
+    void cancelAtPeriodEnd(String reason, String byName) {
         this.cancelAtPeriodEnd = true;
         this.cancelRequestedAt = Instant.now();
+        this.cancelReason = reason;
+        this.cancelledByName = byName;
     }
 
-    /** The school took its cancellation back (or the Super Admin reactivated it). */
+    /** The cancellation was taken back (or the Super Admin reactivated the school, or started its subscription). */
     void resume() {
         this.cancelAtPeriodEnd = false;
         this.cancelRequestedAt = null;
+        this.cancelReason = null;
+        this.cancelledByName = null;
     }
 
     Plan getPendingPlan() {
@@ -201,6 +212,14 @@ class Subscription extends AssignedIdEntity {
 
     Instant getCancelRequestedAt() {
         return cancelRequestedAt;
+    }
+
+    String getCancelReason() {
+        return cancelReason;
+    }
+
+    String getCancelledByName() {
+        return cancelledByName;
     }
 
     LocalDate getAutoPastDueSince() {

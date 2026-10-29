@@ -45,7 +45,7 @@ public record BillingProperties(
             throw new IllegalStateException("akshara.billing day counts are out of range");
         }
         if (renewals.leadDays() < 0 || renewals.leadDays() > renewalWindowDays || renewals.graceDays() < 0
-                || renewals.trialGraceDays() < 0) {
+                || renewals.trialGraceDays() < 0 || renewals.reminderDays() < 0) {
             throw new IllegalStateException("akshara.billing.renewals day counts are out of range");
         }
     }
@@ -59,11 +59,14 @@ public record BillingProperties(
      *                       this many days past its due date (and after the Super Admin last reactivated it)
      * @param trialGraceDays a school whose trial ended without a paid subscription is suspended once the trial ended
      *                       more than this many days ago (and after its last reactivation)
+     * @param reminderDays   a paying school's admins are emailed this many days (or fewer) before the next period
+     *                       starts, once per period
      */
     public record Renewals(
             @DefaultValue("0") int leadDays,
             @DefaultValue("15") int graceDays,
-            @DefaultValue("7") int trialGraceDays) {
+            @DefaultValue("7") int trialGraceDays,
+            @DefaultValue("7") int reminderDays) {
     }
 
     /**

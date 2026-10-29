@@ -15,9 +15,18 @@ const KIND_TONES: Record<RenewalKind, PillTone> = {
   OVERDUE: "bad",
   DUE_FOR_RENEWAL: "warn",
   TRIAL_ENDING: "info",
+  CANCELLING: "bad",
+  DOWNGRADE_SCHEDULED: "accent",
 };
 
-const FILTERS: ("ALL" | RenewalKind)[] = ["ALL", "OVERDUE", "DUE_FOR_RENEWAL", "TRIAL_ENDING"];
+const FILTERS: ("ALL" | RenewalKind)[] = [
+  "ALL",
+  "OVERDUE",
+  "DUE_FOR_RENEWAL",
+  "TRIAL_ENDING",
+  "CANCELLING",
+  "DOWNGRADE_SCHEDULED",
+];
 
 /** "in 5 days", "today", "12 days ago". */
 export function daysLabel(t: Translate, days: number): string {
@@ -102,6 +111,16 @@ export function RenewalsView() {
                       <Pill tone={KIND_TONES[row.kind]} dot>
                         {translateOr(t, `billing.renewals.kind.${row.kind}`, row.kind)}
                       </Pill>
+                      {row.pendingPlan ? (
+                        <span className="block pt-1 text-[12.5px] text-ink-3" data-testid="renewal-pending-plan">
+                          {planLabel(t, row.plan)} → {planLabel(t, row.pendingPlan)}
+                        </span>
+                      ) : null}
+                      {row.note ? (
+                        <span className="block max-w-[260px] truncate pt-1 text-[12.5px] text-ink-3" title={row.note}>
+                          {row.note}
+                        </span>
+                      ) : null}
                       <span className="block pt-1 text-[12.5px] text-ink-3 sm:hidden">
                         {formatPlainDate(row.date, locale)} · {daysLabel(t, row.days)}
                       </span>

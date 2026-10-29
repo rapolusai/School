@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/toast";
 import { AllergyBadges, badgesOf, OutcomePill, when } from "@/components/views/health/health-shared";
 import { VisitLine } from "@/components/views/health/infirmary-view";
 import { ConsentCard, ItemDialog, ItemList } from "@/components/views/health/medical-record-view";
+import { todayInIndia } from "@/lib/format";
 import { healthApi } from "@/lib/health-api";
 import { localeFor, useI18n } from "@/lib/i18n";
 import type { HealthItem, InfirmaryVisit, ItemKind, MedicalRecord } from "@/lib/types";
@@ -119,9 +120,10 @@ function ChildHealth({ childId }: { childId: string }) {
   );
 }
 
-/** Today's infirmary visit of a child, if any. Pure; exported for tests. */
+/** Today's infirmary visit of a child, if any (days in India: a visit at 00:30 IST is that day's). Pure; exported for tests. */
 export function visitToday(record: MedicalRecord | undefined, today: string): InfirmaryVisit | undefined {
-  return record?.visits.find((v) => v.timeIn.slice(0, 10) === today || (v.timeOut !== null && v.timeOut.slice(0, 10) === today));
+  const day = (instant: string) => todayInIndia(new Date(instant));
+  return record?.visits.find((v) => day(v.timeIn) === today || (v.timeOut !== null && day(v.timeOut) === today));
 }
 
 /** The family home card: shown only when the child was in the infirmary today. */

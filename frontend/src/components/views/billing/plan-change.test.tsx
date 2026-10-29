@@ -201,8 +201,39 @@ describe("changing the plan from the Billing page", () => {
     expect(await screen.findByTestId("plan-change-quote")).toHaveTextContent(
       "During the trial the plan changes at once, at no charge.",
     );
-    // A trial has nothing to cancel.
-    expect(screen.queryByTestId("billing-cancel")).not.toBeInTheDocument();
+    // A trial cancels the trial, not a subscription.
+    expect(screen.getByTestId("billing-cancel")).toHaveTextContent("Cancel trial");
+  });
+
+  it("cancels a free trial, shows who did it, and keeps it", async () => {
+    const user = userEvent.setup();
+    const cancelled = schoolBilling({
+      cancellation: {
+        endsOn: "2026-10-12",
+        requestedAt: "2026-10-09T05:00:00Z",
+        reason: "Chose another app",
+        requestedByName: "Asha Admin",
+        trial: true,
+      },
+    });
+    api.mine.mockResolvedValueOnce(schoolBilling()).mockResolvedValue(cancelled);
+    api.cancelSubscription.mockResolvedValue(cancelled);
+    api.resumeSubscription.mockResolvedValue(schoolBilling());
+    renderInSchool(SCHOOL_ADMIN_BILLING, <SchoolBillingView />);
+    await user.click(await screen.findByRole("button", { name: "Cancel trial" }));
+    const dialog = await screen.findByRole("dialog", { name: "Cancel the free trial" });
+    expect(dialog).toHaveTextContent("until the trial ends on 12 Oct 2026");
+    await user.type(within(dialog).getByLabelText("Why are you cancelling? (optional)"), "Chose another app");
+    await user.click(within(dialog).getByRole("button", { name: "Cancel trial" }));
+    await waitFor(() => expect(api.cancelSubscription).toHaveBeenCalledWith("Chose another app"));
+    const notice = await screen.findByTestId("billing-cancelled");
+    expect(notice).toHaveTextContent("Trial cancelled: the school is suspended when it ends on 12 Oct 2026.");
+    expect(notice).toHaveTextContent("By Asha Admin");
+    expect(notice).toHaveTextContent("Chose another app");
+    api.mine.mockResolvedValue(schoolBilling());
+    await user.click(screen.getByRole("button", { name: "Keep trial" }));
+    await waitFor(() => expect(api.resumeSubscription).toHaveBeenCalled());
+    expect(await screen.findByText("The trial continues as before.")).toBeInTheDocument();
   });
 
   it("ranks plans by price", () => {

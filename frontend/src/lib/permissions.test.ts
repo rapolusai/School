@@ -485,7 +485,7 @@ describe("navFor", () => {
   });
 
   it("gives a platform admin only the platform items: Schools, Billing and Platform health", () => {
-    expect(keys(PLATFORM_ADMIN)).toEqual(["schools", "platformBilling", "platformHealth"]);
+    expect(keys(PLATFORM_ADMIN)).toEqual(["schools", "platformBilling", "platformHealth", "platformActivity"]);
   });
 
   it("returns nothing when signed out", () => {

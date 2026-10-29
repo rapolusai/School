@@ -62,11 +62,12 @@ public class BillingService {
     private final AuditService audit;
     private final ApplicationEventPublisher events;
     private final PlanChanges planChanges;
+    private final BillingNotices notices;
 
     BillingService(TenantDirectory tenants, SubscriptionRepository subscriptions, InvoiceRepository invoices,
             InvoicePaymentRepository payments, InvoiceIssuer issuer, BillingAccounts accounts,
             BillingProperties properties, AuditService audit, ApplicationEventPublisher events,
-            PlanChanges planChanges) {
+            PlanChanges planChanges, BillingNotices notices) {
         this.tenants = tenants;
         this.subscriptions = subscriptions;
         this.invoices = invoices;
@@ -77,6 +78,7 @@ public class BillingService {
         this.audit = audit;
         this.events = events;
         this.planChanges = planChanges;
+        this.notices = notices;
     }
 
     // ------------------------------------------------------------------ billing details
@@ -152,6 +154,11 @@ public class BillingService {
             throw ApiException.badRequest("Start the period no more than a year before today or 90 days after it.",
                     "periodStart");
         }
+        boolean cancellationWithdrawn = subscription.isCancelAtPeriodEnd();
+        if (cancellationWithdrawn) {
+            // The school cancelled its trial and now pays after all.
+            subscription.resume();
+        }
         subscription.start(form.billingCycle(), form.billedStudents(), start);
         subscriptions.saveAndFlush(subscription);
         TenantView updated = school;
@@ -173,6 +180,9 @@ public class BillingService {
         details.put("periodEnd", subscription.getPeriodEnd().toString());
         details.put("previousStatus", school.status().name());
         details.put("status", updated.status().name());
+        if (cancellationWithdrawn) {
+            details.put("cancellationWithdrawn", true);
+        }
         audit.record(by, "subscription.started", "school", tenantId, details);
         issuer.issue(subscription, updated, by);
         return accounts.account();
@@ -422,6 +432,9 @@ public class BillingService {
             });
             audit.record(by, "school.status_changed", "school", tenantId,
                     Map.of("previousStatus", school.status().name(), "status", status.name()));
+            if (status == TenantStatus.PAST_DUE) {
+                notices.pastDue(BillingDay.today());
+            }
         }
         return accounts.account();
     }
@@ -439,6 +452,36 @@ public class BillingService {
             throw conflict("Already suspended", "This school is already suspended.");
         }
         suspendNow(subscription, school, reason.trim(), by, Map.of());
+        return accounts.account();
+    }
+
+    /**
+     * The Super Admin ends the school's subscription (or trial) now, for example when the school closes: it is
+     * audited as {@code subscription.ended} with {@code immediate: true} and the school is suspended at once, as when
+     * a cancellation takes effect. Invoices already issued stay due (cancel the unpaid ones separately if they are not
+     * owed). Reactivating the school later brings it back.
+     */
+    public SchoolAccount endSubscription(String reason, Actor actor) {
+        UUID tenantId = TenantContext.require();
+        Actor by = actor(actor);
+        Subscription subscription = lockOrCreate(tenantId);
+        TenantView school = school(tenantId);
+        if (school.status() == TenantStatus.SUSPENDED) {
+            throw conflict("Already suspended", "This school is already suspended.");
+        }
+        String text = reason.trim();
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("immediate", true);
+        details.put("reason", text);
+        details.put("plan", school.plan().name());
+        if (subscription.isPaid()) {
+            details.put("periodEnd", subscription.getPeriodEnd().toString());
+        } else {
+            details.put("trial", true);
+        }
+        audit.record(by, "subscription.ended", "school", tenantId, details);
+        suspendNow(subscription, school, "Subscription ended by Akshara: " + text, by,
+                Map.of("cancelled", true, "immediate", true));
         return accounts.account();
     }
 

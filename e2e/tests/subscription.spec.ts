@@ -1,4 +1,4 @@
-import { expect, test, type APIRequestContext } from "@playwright/test";
+import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 import { adminCredentials, loginViaApi, loginViaUi, mainNav, newSchool, signupViaApi } from "./support/helpers";
 
 /**
@@ -11,6 +11,15 @@ const PLATFORM_EMAIL = process.env.E2E_PLATFORM_EMAIL ?? "";
 const PLATFORM_PASSWORD = process.env.E2E_PLATFORM_PASSWORD ?? "";
 
 test.skip(!PLATFORM_EMAIL || !PLATFORM_PASSWORD, "Set E2E_PLATFORM_EMAIL and E2E_PLATFORM_PASSWORD to run");
+
+async function platformLoginViaUi(page: Page) {
+  await page.goto("/login");
+  await page.getByRole("button", { name: "Super Admin sign in" }).click();
+  await page.getByLabel("Email", { exact: true }).fill(PLATFORM_EMAIL);
+  await page.getByLabel("Password", { exact: true }).fill(PLATFORM_PASSWORD);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page).toHaveURL(/\/app\/platform\/schools$/);
+}
 
 async function platformToken(request: APIRequestContext): Promise<string> {
   const res = await request.post("/api/platform/auth/login", {
@@ -146,4 +155,50 @@ test("a School Admin schedules a downgrade and a cancellation, and takes both ba
   // The API leaves out empty members.
   expect(account.subscription.pendingPlan ?? null).toBeNull();
   expect(account.subscription.cancelAtPeriodEnd).toBe(false);
+});
+
+test("the Super Admin cancels for a school, sees it on Renewals and Activity, and takes it back", async ({
+  page,
+  request,
+}) => {
+  const { school, tenantId, headers, base } = await payingSchool(request, "sacancel");
+  await platformLoginViaUi(page);
+  await page.goto(`/app/platform/schools/${tenantId}`);
+  await page.getByTestId("account-cancel").click();
+  const dialog = page.getByRole("dialog", { name: `Cancel ${school.schoolName}'s subscription` });
+  await dialog.getByLabel("Reason").fill("Asked by phone (E2E)");
+  await dialog.getByRole("button", { name: "Cancel at period end" }).click();
+  await expect(page.getByTestId("account-cancellation")).toContainText("Cancelled: ends on");
+  await expect(page.getByTestId("account-cancellation")).toContainText("Asked by phone (E2E)");
+
+  await page.goto("/app/platform/billing");
+  await page.getByLabel(/^Cancelling \(\d+\)$/).check();
+  const row = page.getByTestId("renewals-table").getByRole("row").filter({ hasText: school.schoolName });
+  await expect(row).toContainText("Asked by phone (E2E)");
+
+  await page.goto("/app/platform/activity");
+  await page.getByLabel("School").selectOption(tenantId);
+  await expect(page.getByTestId("activity-table")).toContainText("Asked by phone (E2E) · for the school");
+
+  await page.goto(`/app/platform/schools/${tenantId}`);
+  await page.getByTestId("account-resume").click();
+  await page.getByRole("dialog").getByRole("button", { name: "Take back cancellation" }).click();
+  await expect(page.getByTestId("account-cancellation")).toHaveCount(0);
+  const account = (await (await request.get(base, { headers })).json()) as { subscription: { cancelAtPeriodEnd: boolean } };
+  expect(account.subscription.cancelAtPeriodEnd).toBe(false);
+});
+
+test("a School Admin cancels the free trial and keeps it again", async ({ page, request }) => {
+  const school = newSchool("trialcancel");
+  await signupViaApi(request, school);
+  await loginViaUi(page, adminCredentials(school));
+  await expect(page).toHaveURL(/\/app\/dashboard$/);
+  await page.goto("/app/billing");
+  await page.getByRole("button", { name: "Cancel trial" }).click();
+  const dialog = page.getByRole("dialog", { name: "Cancel the free trial" });
+  await dialog.getByRole("button", { name: "Cancel trial" }).click();
+  await expect(page.getByTestId("billing-cancelled")).toContainText("Trial cancelled");
+  await page.getByRole("button", { name: "Keep trial" }).click();
+  await expect(page.getByTestId("billing-cancelled")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Cancel trial" })).toBeVisible();
 });
