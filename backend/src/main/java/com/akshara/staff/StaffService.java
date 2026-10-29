@@ -265,6 +265,11 @@ public class StaffService {
      */
     public StaffDetail setPassword(UUID userId, String passwordHash, Actor actor) {
         TenantContext.require();
+        if (actor != null && userId.equals(actor.id())) {
+            // Your own password needs your current one (Change password), so a borrowed session cannot take it over.
+            throw new ApiException(HttpStatus.CONFLICT, "Use Change password",
+                    "To change your own password, use Change password: it asks for your current one.");
+        }
         Member member = roster.find(userId).orElseThrow(() -> ApiException.notFound("Staff member"));
         if (member.status() == StaffStatus.LEFT) {
             throw new ApiException(HttpStatus.CONFLICT, "Already left",

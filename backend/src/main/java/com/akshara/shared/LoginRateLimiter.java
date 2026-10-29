@@ -11,6 +11,9 @@ import org.springframework.stereotype.Component;
  * in PostgreSQL through {@link RateLimitStore}, so the limit holds across every API instance. After
  * {@code maxFailures} failures the key gets 429 until the window that started with its first failure is over; a
  * successful sign-in clears it.
+ *
+ * <p>Password checks use {@link #attempt}: the attempt is counted (one atomic hit) before the slow password check, so
+ * parallel guesses cannot all pass a {@link #check} made before any of them was recorded as a failure.
  */
 @Component
 public class LoginRateLimiter {
@@ -35,6 +38,17 @@ public class LoginRateLimiter {
     /** Throws 429 when the key has used up its failed attempts. */
     public void check(String key) {
         if (store.hits(storeKey(key), clock.instant()) >= maxFailures) {
+            throw ApiException.tooManyRequests();
+        }
+    }
+
+    /**
+     * Counts an attempt on the key before its password or code is checked, and throws 429 when the attempts already
+     * counted in the window have used up the limit. The caller does not record the failure again; a success clears the
+     * count with {@link #reset}.
+     */
+    public void attempt(String key) {
+        if (store.hit(storeKey(key), window, clock.instant()) > maxFailures) {
             throw ApiException.tooManyRequests();
         }
     }

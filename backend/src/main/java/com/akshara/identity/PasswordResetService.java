@@ -89,10 +89,8 @@ public class PasswordResetService {
         String school = schoolCode.trim().toLowerCase(Locale.ROOT);
         String perPerson = "reset|" + school + "|" + cleanEmail.toLowerCase(Locale.ROOT);
         String perIp = "reset-ip|" + clientIp;
-        rateLimiter.check(perPerson);
-        rateLimiter.check(perIp);
-        rateLimiter.recordFailure(perPerson);
-        rateLimiter.recordFailure(perIp);
+        rateLimiter.attempt(perPerson);
+        rateLimiter.attempt(perIp);
 
         Optional<TenantView> found = tenants.findByCode(school);
         if (found.isEmpty() || !found.get().status().allowsSignIn()) {
@@ -131,7 +129,7 @@ public class PasswordResetService {
         String cleanEmail = email.trim();
         String school = schoolCode.trim().toLowerCase(Locale.ROOT);
         String key = "reset-confirm|" + clientIp + "|" + school + "|" + cleanEmail.toLowerCase(Locale.ROOT);
-        rateLimiter.check(key);
+        rateLimiter.attempt(key);
 
         TenantView tenant = tenants.findByCode(school).filter(t -> t.status().allowsSignIn()).orElse(null);
         String typed = code == null ? "" : code.replaceAll("\\s", "");
@@ -155,7 +153,6 @@ public class PasswordResetService {
             return user.getId();
         }));
         if (userId == null) {
-            rateLimiter.recordFailure(key);
             throw ApiException.badRequest(WRONG_CODE, "code");
         }
         rateLimiter.reset(key);

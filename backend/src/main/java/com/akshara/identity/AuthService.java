@@ -109,7 +109,8 @@ public class AuthService {
         String cleanEmail = email.trim();
         String key = "school|" + clientIp + "|" + schoolCode.trim().toLowerCase(Locale.ROOT) + "|"
                 + cleanEmail.toLowerCase(Locale.ROOT);
-        rateLimiter.check(key);
+        // Counted before the slow check, so parallel guesses cannot all slip past the limit.
+        rateLimiter.attempt(key);
 
         Optional<TenantView> school = tenants.findByCode(schoolCode);
         if (school.isEmpty()) {
@@ -154,7 +155,6 @@ public class AuthService {
         }));
         if (session == null) {
             if (paused) {
-                rateLimiter.recordFailure(key);
                 throw new ApiException(org.springframework.http.HttpStatus.UNAUTHORIZED, "Sign-in paused", SCHOOL_PAUSED,
                         Map.of(), SCHOOL_PAUSED_TYPE);
             }
@@ -222,7 +222,7 @@ public class AuthService {
         UUID tenantId = TenantContext.require();
         TenantView tenant = tenants.findById(tenantId).orElseThrow(() -> ApiException.notFound("School"));
         String key = "change|" + userId;
-        rateLimiter.check(key);
+        rateLimiter.attempt(key);
 
         TransactionTemplate readOnly = new TransactionTemplate(tx.getTransactionManager());
         readOnly.setReadOnly(true);
@@ -233,7 +233,6 @@ public class AuthService {
         }
         boolean usable = UserAccount.hasPassword(currentHash);
         if (!passwordEncoder.matches(currentPassword, usable ? currentHash : dummyHash) || !usable) {
-            rateLimiter.recordFailure(key);
             throw ApiException.badRequest("That is not your current password.", "currentPassword");
         }
         if (passwordEncoder.matches(newPassword, currentHash)) {
@@ -310,8 +309,8 @@ public class AuthService {
         }
     }
 
+    /** A refused sign-in; the attempt was already counted ({@link LoginRateLimiter#attempt}). */
     private ApiException failed(String key) {
-        rateLimiter.recordFailure(key);
         return ApiException.unauthorized(GENERIC_FAILURE);
     }
 }
