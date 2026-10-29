@@ -271,18 +271,22 @@ class SubscriptionNegativeIT extends IntegrationTest {
         api.post("/api/billing/plan", root.accessToken(), """
                 {"plan":"GROWTH"}""").andExpect(status().is4xxClientError());
 
-        // Upgrade on the last day of a monthly period, one student: a small, correctly rounded invoice.
+        // Upgrade near the end of a monthly period, one student: a small, correctly rounded invoice. On some dates
+        // (30 October, say) no monthly period ends today, so the period may still have a second day to run.
         billing.details(root, school.tenantId(), "36", null);
         LocalDate today = BillingDay.today();
         LocalDate start = today.minusMonths(1).plusDays(1);
+        LocalDate end = BillingCycle.MONTHLY.periodEnd(start);
+        long remaining = java.time.temporal.ChronoUnit.DAYS.between(today, end) + 1;
+        assertThat(remaining).isBetween(1L, 2L);
         billing.start(root, school.tenantId(), "STARTER", "MONTHLY", 1, start.toString());
         api.get("/api/billing/plan/quote?plan=GROWTH", admin.accessToken())
-                .andExpect(jsonPath("$.remainingDays").value(1));
+                .andExpect(jsonPath("$.remainingDays").value((int) remaining));
         String body = api.post("/api/billing/plan", admin.accessToken(), """
                 {"plan":"GROWTH"}""").andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         assertThat((Integer) JsonPath.read(body, "$.invoices.length()")).isEqualTo(2);
-        long periodDays = java.time.temporal.ChronoUnit.DAYS.between(start, today) + 1;
-        long unit = Math.round((2000 - 830) / (double) periodDays);
+        long periodDays = java.time.temporal.ChronoUnit.DAYS.between(start, end) + 1;
+        long unit = Math.round((2000 - 830) * remaining / (double) periodDays);
         String upgrade = JsonPath.read(body, "$.invoices[0].id");
         api.get("/api/billing/invoices/" + upgrade, admin.accessToken())
                 .andExpect(jsonPath("$.kind").value("UPGRADE"))
