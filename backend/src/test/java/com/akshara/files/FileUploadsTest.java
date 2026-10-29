@@ -81,7 +81,7 @@ class FileUploadsTest {
     }
 
     @Test
-    void negativeSweepNamesAndContentsThatTryToPassForSomethingElse() {
+    void negativeSweepNamesAndContentsThatTryToPassForSomethingElse() throws IOException {
         // Negative sweep 2026-10-29: a NUL or a second extension in the name, a text file with a NUL, a damaged zip
         // central directory, and a name that is only dots and spaces.
         assertRefused(() -> FileUploads.check("notes.pdf\u0000.exe", PDF, "file"), HttpStatus.BAD_REQUEST,
