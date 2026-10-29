@@ -73,6 +73,8 @@ final class XlsxReader {
     private static final LocalDate EPOCH_1900 = LocalDate.of(1899, 12, 30);
     private static final LocalDate EPOCH_1904 = LocalDate.of(1904, 1, 1);
     private static final int MAX_EXCEL_ROW = 1_048_576;
+    /** Digits before or after the decimal point beyond which a number cell is kept as written. */
+    private static final int MAX_NUMBER_DIGITS = 30;
 
     private final Limits limits;
     private final XMLInputFactory xml;
@@ -552,7 +554,12 @@ final class XlsxReader {
         } catch (NumberFormatException e) {
             return v;
         }
-        if (style != null && dateStyles.contains(style)) {
+        // A number written with an absurd exponent (1E999999999) stays as written: expanding it would take minutes
+        // and gigabytes, or overflow. No column the import reads needs more than 30 digits.
+        if (number.scale() > MAX_NUMBER_DIGITS || number.precision() - (long) number.scale() > MAX_NUMBER_DIGITS) {
+            return v;
+        }
+        if (style != null && dateStyles.contains(style) && number.precision() - number.scale() <= 7) {
             long days = number.setScale(0, java.math.RoundingMode.FLOOR).longValueExact();
             if (days >= 1 && days < 2_958_466) { // up to 9999-12-31
                 return epoch.plusDays(days).toString();

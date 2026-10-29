@@ -267,6 +267,32 @@ class XlsxReaderTest {
     }
 
     @Test
+    void numbersWithHugeExponentsAreReadQuicklyAsTextAndHugeDateSerialsAreNotDates() {
+        // Negative sweep 2026-10-29: "1E999999999" in a number cell made the reader build a billion-digit number.
+        String styles = """
+                <styleSheet xmlns="%s"><cellXfs count="2"><xf numFmtId="0"/><xf numFmtId="14"/></cellXfs>\
+                </styleSheet>""".formatted(NS);
+        byte[] file = zip(workbookParts(List.of("S"), Map.of("xl/styles.xml", styles, "xl/worksheets/sheet1.xml",
+                sheetXml("<row><c><v>1E999999999</v></c><c><v>-1e-999999999</v></c><c s=\"1\"><v>1E20</v></c>"
+                        + "<c s=\"1\"><v>9E999999999</v></c><c><v>1.5E3</v></c><c s=\"1\"><v>45000.75</v></c></row>"))));
+        long started = System.nanoTime();
+        List<String> cells = reader.read(file).getFirst().rows().getFirst().cells();
+        assertThat(java.time.Duration.ofNanos(System.nanoTime() - started)).isLessThan(java.time.Duration.ofSeconds(2));
+        assertThat(cells).containsExactly("1E999999999", "-1e-999999999", "100000000000000000000", "9E999999999", "1500",
+                "2023-03-15");
+    }
+
+    @Test
+    void formulasGiveTheirSavedValueAndUnicodeTextIsKept() {
+        byte[] file = zip(workbookParts(List.of("S"), Map.of("xl/worksheets/sheet1.xml",
+                sheetXml("<row><c><f>SUM(1,1)</f><v>2</v></c><c t=\"str\"><f>HYPERLINK(\"http://x\")</f>"
+                        + "<v>click</v></c><c t=\"inlineStr\"><is><t>\u0905\u0915\u094D\u0937\u0930 \uD83D\uDE00 "
+                        + "\u0645\u0631\u062D\u0628\u0627</t></is></c></row>"))));
+        assertThat(reader.read(file).getFirst().rows().getFirst().cells())
+                .containsExactly("2", "click", "\u0905\u0915\u094D\u0937\u0930 \uD83D\uDE00 \u0645\u0631\u062D\u0628\u0627");
+    }
+
+    @Test
     void recognisesDateFormatsAndColumnLetters() {
         assertThat(XlsxReader.isDateFormat(14, null)).isTrue();
         assertThat(XlsxReader.isDateFormat(22, null)).isTrue();
