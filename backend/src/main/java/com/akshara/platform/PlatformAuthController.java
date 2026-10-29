@@ -58,12 +58,12 @@ public class PlatformAuthController {
     public ResponseEntity<Map<String, Object>> login(@Valid @RequestBody PlatformLoginRequest request,
             HttpServletRequest http) {
         String key = "platform|" + http.getRemoteAddr() + "|" + request.email().toLowerCase();
-        rateLimiter.check(key);
+        // Counted before the slow check, so parallel guesses cannot all slip past the limit.
+        rateLimiter.attempt(key);
         PlatformAdmin admin = admins.findByEmail(request.email().trim()).orElse(null);
         boolean ok = passwordEncoder.matches(request.password(), admin == null ? dummyHash : admin.getPasswordHash())
                 && admin != null && admin.isActive();
         if (!ok) {
-            rateLimiter.recordFailure(key);
             throw ApiException.unauthorized("Those details don't match.");
         }
         rateLimiter.reset(key);

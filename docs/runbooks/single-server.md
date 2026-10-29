@@ -255,8 +255,10 @@ Write the date and the restore time in the launch checklist.
 backup/restore.sh --live /var/backups/akshara/akshara-20261103T213012Z.dump      # or an s3:// URL
 ```
 
-It asks for the domain as confirmation, takes a safety dump of the current database, stops the API and web,
-recreates the database, restores, and starts everything again. Everything since the dump is lost (RPO up to 24
+It asks for the domain as confirmation, takes a safety dump of the current database, restores the dump into a
+side database `akshara_restoring` while the live one keeps serving, and only if that succeeds stops the API and
+web, swaps the databases and starts everything again. A truncated or corrupt dump stops before anything live is
+touched ("the live database was not touched"). The side copy needs free disk for a second copy of the database. Everything since the dump is lost (RPO up to 24
 hours; take an extra `backup/backup.sh` before risky operations). To recover a few rows instead, restore the dump into a side
 container by hand (as `--drill` does) and copy the rows over with `psql`.
 
@@ -345,6 +347,7 @@ standalone output (`npm run build` with `API_URL=http://api:8080`): the sandbox 
 | `backup.sh` with the upload path, against a stub `aws` CLI | 1.5 MB dump (after the suite), checked, `.sha256`, "uploaded" to `db/2026/10/` |
 | `restore.sh --drill s3://…` (from the stub) | checksum ok, restored in 5 s, **243 tables, 5,406 rows, counts equal to the live database for all 243** |
 | `restore.sh --live --yes <dump>` | safety dump, database recreated, restored in 6 s, stack healthy again 49 s later; afterwards auth, students and isolation specs passed (5 tests) |
+| `restore.sh --live --yes` with a truncated dump, then random bytes (negative sweep 2026-10-29) | before the fix: live database dropped, 0 tables, Caddy 502 on every page; after: pg_restore fails into the side database, the stack keeps serving (244 tables, login 200) |
 | `deploy.sh --rollback` twice (two tags of the same images) | switched and smoke-tested in ~35 s each way; `--status` shows the history |
 | Shell scripts | `sh -n`, `dash -n` and `shellcheck -s sh` clean |
 

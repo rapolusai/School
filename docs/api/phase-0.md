@@ -80,7 +80,8 @@ Login failures return `401` with a generic message (no hint whether the school, 
 Repeated failures return `429`: after `akshara.auth.max-failed-logins` (10) failures for one IP address, school
 code and email (IP address and email for the Super Admin) the key is refused until the
 `akshara.auth.failed-login-window` (5 minutes) that started with its first failure is over; a successful sign-in
-clears it. The counts are kept in PostgreSQL (`platform.rate_limit`, migration `V29`), so the limit holds across every
+clears it. Each attempt is counted before its password is checked, so parallel guesses sent at once cannot all get
+past the limit (at most 10 are checked; the rest get `429`). The counts are kept in PostgreSQL (`platform.rate_limit`, migration `V29`), so the limit holds across every
 API instance: each failure is one atomic `insert ... on conflict do update` on the SHA-256 of the key (no email or IP
 address is stored in clear), and rows whose window is over are deleted every 500 hits. The public limits (enquiry
 form, certificate verification, privacy notice, GPS devices) use the same table.
@@ -89,7 +90,7 @@ Refresh rotates the cookie. A refresh with a cookie that was already replaced in
 tabs refreshing together, or a response lost because the page was left or reloaded mid-refresh) succeeds
 with another new cookie in the same chain and leaves the earlier new cookie valid too, unless the chain has
 been signed out; an older replaced cookie is treated as stolen: every session in that chain ends and the
-event is audited. Refresh and logout reject requests whose `Origin` header is not the web app.
+event is audited. Refresh and logout reject requests whose `Origin` header is not the web app, however the path is spelled (`/api/auth/refres%68` too).
 
 ### Super Admin sessions
 

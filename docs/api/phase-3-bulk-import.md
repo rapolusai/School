@@ -24,7 +24,7 @@ column.
 | GET | `/api/school-import/template.xlsx` | `students.manage` and `staff.manage` | `200` the template (`Content-Disposition: attachment; filename="school-import-template.xlsx"`) |
 | GET | `/api/school-import/sample.xlsx` | `students.manage` and `staff.manage` | `200` a sample workbook with 2,000 made-up students and 30 made-up staff |
 | POST | `/api/school-import?dryRun=true&createMissing=false` | `students.manage` and `staff.manage` (and `settings.manage` when `createMissing=true`) | `200 ImportResult` |
-| PUT | `/api/staff/{userId}/password` | `staff.manage` | `200 StaffDetail`; body `{ password }` (10 to 200 characters) |
+| PUT | `/api/staff/{userId}/password` | `staff.manage` | `200 StaffDetail`; body `{ password }` (10 to 200 characters); your own id `409` (use Change password, which asks for the current one) |
 
 The School Admin has every permission needed. A role with `students.manage` but not `staff.manage` (Front office)
 gets `403`, and `createMissing=true` without `settings.manage` gets `403`.
@@ -61,7 +61,9 @@ file is untrusted it refuses, with `400 errors.file`: anything that is not a zip
 more than 2,000 zip entries, entry names with `..`, a leading `/`, a backslash, a drive letter or NUL, the same entry
 twice, more than 40 MB inflated in one entry or 120 MB in all (counted while inflating, whatever the zip headers say,
 so a zip bomb stops early), any `<!DOCTYPE>` (so no entity expansion and no external entities), relationship
-targets outside `xl/worksheets/`, and damaged XML.
+targets outside `xl/worksheets/`, and damaged XML. A number cell with more than 30 digits before or after the
+decimal point (such as `1E999999999`) is read as the text it holds rather than expanded, so it is a row problem
+and never ties up the server.
 
 File-level problems (not a workbook, too many students, no current academic year, a file with no students or staff
 at all) answer `400` with `errors.file`.
@@ -105,7 +107,8 @@ Dates may be Excel dates or text as `YYYY-MM-DD`, `DD-MM-YYYY`, `DD/MM/YYYY` or 
 
 Sheet problems (reported with `row: null`): a sheet whose name is not `class - section` (unless it is empty), two
 sheets for the same section, a second Staff sheet, a missing required heading, a heading twice, a section name over
-20 characters for a section to be created, and a class or section that is not set up when `createMissing=false`.
+20 characters for a section to be created, a class name over 40 characters for a class to be created (Google Sheets
+and LibreOffice allow sheet names longer than Excel's 31 characters), and a class or section that is not set up when `createMissing=false`.
 
 ## Classes, sections and departments that do not exist yet
 

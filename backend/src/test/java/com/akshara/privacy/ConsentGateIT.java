@@ -1,9 +1,13 @@
 package com.akshara.privacy;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.net.URI;
+
 import org.junit.jupiter.api.Test;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import com.akshara.support.TestApi;
 import com.akshara.support.TestApi.Session;
@@ -73,6 +77,18 @@ class ConsentGateIT extends PrivacyTestBase {
         }
         api.get("/api/me/privacy", parent.accessToken()).andExpect(jsonPath("$.notice.version").value(v2));
         api.get("/api/me/children", parent.accessToken()).andExpect(status().isOk());
+    }
+
+    @Test
+    void oddSpellingsOfAFamilyPathAreStillAskedForConsent() throws Exception {
+        publish(null);
+        // Negative sweep 2026-10-29: percent-encoded letters and a trailing slash must not slip past the gate.
+        for (String path : new String[] {"/api/me/%63hildren", "/api/%6De/children", "/api/me/children/"}) {
+            int code = mvc.perform(MockMvcRequestBuilders.get(URI.create(path))
+                    .header("Authorization", "Bearer " + parent.accessToken()))
+                    .andReturn().getResponse().getStatus();
+            assertThat(code).as(path).isIn(403, 404);
+        }
     }
 
     @Test

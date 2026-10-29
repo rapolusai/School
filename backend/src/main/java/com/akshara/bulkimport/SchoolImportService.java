@@ -44,6 +44,8 @@ public class SchoolImportService {
     /** Problems listed per sheet and in all; the counts are always complete. */
     static final int MAX_PROBLEMS_PER_SHEET = 200;
     static final int MAX_PROBLEMS = 1_000;
+    /** The longest class name School setup keeps (academics.school_class.name). */
+    static final int MAX_CLASS_NAME = 40;
 
     static final String INSTRUCTIONS = "Instructions";
     static final String STAFF = "Staff";
@@ -184,6 +186,10 @@ public class SchoolImportService {
             }
             if (plan.status() != SectionStatus.EXISTS && plan.sectionName().length() > 20) {
                 draft.sheetProblem("A section name can have at most 20 characters.");
+                continue;
+            }
+            if (plan.status() == SectionStatus.NEW_CLASS && plan.className().length() > MAX_CLASS_NAME) {
+                draft.sheetProblem("A class name can have at most " + MAX_CLASS_NAME + " characters.");
                 continue;
             }
             if (plan.status() == SectionStatus.MISSING) {

@@ -5,8 +5,10 @@
 #                                             every table with the live database, then remove the container.
 #                                             Touches nothing live. Do this monthly.
 #   backup/restore.sh --live  FILE|s3://...   REPLACE the live database with the dump: takes a safety dump first,
-#                                             stops api/web, recreates the database, restores, starts the stack
-#                                             (the API migrates an older dump up to the running version).
+#                                             restores into a side database (the live one keeps serving; a bad
+#                                             dump stops here), then stops api/web, swaps the databases and
+#                                             starts the stack (the API migrates an older dump up to the running
+#                                             version).
 #   Add --yes to skip the confirmation of --live.
 set -eu
 
@@ -127,18 +129,27 @@ fi
 log "safety dump of the current database first"
 "$HERE/backup/backup.sh" --no-upload
 
+# Restore into a side database while the live one keeps serving. If the dump is truncated or corrupt, pg_restore
+# fails here and the live database has not been touched. (Needs free disk for a second copy of the database.)
+SIDE=akshara_restoring
+log "restoring $DUMP into the side database $SIDE (the live database keeps serving)"
+"$COMPOSE" exec -T db psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
+    -c "drop database if exists $SIDE with (force)" \
+    -c "create database $SIDE owner akshara_owner"
+START=$(date +%s)
+if ! "$COMPOSE" exec -T db pg_restore -U postgres -d "$SIDE" --exit-on-error < "$DUMP"; then
+    "$COMPOSE" exec -T db psql -U postgres -d postgres -c "drop database if exists $SIDE with (force)" >/dev/null || true
+    die "pg_restore failed; the live database was not touched (the safety dump is in $BACKUP_DIR)"
+fi
+log "restored in $(( $(date +%s) - START ))s"
+
 log "stopping web and api (Caddy keeps answering; visitors see an error page until the end)"
 "$COMPOSE" stop web api
 
-log "recreating database akshara"
+log "swapping in the restored database"
 "$COMPOSE" exec -T db psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
     -c "drop database if exists akshara with (force)" \
-    -c "create database akshara owner akshara_owner"
-
-START=$(date +%s)
-log "restoring $DUMP"
-"$COMPOSE" exec -T db pg_restore -U postgres -d akshara --exit-on-error < "$DUMP" || die "pg_restore failed; the safety dump is in $BACKUP_DIR"
-log "restored in $(( $(date +%s) - START ))s"
+    -c "alter database $SIDE rename to akshara"
 
 log "starting the stack (the API applies any newer migrations as it starts)"
 "$COMPOSE" up -d --wait

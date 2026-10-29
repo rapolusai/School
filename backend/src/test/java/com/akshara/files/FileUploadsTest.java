@@ -80,6 +80,26 @@ class FileUploadsTest {
         assertThat(FileUploads.cleanName("x".repeat(300) + ".png", FileType.PNG)).hasSize(104);
     }
 
+    @Test
+    void negativeSweepNamesAndContentsThatTryToPassForSomethingElse() throws IOException {
+        // Negative sweep 2026-10-29: a NUL or a second extension in the name, a text file with a NUL, a damaged zip
+        // central directory, and a name that is only dots and spaces.
+        assertRefused(() -> FileUploads.check("notes.pdf\u0000.exe", PDF, "file"), HttpStatus.BAD_REQUEST,
+                "Upload a PDF");
+        assertThat(FileUploads.check("report.exe.pdf", PDF, "file").name()).isEqualTo("report.exe.pdf");
+        assertRefused(() -> FileUploads.check("answers.txt", "a\u0000b".getBytes(StandardCharsets.UTF_8), "file"),
+                HttpStatus.BAD_REQUEST, "Upload a PDF");
+        byte[] lying = office("word/document.xml");
+        lying[lying.length - 12] = (byte) 0xFF; // central directory offset beyond the file
+        lying[lying.length - 11] = (byte) 0xFF;
+        assertThat(FileSniffer.sniff(lying)).isEmpty();
+        assertThat(FileUploads.cleanName(" . . .pdf", FileType.PDF)).isEqualTo("file.pdf");
+        assertThat(FileUploads.cleanName("\u202E\u202Dfdp.pdf", FileType.PDF)).isEqualTo("fdp.pdf");
+        // A PDF that also holds HTML is still served as a PDF attachment (FileDownloads, nosniff).
+        byte[] polyglot = "%PDF-1.4\n<html><script>alert(1)</script></html>".getBytes(StandardCharsets.US_ASCII);
+        assertThat(FileUploads.check("x.pdf", polyglot, "file").type()).isEqualTo(FileType.PDF);
+    }
+
     private static void assertRefused(Runnable action, HttpStatus status, String message) {
         assertThatThrownBy(action::run).isInstanceOfSatisfying(ApiException.class, e -> {
             assertThat(e.status()).isEqualTo(status);

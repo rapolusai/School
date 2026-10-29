@@ -327,7 +327,14 @@ public class OnlinePaymentService {
         return new CheckoutResult(order.getId(), order.getGatewayOrderId(), "FAILED", null, null);
     }
 
+    /**
+     * A sandbox order the caller may complete. Only while the sandbox is the live gateway: once the school switches to
+     * Razorpay, a sandbox order left open must not be "paid" without money.
+     */
     private PaymentOrder sandboxOrder(String gatewayOrderId, UUID userId, boolean staff) {
+        if (!SandboxPaymentGateway.NAME.equals(properties.gateway())) {
+            throw ApiException.notFound("Payment order");
+        }
         return orders.findByGatewayAndGatewayOrderId(SandboxPaymentGateway.NAME, gatewayOrderId)
                 .filter(o -> staff || (userId != null && userId.equals(o.getCreatedBy())))
                 .orElseThrow(() -> ApiException.notFound("Payment order"));

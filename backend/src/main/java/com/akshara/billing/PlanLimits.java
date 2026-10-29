@@ -93,7 +93,7 @@ class PlanLimits implements EnrolmentLimit, HandlerInterceptor {
         if (TenantContext.current().isEmpty() || CurrentUser.isPlatformAdmin()) {
             return true;
         }
-        Gate gate = PlanFeatures.gateFor(request.getRequestURI()).orElse(null);
+        Gate gate = PlanFeatures.gateFor(request).orElse(null);
         if (gate == null) {
             return true;
         }

@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.UrlPathHelper;
 
 /** Blocks cross-site use of the cookie-based refresh and logout endpoints. */
 @Component
@@ -27,7 +28,8 @@ public class OriginCheckFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getRequestURI();
+        // The path as the controllers see it (percent-decoded, no ";" parameters): "/api/auth/refres%68" is refresh too.
+        String path = UrlPathHelper.defaultInstance.getPathWithinApplication(request);
         return !(path.equals("/api/auth/refresh") || path.equals("/api/auth/logout")
                 || path.equals("/api/platform/auth/refresh") || path.equals("/api/platform/auth/logout"));
     }

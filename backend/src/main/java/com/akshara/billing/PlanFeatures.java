@@ -5,7 +5,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import org.springframework.util.AntPathMatcher;
+import org.springframework.web.servlet.HandlerMapping;
+import org.springframework.web.util.UrlPathHelper;
 
 import com.akshara.billing.PlanCatalog.PlanInfo;
 import com.akshara.platform.Plan;
@@ -52,6 +56,22 @@ public final class PlanFeatures {
             return Optional.empty();
         }
         return GATES.stream().filter(g -> g.paths().stream().anyMatch(p -> MATCHER.match(p, path))).findFirst();
+    }
+
+    /**
+     * The gated feature a request needs. Checked against the path as the controllers see it (percent-decoded, without
+     * {@code ;} parameters) and against the pattern of the endpoint it reached, not only the raw request URI, so
+     * {@code /api/%74ransport/...} cannot reach a gated endpoint around the check.
+     */
+    public static Optional<Gate> gateFor(HttpServletRequest request) {
+        Optional<Gate> gate = gateFor(request.getRequestURI());
+        if (gate.isEmpty()) {
+            gate = gateFor(UrlPathHelper.defaultInstance.getPathWithinApplication(request));
+        }
+        if (gate.isEmpty() && request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE) instanceof String p) {
+            gate = gateFor(p);
+        }
+        return gate;
     }
 
     /** Whether the plan's limits apply at all to a school in this status (not during the trial). */

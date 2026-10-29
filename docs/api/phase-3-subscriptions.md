@@ -24,7 +24,7 @@ never touches fee orders. Credentials never go in configuration files.
 | POST | `/api/billing/invoices/{id}/orders` | `billing.read` + `settings.manage` | | `201 InvoiceOrderView`; the order already open for the invoice (same gateway and amount) is returned again; `409` when the invoice is paid or cancelled; another school's invoice `404` |
 | GET | `/api/billing/orders/{orderId}` | same | | `200 InvoiceOrderView` |
 | POST | `/api/billing/orders/{orderId}/verify` | same | `{ gatewayPaymentId, signature }` | `200 InvoiceView`; `400 signature` when it does not match; the same payment again returns the invoice; another payment on a paid order `409` |
-| GET | `/api/billing/sandbox/orders/{gatewayOrderId}` | same | | `200 SandboxInvoiceCheckout` (sandbox only) |
+| GET | `/api/billing/sandbox/orders/{gatewayOrderId}` | same | | `200 SandboxInvoiceCheckout`; `404` unless the sandbox is the live gateway (a sandbox order left open after the switch to Razorpay cannot be completed) |
 | POST | `/api/billing/sandbox/orders/{gatewayOrderId}/complete` | same | `{ outcome: "SUCCESS" \| "FAILURE" }` | `200 InvoiceCheckoutResult`: a payment id and signature to verify, or a signed `payment.failed` webhook delivered (order `FAILED`) |
 | POST | `/api/public/billing/webhook/{gateway}` | none (signed) | the gateway's raw body | `200 { outcome }`: `RECORDED`, `ALREADY_RECORDED`, `FAILED`, `IGNORED` or `DUPLICATE`; `400` for a bad signature |
 
@@ -132,7 +132,9 @@ place. The students module asks through its `EnrolmentLimit` interface, which th
 | `report_cards` | `report_cards` | `/api/exams/report-cards/**`, `/api/me/report-card`, `/api/me/children/*/report-card` |
 
 `api_access` has no switch yet (there is no public API to turn off); branches (`maxBranches`) are not enforced, since
-the app has no branches. Bus devices (`/api/public/transport/…`) are never gated. A request to a gated path from a
+the app has no branches. Bus devices (`/api/public/transport/…`) are never gated. The paths are matched as the
+controllers see them (percent-decoded) and against the endpoint the request reached, so `/api/%74ransport/…` is
+gated like `/api/transport/…`. A request to a gated path from a
 school whose plan leaves the feature out is refused before the endpoint's own permission check:
 
 ```json

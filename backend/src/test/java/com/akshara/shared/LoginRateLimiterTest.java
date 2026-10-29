@@ -54,4 +54,19 @@ class LoginRateLimiterTest {
         limiter.reset("k");
         assertThatCode(() -> limiter.check("k")).doesNotThrowAnyException();
     }
+
+    @Test
+    void attemptsAreCountedBeforeTheCheckSoParallelGuessesCannotAllPass() {
+        LoginRateLimiter limiter = new LoginRateLimiter(3, Duration.ofMinutes(5), clock, new InMemoryRateLimitStore());
+        // Three attempts in flight at once (none has failed yet): the fourth is refused before its password is checked.
+        limiter.attempt("k");
+        limiter.attempt("k");
+        limiter.attempt("k");
+        assertThatThrownBy(() -> limiter.attempt("k")).isInstanceOf(ApiException.class)
+                .extracting(e -> ((ApiException) e).status().value()).isEqualTo(429);
+        assertThatThrownBy(() -> limiter.check("k")).isInstanceOf(ApiException.class);
+        // A success clears the count.
+        limiter.reset("k");
+        assertThatCode(() -> limiter.attempt("k")).doesNotThrowAnyException();
+    }
 }
