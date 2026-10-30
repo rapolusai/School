@@ -27,6 +27,8 @@ const school = (tenantId: string) => `/api/platform/billing/schools/${id(tenantI
 
 /** The school's own billing (billing.read): plan, trial, invoices and the banner. */
 export const billingApi = {
+  /** The plan catalogue, without signing in (the sign-up page). */
+  publicPlans: () => apiFetch<PlanView[]>("/api/public/plans", { auth: false }),
   mine: () => apiFetch<SchoolBilling>("/api/billing"),
   notice: () => apiFetch<BillingNotice>("/api/billing/notice"),
   /** What changing to the plan would do now, and cost (billing.read + settings.manage). */

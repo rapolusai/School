@@ -184,6 +184,9 @@ export const en = {
   "signup.password": "Password",
   "signup.password.hint": "At least 10 characters.",
   "signup.review.note": "Your 14-day free trial starts today. No card needed.",
+  "signup.plan": "Plan",
+  "signup.plan.hint":
+    "Every plan is free for the 14-day trial, with all features open. The plan sets your price after the trial, and you can change it any time from Billing.",
   "signup.submit": "Create my school",
   "signup.submitting": "Creating your school…",
   "signup.haveAccount": "Already have an account?",

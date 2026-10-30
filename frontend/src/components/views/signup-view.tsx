@@ -7,11 +7,15 @@ import { useEffect, useRef, useState } from "react";
 import { AuthLayout } from "@/components/auth-layout";
 import { SelectField, TextField } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/states";
+import { Pill } from "@/components/ui/pill";
+import { planLabel } from "@/components/views/billing/billing-ui";
 import { api, toApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { billingApi } from "@/lib/billing-api";
 import { errorMessage, fieldErrorMessages } from "@/lib/error-message";
-import { useI18n, type MessageKey } from "@/lib/i18n";
-import { BOARDS, type Board, type SignupRequest } from "@/lib/types";
+import { formatPaise } from "@/lib/format";
+import { plural, translateOr, useI18n, type MessageKey } from "@/lib/i18n";
+import { BOARDS, PLANS, type Board, type Plan, type PlanView, type SignupRequest } from "@/lib/types";
 import {
   isValidEmail,
   isValidSchoolCode,
@@ -19,7 +23,7 @@ import {
   suggestSchoolCode,
 } from "@/lib/validation";
 
-type Values = SignupRequest;
+type Values = Required<SignupRequest>;
 type Field = keyof Values;
 type Errors = Partial<Record<Field, string>>;
 
@@ -30,7 +34,7 @@ const STEP_FIELDS: Record<1 | 2, Field[]> = {
 };
 
 /** Client-side checks for one wizard step. Returns message keys per invalid field. */
-export function validateSignupStep(step: 1 | 2, values: Values): Partial<Record<Field, MessageKey>> {
+export function validateSignupStep(step: 1 | 2, values: SignupRequest): Partial<Record<Field, MessageKey>> {
   const errors: Partial<Record<Field, MessageKey>> = {};
   if (step === 1) {
     if (!values.schoolName.trim()) errors.schoolName = "validation.required";
@@ -66,11 +70,27 @@ export function SignupView() {
     adminName: "",
     adminEmail: "",
     password: "",
+    plan: "STARTER",
   });
+  const [plans, setPlans] = useState<PlanView[] | null>(null);
   const [codeEdited, setCodeEdited] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // The catalogue only adds prices and limits to the plan choice; without it the plans are listed by name.
+  useEffect(() => {
+    let live = true;
+    billingApi
+      .publicPlans()
+      .then((list) => {
+        if (live) setPlans(list);
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, []);
 
   // Announce each new step to assistive tech by moving focus to its heading.
   const shownStep = useRef(step);
@@ -279,6 +299,10 @@ export function SignupView() {
         ) : null}
 
         {step === 3 ? (
+          <PlanPicker value={values.plan} plans={plans} onChange={(plan) => set("plan", plan)} />
+        ) : null}
+
+        {step === 3 ? (
           <div className="card flex flex-col gap-3.5">
             <dl className="kv">
               <dt>{t("signup.schoolName")}</dt>
@@ -326,5 +350,72 @@ export function SignupView() {
         </Link>
       </p>
     </AuthLayout>
+  );
+}
+
+/** The plan the school starts its trial on: name, price per student and limits, with Starter chosen by default. */
+function PlanPicker({
+  value,
+  plans,
+  onChange,
+}: {
+  value: Plan;
+  plans: PlanView[] | null;
+  onChange: (plan: Plan) => void;
+}) {
+  const { t } = useI18n();
+  const options = plans ?? PLANS.map((plan) => ({ plan }) as Partial<PlanView> & { plan: Plan });
+  return (
+    <fieldset className="flex flex-col gap-2" data-testid="signup-plans">
+      <legend className="field-label mb-1.5">{t("signup.plan")}</legend>
+      {options.map((option) => (
+        <label key={option.plan} className="check items-start">
+          <input
+            type="radio"
+            name="plan"
+            value={option.plan}
+            checked={value === option.plan}
+            onChange={() => onChange(option.plan)}
+            className="mt-0.5"
+          />
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+              <b className="font-semibold">
+                {planLabel(t, option.plan)}
+                {option.popular ? (
+                  <>
+                    {" "}
+                    <Pill tone="info">{t("billing.plans.popular")}</Pill>
+                  </>
+                ) : null}
+              </b>
+              {option.pricePerStudentPerYearPaise !== undefined ? (
+                <span className="text-[13px] text-ink-2">
+                  <b className="font-semibold text-ink">{formatPaise(option.pricePerStudentPerYearPaise)}</b>{" "}
+                  {t("billing.plans.perStudentYear")}
+                </span>
+              ) : null}
+            </span>
+            {option.features ? (
+              <>
+                <span className="text-[13px] text-ink-2">
+                  {option.maxStudents === null
+                    ? t("billing.plans.unlimitedStudents")
+                    : t("billing.plans.upToStudents", { count: (option.maxStudents ?? 0).toLocaleString("en-IN") })}
+                  {" · "}
+                  {option.maxBranches === null || option.maxBranches === undefined
+                    ? t("billing.plans.unlimitedBranches")
+                    : plural(t, "billing.plans.branches", option.maxBranches)}
+                </span>
+                <span className="text-[13px] text-ink-3">
+                  {option.features.map((f) => translateOr(t, `billing.feature.${f}`, f)).join(" · ")}
+                </span>
+              </>
+            ) : null}
+          </span>
+        </label>
+      ))}
+      <p className="field-hint">{t("signup.plan.hint")}</p>
+    </fieldset>
   );
 }

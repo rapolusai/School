@@ -182,6 +182,9 @@ export const hi: Record<MessageKey, string> = {
   "signup.password": "पासवर्ड",
   "signup.password.hint": "कम से कम 10 अक्षर।",
   "signup.review.note": "आपका 14 दिन का मुफ़्त ट्रायल आज से शुरू होगा। कोई कार्ड नहीं चाहिए।",
+  "signup.plan": "प्लान",
+  "signup.plan.hint":
+    "14 दिन के ट्रायल में हर प्लान मुफ़्त है और सभी सुविधाएँ खुली रहती हैं। ट्रायल के बाद प्लान से आपकी क़ीमत तय होती है, और आप इसे कभी भी बिलिंग से बदल सकते हैं।",
   "signup.submit": "मेरा स्कूल बनाएँ",
   "signup.submitting": "आपका स्कूल बन रहा है…",
   "signup.haveAccount": "पहले से खाता है?",
