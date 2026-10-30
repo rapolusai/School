@@ -159,12 +159,16 @@ akshara:
       cron: ${BILLING_RENEWALS_CRON:0 15 2 * * *}
       lead-days: ${BILLING_RENEWAL_LEAD_DAYS:0}
       grace-days: ${BILLING_GRACE_DAYS:15}
+      # The school's admins are emailed this many days before a renewal (once per period).
+      reminder-days: ${BILLING_RENEWAL_REMINDER_DAYS:7}
       trial-grace-days: ${BILLING_TRIAL_GRACE_DAYS:7}
     payments:
       # Schools paying their subscription invoices online. The money is Akshara's, so this is Akshara's own gateway
       # account, separate from the schools' fee gateway above: "sandbox" (default: no network calls, no real money)
       # or "razorpay". Razorpay's keys come from Secrets Manager as environment variables; the API refuses to start
       # with gateway "razorpay" and any of them missing. Webhooks: /api/public/billing/webhook/razorpay.
+      # "off" switches online payment of invoices off (schools pay by bank transfer): production uses it until the live
+      # Razorpay keys are in, so the sandbox can never let a school mark its own invoice paid.
       gateway: ${BILLING_PAYMENTS_GATEWAY:sandbox}
       # The sandbox moves no money, so it falls back to the fee sandbox's shared secret (every API task needs the same).
       sandbox-secret: ${BILLING_PAYMENTS_SANDBOX_SECRET:${PAYMENTS_SANDBOX_SECRET:}}

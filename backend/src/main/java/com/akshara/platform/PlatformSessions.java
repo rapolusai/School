@@ -21,6 +21,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.akshara.audit.AuditService.Actor;
+import com.akshara.audit.PlatformAuditService;
 import com.akshara.shared.AksharaProperties;
 import com.akshara.shared.ApiException;
 import com.akshara.shared.Ids;
@@ -72,11 +74,13 @@ public class PlatformSessions {
     private final JwtService jwt;
     private final AksharaProperties properties;
     private final TransactionTemplate tx;
+    private final PlatformAuditService audit;
     private final SecureRandom random = new SecureRandom();
 
     PlatformSessions(PlatformAdminRepository admins, PlatformRefreshTokenRepository tokens, JwtService jwt,
-            AksharaProperties properties, PlatformTransactionManager transactions) {
+            AksharaProperties properties, PlatformTransactionManager transactions, PlatformAuditService audit) {
         this.admins = admins;
+        this.audit = audit;
         this.tokens = tokens;
         this.jwt = jwt;
         this.properties = properties;
@@ -106,6 +110,9 @@ public class PlatformSessions {
                     // An old token came back: someone may have copied it. End every session in this chain.
                     tokens.revokeFamily(token.getFamilyId(), now);
                     log.warn("Reuse of a rotated Super Admin refresh token; chain {} ended", token.getFamilyId());
+                    PlatformAdmin owner = admins.findById(token.getAdminId()).orElse(null);
+                    audit.record(new Actor(token.getAdminId(), owner == null ? null : owner.getName()),
+                            "platform.refresh_reused", null, "platform_admin", token.getAdminId(), Map.of());
                     return new RefreshRejected(true);
                 }
                 if (!tokens.existsByFamilyIdAndRevokedAtIsNull(token.getFamilyId())) {
@@ -133,14 +140,18 @@ public class PlatformSessions {
         return (Session) outcome;
     }
 
-    /** Ends the chain the cookie belongs to. Unknown or malformed cookies are ignored. */
-    public void logout(String cookieValue) {
+    /**
+     * Ends the chain the cookie belongs to and returns whose it was. Unknown or malformed cookies are ignored (empty).
+     */
+    public Optional<PlatformAdmin> logout(String cookieValue) {
         Optional<String> hash = parse(cookieValue);
         if (hash.isEmpty()) {
-            return;
+            return Optional.empty();
         }
-        tx.executeWithoutResult(status -> tokens.findByTokenHash(hash.get())
-                .ifPresent(token -> tokens.revokeFamily(token.getFamilyId(), Instant.now())));
+        return tx.execute(status -> tokens.findByTokenHash(hash.get()).flatMap(token -> {
+            tokens.revokeFamily(token.getFamilyId(), Instant.now());
+            return admins.findById(token.getAdminId());
+        }));
     }
 
     Duration ttl() {

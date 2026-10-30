@@ -197,8 +197,8 @@ export function SchoolBillingView({ upgrade = null }: { upgrade?: PlanModule | n
   const { me } = useAuth();
   const { toast } = useToast();
   const canEdit = hasPermission(me, PERMISSIONS.settingsManage);
-  const canPay = canPayOnline(me);
   const billing = useApiData("billing:mine", billingApi.mine);
+  const canPay = canPayOnline(me) && billing.data?.onlinePayments !== false;
   const payment = usePayInvoice((number) => {
     billing.reload();
     toast(t("billing.pay.done", { number }));
@@ -267,6 +267,11 @@ export function SchoolBillingView({ upgrade = null }: { upgrade?: PlanModule | n
             />
             {canPay && data.invoices.some(isPayable) ? (
               <p className="mt-3 text-[13px] text-ink-3">{t("billing.pay.note")}</p>
+            ) : null}
+            {data.onlinePayments === false && data.invoices.some(isPayable) ? (
+              <p className="mt-3 text-[13px] text-ink-3" data-testid="billing-pay-offline">
+                {t("billing.pay.offline")}
+              </p>
             ) : null}
           </section>
           <section aria-labelledby="billing-plans" className="flex flex-col gap-3">

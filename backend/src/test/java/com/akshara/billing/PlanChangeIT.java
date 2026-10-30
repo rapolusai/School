@@ -264,7 +264,11 @@ class PlanChangeIT extends IntegrationTest {
                 .andExpect(jsonPath("$.invoices.length()").value(0));
         api.get("/api/billing/plan/quote?plan=STARTER", admin.accessToken())
                 .andExpect(jsonPath("$.kind").value("TRIAL")).andExpect(jsonPath("$.allowed").value(true));
-        api.post("/api/billing/cancel", admin.accessToken(), "{}").andExpect(status().isConflict());
+        // A trial can be cancelled (and taken back): see SubscriptionCancellationIT.
+        api.post("/api/billing/cancel", admin.accessToken(), "{}").andExpect(status().isOk())
+                .andExpect(jsonPath("$.cancellation.trial").value(true));
+        api.post("/api/billing/resume", admin.accessToken(), null).andExpect(status().isOk())
+                .andExpect(jsonPath("$.cancellation").doesNotExist());
         api.post("/api/billing/plan", admin.accessToken(), """
                 {"plan":"NOPE"}""").andExpect(status().isBadRequest());
 

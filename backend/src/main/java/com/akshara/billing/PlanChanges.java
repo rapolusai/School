@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.akshara.audit.AuditService;
 import com.akshara.audit.AuditService.Actor;
 import com.akshara.billing.BillingViews.PlanChangeQuote;
+import com.akshara.billing.BillingViews.SchoolAccount;
 import com.akshara.billing.BillingViews.SchoolBilling;
 import com.akshara.billing.InvoiceIssuer.Proration;
 import com.akshara.billing.PlanCatalog.PlanInfo;
@@ -32,8 +33,9 @@ import com.akshara.students.StudentRoster;
  * students, plus GST.</li>
  * <li><b>Downgrade</b> (a cheaper plan): scheduled for the next renewal, and refused while the school has more
  * students on roll than the plan covers. It can be withdrawn until then.</li>
- * <li><b>Cancel</b>: the subscription is not renewed and the school is suspended when the current period ends. It
- * can be withdrawn until then.</li>
+ * <li><b>Cancel</b>: the subscription is not renewed and the school is suspended when the current period ends (a
+ * school on its free trial: when the trial ends). It can be withdrawn until then. The Super Admin can do both for the
+ * school.</li>
  * </ul>
  * A school that does not pay yet (a trial) changes plan at once and for nothing. Every change locks the school's
  * subscription row, so a second click finds the change made and does nothing more, and is audited.
@@ -59,10 +61,11 @@ public class PlanChanges {
     private final BillingProperties properties;
     private final StudentRoster roster;
     private final AuditService audit;
+    private final BillingNotices notices;
 
     PlanChanges(TenantDirectory tenants, SubscriptionRepository subscriptions, InvoiceRepository invoices,
             InvoiceIssuer issuer, BillingAccounts accounts, BillingProperties properties, StudentRoster roster,
-            AuditService audit) {
+            AuditService audit, BillingNotices notices) {
         this.tenants = tenants;
         this.subscriptions = subscriptions;
         this.invoices = invoices;
@@ -71,6 +74,7 @@ public class PlanChanges {
         this.properties = properties;
         this.roster = roster;
         this.audit = audit;
+        this.notices = notices;
     }
 
     /** A dearer plan is an upgrade (prices rise with the plans' limits and features). */
@@ -174,41 +178,90 @@ public class PlanChanges {
         return accounts.schoolBilling();
     }
 
-    /** Cancels at the end of the current period: no renewal, and the school is suspended after the period ends. */
+    /**
+     * The School Admin cancels: no renewal, and the school is suspended after the current period ends. A school still
+     * on its free trial can cancel too: it is suspended when the trial ends, instead of being chased as past due.
+     */
     public SchoolBilling cancel(String reason) {
+        scheduleCancel(reason, signedIn(), false);
+        return accounts.schoolBilling();
+    }
+
+    /** The School Admin takes a cancellation back before it takes effect: the subscription renews as before. */
+    public SchoolBilling resume() {
+        withdrawCancel(signedIn(), false);
+        return accounts.schoolBilling();
+    }
+
+    /** The Super Admin cancels for the school, at the end of its period (or trial). */
+    public SchoolAccount cancelOnBehalf(String reason, Actor by) {
+        scheduleCancel(reason, by, true);
+        return accounts.account();
+    }
+
+    /** The Super Admin takes the school's cancellation back. */
+    public SchoolAccount resumeOnBehalf(Actor by) {
+        withdrawCancel(by, true);
+        return accounts.account();
+    }
+
+    /**
+     * Cancels the current school's subscription at the end of its period (or its trial). {@code onBehalf}: the Super
+     * Admin cancelled for the school (for example after a phone call); the audit trail and the school's admins are
+     * told so. Cancelling again changes nothing.
+     */
+    void scheduleCancel(String reason, Actor by, boolean onBehalf) {
         UUID tenantId = TenantContext.require();
         Subscription subscription = lockOrCreate(tenantId);
         TenantView school = school(tenantId);
         requireNotSuspended(school);
-        if (!subscription.isPaid()) {
-            throw conflict("Not paying", "There is no paid subscription to cancel. A trial simply ends.");
+        boolean trial = !subscription.isPaid();
+        if (trial && (school.trialEndsAt() == null
+                || (school.status() != TenantStatus.TRIAL && school.status() != TenantStatus.PAST_DUE))) {
+            throw conflict("Not paying", "There is no paid subscription or free trial to cancel.");
         }
-        if (!subscription.isCancelAtPeriodEnd()) {
-            subscription.cancelAtPeriodEnd();
-            subscriptions.saveAndFlush(subscription);
-            Map<String, Object> details = new LinkedHashMap<>();
-            details.put("endsOn", subscription.getPeriodEnd().toString());
-            String text = reason == null || reason.isBlank() ? null : reason.trim();
-            if (text != null) {
-                details.put("reason", text);
-            }
-            audit.record(signedIn(), "subscription.cancel_scheduled", "school", tenantId, details);
+        if (subscription.isCancelAtPeriodEnd()) {
+            return;
         }
-        return accounts.schoolBilling();
+        String text = reason == null || reason.isBlank() ? null : reason.trim();
+        subscription.cancelAtPeriodEnd(text, by.name());
+        subscriptions.saveAndFlush(subscription);
+        LocalDate endsOn = trial ? BillingDay.of(school.trialEndsAt()) : subscription.getPeriodEnd();
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("endsOn", endsOn.toString());
+        if (text != null) {
+            details.put("reason", text);
+        }
+        if (trial) {
+            details.put("trial", true);
+        }
+        if (onBehalf) {
+            details.put("onBehalf", true);
+        }
+        audit.record(by, "subscription.cancel_scheduled", "school", tenantId, details);
+        notices.cancelScheduled(endsOn, onBehalf ? "by Akshara, at your request" : "by " + by.name());
     }
 
-    /** Takes a cancellation back before the period ends: the subscription renews as before. */
-    public SchoolBilling resume() {
+    /** Takes back the current school's cancellation. Nothing to take back is not an error. */
+    void withdrawCancel(Actor by, boolean onBehalf) {
         UUID tenantId = TenantContext.require();
         Subscription subscription = lockOrCreate(tenantId);
         requireNotSuspended(school(tenantId));
         if (subscription.isCancelAtPeriodEnd()) {
             subscription.resume();
             subscriptions.saveAndFlush(subscription);
-            audit.record(signedIn(), "subscription.cancel_withdrawn", "school", tenantId,
-                    Map.of("periodEnd", subscription.getPeriodEnd().toString()));
+            Map<String, Object> details = new LinkedHashMap<>();
+            if (subscription.isPaid()) {
+                details.put("periodEnd", subscription.getPeriodEnd().toString());
+            } else {
+                details.put("trial", true);
+            }
+            if (onBehalf) {
+                details.put("onBehalf", true);
+            }
+            audit.record(by, "subscription.cancel_withdrawn", "school", tenantId, details);
+            notices.cancelWithdrawn(onBehalf ? "by Akshara" : "by " + by.name());
         }
-        return accounts.schoolBilling();
     }
 
     // ------------------------------------------------------------------ at renewal

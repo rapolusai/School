@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.akshara.audit.AuditService.Actor;
+import com.akshara.audit.PlatformAuditService;
 import com.akshara.shared.AksharaProperties;
 import com.akshara.shared.ApiException;
 import com.akshara.shared.ApiExceptionHandler;
@@ -37,15 +39,18 @@ public class PlatformAuthController {
     private final LoginRateLimiter rateLimiter;
     private final PlatformSessions sessions;
     private final AksharaProperties properties;
+    private final PlatformAuditService audit;
     private final String dummyHash;
 
     public PlatformAuthController(PlatformAdminRepository admins, PasswordEncoder passwordEncoder,
-            LoginRateLimiter rateLimiter, PlatformSessions sessions, AksharaProperties properties) {
+            LoginRateLimiter rateLimiter, PlatformSessions sessions, AksharaProperties properties,
+            PlatformAuditService audit) {
         this.admins = admins;
         this.passwordEncoder = passwordEncoder;
         this.rateLimiter = rateLimiter;
         this.sessions = sessions;
         this.properties = properties;
+        this.audit = audit;
         // Checked when the email is unknown, so a wrong email takes as long as a wrong password.
         this.dummyHash = passwordEncoder.encode(java.util.UUID.randomUUID().toString());
     }
@@ -64,11 +69,19 @@ public class PlatformAuthController {
         boolean ok = passwordEncoder.matches(request.password(), admin == null ? dummyHash : admin.getPasswordHash())
                 && admin != null && admin.isActive();
         if (!ok) {
+            // Kept although this transaction rolls back: the Super Admin's trail shows every failed attempt.
+            String email = request.email().trim().toLowerCase();
+            audit.recordNow(admin == null ? new Actor(null, null) : new Actor(admin.getId(), admin.getName()),
+                    "platform.login_failed", null, "platform_admin", admin == null ? null : admin.getId(),
+                    Map.of("email", email.length() > 200 ? email.substring(0, 200) : email, "reason",
+                            admin == null ? "unknown_email" : admin.isActive() ? "wrong_password" : "disabled"));
             throw ApiException.unauthorized("Those details don't match.");
         }
         rateLimiter.reset(key);
         admin.recordLogin();
         PlatformSessions.Session session = sessions.start(admin);
+        audit.record(new Actor(admin.getId(), admin.getName()), "platform.login", null, "platform_admin",
+                admin.getId(), Map.of());
         boolean secure = properties.auth().cookieSecure();
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, SessionCookies.set(SessionCookies.PLATFORM_NAME,
@@ -103,7 +116,8 @@ public class PlatformAuthController {
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(
             @CookieValue(name = SessionCookies.PLATFORM_NAME, required = false) String cookie) {
-        sessions.logout(cookie);
+        sessions.logout(cookie).ifPresent(admin -> audit.record(new Actor(admin.getId(), admin.getName()),
+                "platform.logout", null, "platform_admin", admin.getId(), Map.of()));
         return ResponseEntity.noContent().header(HttpHeaders.SET_COOKIE, clearedCookie().toString()).build();
     }
 

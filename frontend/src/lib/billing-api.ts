@@ -85,4 +85,9 @@ export const platformBillingApi = {
     apiFetch<SchoolAccount>(`${school(tenantId)}/suspend`, { method: "POST", body: { reason } }),
   reactivate: (tenantId: string) =>
     apiFetch<SchoolAccount>(`${school(tenantId)}/reactivate`, { method: "POST", body: {} }),
+  /** Cancels for the school: at the end of its period (or trial), or now (`immediate`: suspended today). */
+  cancel: (tenantId: string, reason: string, immediate: boolean) =>
+    apiFetch<SchoolAccount>(`${school(tenantId)}/cancel`, { method: "POST", body: { reason, immediate } }),
+  /** Takes the school's cancellation back. */
+  resume: (tenantId: string) => apiFetch<SchoolAccount>(`${school(tenantId)}/resume`, { method: "POST", body: {} }),
 };

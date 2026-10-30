@@ -11,7 +11,7 @@ schools' fee gateway (`akshara.payments`, [phase-1-fees.md](phase-1-fees.md)):
 
 | Property (env) | Default | Meaning |
 | --- | --- | --- |
-| `akshara.billing.payments.gateway` (`BILLING_PAYMENTS_GATEWAY`) | `sandbox` | `sandbox` (no network, no money) or `razorpay` |
+| `akshara.billing.payments.gateway` (`BILLING_PAYMENTS_GATEWAY`) | `sandbox` (production compose: `off`) | `off` (no online payment: invoices are paid by bank transfer and recorded by the Super Admin), `sandbox` (no network, no money; for local and test only) or `razorpay` |
 | `akshara.billing.payments.sandbox-secret` (`BILLING_PAYMENTS_SANDBOX_SECRET`, else `PAYMENTS_SANDBOX_SECRET`) | random at startup | signs sandbox checkouts and webhooks |
 | `akshara.billing.payments.razorpay.key-id` / `key-secret` / `webhook-secret` (`BILLING_RAZORPAY_KEY_ID`, `BILLING_RAZORPAY_KEY_SECRET`, `BILLING_RAZORPAY_WEBHOOK_SECRET`) | empty | Akshara's Razorpay account (test mode keys until launch); the API refuses to start with gateway `razorpay` and any of them missing |
 
@@ -170,7 +170,7 @@ change is in the school's audit trail, and the Super Admin sees the result on th
 | GET | `/api/billing/plan/quote?plan=GROWTH` | | `200 PlanChangeQuote`: what the change would do now, and cost; nothing changes |
 | POST | `/api/billing/plan` | `{ plan }` | `200 SchoolBilling`; `409` type `urn:akshara:problem:plan-downgrade` (with `plan`, `maxStudents`, `activeStudents`) when a downgrade does not fit; choosing the current plan withdraws a scheduled downgrade |
 | DELETE | `/api/billing/plan/pending` | | `200 SchoolBilling`: the scheduled downgrade withdrawn |
-| POST | `/api/billing/cancel` | `{ reason? }` (optional body) | `200 SchoolBilling`; `409` for a school that does not pay yet |
+| POST | `/api/billing/cancel` | `{ reason? }` (optional body) | `200 SchoolBilling`; a trial school cancels its trial; `409` once the trial has ended or for a suspended school |
 | POST | `/api/billing/resume` | | `200 SchoolBilling`: the cancellation taken back |
 
 A suspended school can do none of these (`409`). Other roles get `403`; the platform console has no school plan.
@@ -210,6 +210,17 @@ renewed, with no new invoice. Until then the School Admin can take it back (`POS
 issue the next period's invoice (`409`). A Super Admin who reactivates the school clears the cancellation, so it renews
 again. Invoices already issued stay due.
 
+**Cancelling a trial.** A school on its free trial (never paid; `TRIAL`, or `PAST_DUE` after the trial lapsed) can
+cancel too. Nothing changes until the trial ends; on the first run of the renewal job on or after `trialEndsAt` the
+school is suspended (`subscription.ended` with `trial: true`, then `school.suspended`) instead of being marked past due.
+Starting a paid subscription (the Super Admin's "Start paid subscription") clears a trial's cancellation, recorded on
+`subscription.started` as `cancellationWithdrawn: true`.
+
+`SchoolBilling` and `SchoolAccount` gain `cancellation: { endsOn, requestedAt, reason, requestedByName, trial } | null`
+(who cancelled is the School Admin or, on the school's behalf, the Super Admin), and `SchoolBilling` gains
+`onlinePayments: boolean` (false while the gateway is `off`: the Billing page then hides "Pay online" and says to pay by
+bank transfer).
+
 ```ts
 type PlanChangeQuote = { plan: Plan; kind: "SAME" | "TRIAL" | "UPGRADE" | "DOWNGRADE"; effectiveOn: string;
   remainingDays: number; periodDays: number; unitPricePaise: number; billedStudents: number; taxablePaise: number;
@@ -226,8 +237,71 @@ trial's change.
 
 Web app: each plan card on Billing has "Upgrade", "Downgrade" or (in the trial) "Switch to this plan", which shows the
 quote and asks to confirm; a scheduled downgrade shows "Keep <plan>", and "Cancel subscription" / "Keep subscription"
-sit under the plan summary. After a change the menu checks the plan again, so modules unlock at once.
+("Cancel trial" / "Keep trial" during the trial) sit under the plan summary. After a change the menu checks the plan again, so modules unlock at once.
 
 Data (`V34__subscription_plan_changes.sql`): `billing.invoice.kind` and `previous_plan`; `uq_invoice_period` for
 `PERIOD` invoices only; `billing.subscription.pending_plan`, `pending_plan_requested_at`, `cancel_at_period_end`,
 `cancel_requested_at`.
+
+Data (`V35__subscription_cancellation_and_platform_audit.sql`): `billing.subscription.cancel_reason` and
+`cancelled_by_name` (set only while `cancel_at_period_end`).
+
+## 5. Cancelling for a school, the renewals list and billing emails
+
+**The Super Admin** (`platform.admin`) cancels or resumes on a school's behalf from the school's account page, with a
+reason (for example when the school asks by phone):
+
+| Method | Path | Body | Success |
+| --- | --- | --- | --- |
+| POST | `/api/platform/billing/schools/{id}/cancel` | `{ reason, immediate }` | `200 SchoolAccount`. `immediate: false`: cancelled at the period's end (or the trial's end), exactly as if the school had cancelled. `immediate: true`: the subscription ends now and the school is suspended today (`subscription.ended` with `immediate: true`, then `school.suspended` with reason "Subscription ended by Akshara: …"); no refund is made by the app |
+| POST | `/api/platform/billing/schools/{id}/resume` | | `200 SchoolAccount`: the cancellation taken back |
+
+`reason` is required (at most 500 characters). Both are audited in the school's trail with `onBehalf: true` and in the
+platform trail (section 6). A suspended school is refused (`409`).
+
+**Renewals list** (`GET /api/platform/billing/renewals`) gains two kinds: `CANCELLING` (a school that cancelled; date =
+the day it ends, `note` = the reason; such a school is not also listed as due for renewal) and `DOWNGRADE_SCHEDULED`
+(a paying school with a scheduled downgrade, whatever the date; `pendingPlan` = the plan it moves to, amount = the next
+invoice at that plan). `RenewalRow` gains `pendingPlan` and `note`.
+
+**Billing emails.** Every active School Admin of the school gets an email (in English, through the notifications
+outbox, each at most once per event and person) when: an invoice is issued, an invoice is paid, the school is marked
+past due, suspended or reactivated, a cancellation is scheduled or taken back (by the school or the Super Admin), the
+renewal is near (renewal job, `renewals.reminder-days` before the next period, default `7`,
+`BILLING_RENEWAL_REMINDER_DAYS`), and the trial is about to end (within the trial warning days). A cancelled school
+gets no renewal or trial-ending reminder. The emails are listed on the school's messages page like any other message.
+
+## 6. Audit trail and the platform trail
+
+**The school's trail** (`audit.read`): `GET /api/audit-events` takes `limit` (1-200, default 50), `action`, `actorId`,
+`from` and `to` (India days, inclusive; at most 3 years apart; `to` before `from` is `400`), and `before` + `beforeId`
+(the last entry shown) to load older entries. `GET /api/audit-events/facets` returns `{ actions, people }` for the
+filters. `GET /api/audit-events/export.csv` (same filters, up to 10,000 entries) returns a UTF-8 CSV for Excel; cells
+that start with `=`, `+`, `-`, `@` or a tab are prefixed with `'` so Excel does not run them, and the export itself is
+audited as `audit.exported` with the filters and the number of rows.
+
+**The platform trail** (`audit.platform_event`, V35) records, across schools: every Super Admin sign-in
+(`platform.login`), failed sign-in (`platform.login_failed`, with the email and why: unknown email, wrong password or
+disabled), sign-out (`platform.logout`) and reused refresh token (`platform.refresh_reused`); every audited change a
+Super Admin makes in a school; and every subscription, invoice, payment order, billing details and school status change
+made by anyone (the school, the renewal job or the payment gateway). Rows are insert-only for the app role.
+
+| Method | Path | Success |
+| --- | --- | --- |
+| GET | `/api/platform/audit-events?limit&action&schoolId&actorId&from&to&before&beforeId` | `200 PlatformAuditEvent[]`, newest first |
+| GET | `/api/platform/audit-events/facets` | `200 { actions, schools: [{ id, name, code }] }` |
+| GET | `/api/platform/audit-events/export.csv` | the CSV (audited as `platform.audit_exported`) |
+
+```ts
+type PlatformAuditEvent = { id: string; at: string; actorName: string | null; platformAdmin: boolean; action: string;
+  schoolId: string | null; schoolName: string | null; schoolCode: string | null; entityType: string | null;
+  entityId: string | null; details: Record<string, unknown>; ip: string | null };
+```
+
+Web app: the school's Audit trail page has filters (action, person, days), "Load older entries" and "Download for
+Excel"; the Super Admin's new **Activity** page (`/app/platform/activity`) shows the platform trail with a school filter.
+
+**Coverage guard.** `AuditCoverageIT` lists every POST, PUT, PATCH and DELETE endpoint of the API and compares it with
+`backend/src/test/resources/audit/mutating-endpoints.txt`, where each one is marked `audited` or `exempt: <why>` (for
+example read-only previews and sign-in refreshes). A new change endpoint fails the build until it is added there, so
+nobody can add one without deciding how it is audited.

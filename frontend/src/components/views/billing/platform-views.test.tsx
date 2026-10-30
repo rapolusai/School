@@ -71,6 +71,50 @@ describe("RenewalsView", () => {
     expect(screen.getByText("1 school on this plan")).toBeInTheDocument();
   });
 
+  it("flags schools that are cancelling and scheduled downgrades", async () => {
+    const user = userEvent.setup();
+    api.renewals.mockResolvedValue([
+      ...RENEWALS,
+      {
+        tenantId: "t4",
+        name: "Green Valley School",
+        code: "green-valley",
+        status: "ACTIVE",
+        plan: "GROWTH",
+        kind: "CANCELLING",
+        date: "2026-11-30",
+        days: 52,
+        amountPaise: null,
+        invoices: null,
+        pendingPlan: null,
+        note: "Moving to another provider",
+      },
+      {
+        tenantId: "t5",
+        name: "Oak Tree School",
+        code: "oak-tree",
+        status: "ACTIVE",
+        plan: "ENTERPRISE",
+        kind: "DOWNGRADE_SCHEDULED",
+        date: "2027-04-01",
+        days: 174,
+        amountPaise: 1_00_000_00,
+        invoices: null,
+        pendingPlan: "GROWTH",
+        note: null,
+      },
+    ]);
+    renderAsSuperAdmin(<RenewalsView />);
+    const table = await screen.findByTestId("renewals-table");
+    expect(within(table).getAllByRole("row")).toHaveLength(6);
+    await user.click(screen.getByLabelText("Cancelling (1)"));
+    const cancelling = screen.getByTestId("renewals-table");
+    expect(within(cancelling).getByRole("link", { name: "Green Valley School" })).toBeInTheDocument();
+    expect(within(cancelling).getByText("Moving to another provider")).toBeInTheDocument();
+    await user.click(screen.getByLabelText("Downgrade scheduled (1)"));
+    expect(screen.getByTestId("renewal-pending-plan")).toHaveTextContent("Enterprise → Growth");
+  });
+
   it("says when nothing needs attention", async () => {
     api.renewals.mockResolvedValue([]);
     renderAsSuperAdmin(<RenewalsView />);

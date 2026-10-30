@@ -39,7 +39,10 @@ import com.akshara.shared.TenantContext;
  * <li><b>Suspension.</b> A PAST_DUE school with an invoice more than {@code renewals.grace-days} past its due date, or
  * a trial that ended more than {@code renewals.trial-grace-days} ago, is suspended through the same path as the Super
  * Admin's suspension ({@link SchoolSuspended}). The grace period also counts from the school's last reactivation.</li>
+ * <li><b>Reminders.</b> The school's admins are emailed before a renewal and before a trial ends ({@link
+ * BillingNotices}), once each.</li>
  * </ol>
+ * A school that cancelled is suspended when its period (or its trial) ends, instead of renewed.
  * Every step reads the current state first, so running twice on one day changes nothing the second time.
  */
 @Service
@@ -74,13 +77,15 @@ public class BillingRenewals {
     private final BillingProperties properties;
     private final AuditService audit;
     private final PlanChanges planChanges;
+    private final BillingNotices notices;
     private final TransactionTemplate tx;
     private final TransactionTemplate outer;
     private final JdbcTemplate jdbc;
 
     BillingRenewals(TenantDirectory tenants, SubscriptionRepository subscriptions, InvoiceRepository invoices,
             InvoiceIssuer issuer, BillingService billing, BillingProperties properties, AuditService audit,
-            PlanChanges planChanges, PlatformTransactionManager transactions, JdbcTemplate jdbc) {
+            PlanChanges planChanges, BillingNotices notices, PlatformTransactionManager transactions,
+            JdbcTemplate jdbc) {
         this.tenants = tenants;
         this.subscriptions = subscriptions;
         this.invoices = invoices;
@@ -89,6 +94,7 @@ public class BillingRenewals {
         this.properties = properties;
         this.audit = audit;
         this.planChanges = planChanges;
+        this.notices = notices;
         this.tx = new TransactionTemplate(transactions);
         this.tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         this.outer = new TransactionTemplate(transactions);
@@ -158,7 +164,8 @@ public class BillingRenewals {
             return new Outcome(tenantId, false, null, before, before);
         }
 
-        // 0. A subscription the school cancelled ends with its period: suspended instead of renewed.
+        // 0. A subscription the school cancelled ends with its period: suspended instead of renewed. A cancelled
+        //    trial ends with the trial, without the past-due weeks in between.
         if (subscription != null && subscription.isPaid() && subscription.isCancelAtPeriodEnd()) {
             if (today.isAfter(subscription.getPeriodEnd())) {
                 Map<String, Object> details = new LinkedHashMap<>();
@@ -170,6 +177,18 @@ public class BillingRenewals {
                         Map.of("automatic", true, "cancelled", true));
                 return new Outcome(tenantId, false, null, before, TenantStatus.SUSPENDED);
             }
+        }
+        if (subscription != null && !subscription.isPaid() && subscription.isCancelAtPeriodEnd()
+                && school.trialEndsAt() != null && !now.isBefore(school.trialEndsAt())) {
+            LocalDate trialEnd = BillingDay.of(school.trialEndsAt());
+            Map<String, Object> details = new LinkedHashMap<>();
+            details.put("trialEndedOn", trialEnd.toString());
+            details.put("plan", school.plan().name());
+            details.put("trial", true);
+            audit.record(system, "subscription.ended", "school", tenantId, details);
+            billing.suspendNow(subscription, school, "The school cancelled its free trial; it ended on " + trialEnd
+                    + " (suspended automatically).", system, Map.of("automatic", true, "cancelled", true));
+            return new Outcome(tenantId, false, null, before, TenantStatus.SUSPENDED);
         }
 
         // 1. Renewal.
@@ -201,6 +220,7 @@ public class BillingRenewals {
             details.put("reason", overdueSince != null ? "invoice_overdue" : "trial_ended");
             details.put("automatic", true);
             audit.record(system, "school.status_changed", "school", tenantId, details);
+            notices.pastDue(today);
             status = TenantStatus.PAST_DUE;
         } else if (status == TenantStatus.PAST_DUE && billing.restoreIfSettled(tenantId, system, today, now)) {
             status = TenantStatus.ACTIVE;
@@ -235,7 +255,39 @@ public class BillingRenewals {
                 status = TenantStatus.SUSPENDED;
             }
         }
+        // 4. Reminders to the school's admins: the renewal coming up, the trial ending. Once each (dedupe keys).
+        if (status != TenantStatus.SUSPENDED) {
+            remind(subscription, tenants.findById(tenantId).orElseThrow(), today);
+        }
         return new Outcome(tenantId, invoiceNo != null, invoiceNo, before, status);
+    }
+
+    /**
+     * Emails a paying school's admins {@code renewals.reminder-days} before the next period starts (not when it
+     * cancelled), and a school on trial within {@code trialWarningDays} of the trial's end (not when it cancelled).
+     */
+    private void remind(Subscription subscription, TenantView school, LocalDate today) {
+        boolean cancelled = subscription != null && subscription.isCancelAtPeriodEnd();
+        if (cancelled) {
+            return;
+        }
+        if (subscription != null && subscription.isPaid()) {
+            LocalDate next = subscription.nextRenewalOn();
+            long daysLeft = java.time.temporal.ChronoUnit.DAYS.between(today, next);
+            if (daysLeft > 0 && daysLeft <= properties.renewals().reminderDays()) {
+                long taxable = BillingMapper.subscription(subscription, school.plan()).nextInvoiceTaxablePaise();
+                long amount = subscription.getStateCode() == null ? taxable
+                        : GstMath.tax(taxable, properties.seller().stateCode(), subscription.getStateCode())
+                                .totalPaise();
+                notices.renewalReminder(next, amount);
+            }
+        } else if (school.status() == TenantStatus.TRIAL && school.trialEndsAt() != null) {
+            LocalDate ends = BillingDay.of(school.trialEndsAt());
+            long daysLeft = java.time.temporal.ChronoUnit.DAYS.between(today, ends);
+            if (daysLeft >= 0 && daysLeft <= properties.trialWarningDays()) {
+                notices.trialEnding(ends);
+            }
+        }
     }
 
     /** Moves into the next period and issues its invoice, if the plan still covers the billed students. */

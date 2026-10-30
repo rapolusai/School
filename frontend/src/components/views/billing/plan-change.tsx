@@ -9,7 +9,7 @@ import { useToast } from "@/components/ui/toast";
 import { toApiError } from "@/lib/api";
 import { billingApi } from "@/lib/billing-api";
 import { errorMessage } from "@/lib/error-message";
-import { formatPaise, formatPlainDate } from "@/lib/format";
+import { formatDate, formatDateTime, formatPaise, formatPlainDate } from "@/lib/format";
 import { localeFor, useI18n } from "@/lib/i18n";
 import { notifyPlanChanged } from "@/lib/plan-access";
 import type { Plan, PlanChangeQuote, PlanView, SchoolBilling } from "@/lib/types";
@@ -187,9 +187,19 @@ function QuoteText({ quote, name, locale }: { quote: PlanChangeQuote; name: stri
   );
 }
 
+/** Whether the school is on its free trial and can still cancel it (it has never paid). */
+export function canCancelTrial(billing: SchoolBilling): boolean {
+  return (
+    !billing.subscription &&
+    Boolean(billing.trialEndsAt) &&
+    (billing.status === "TRIAL" || billing.status === "PAST_DUE")
+  );
+}
+
 /**
  * Scheduled changes on the plan summary: a pending downgrade with "Keep <plan>", a cancellation with "Keep
- * subscription", and "Cancel subscription" for a paying school. `canChange`: the School Admin (settings.manage).
+ * subscription", and "Cancel subscription" for a paying school ("Cancel trial" during the free trial). `canChange`:
+ * the School Admin (settings.manage).
  */
 export function SubscriptionChanges({
   billing,
@@ -207,7 +217,8 @@ export function SubscriptionChanges({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const sub = billing.subscription;
-  if (!sub) return null;
+  const trial = canCancelTrial(billing);
+  if (!sub && !trial) return null;
   const current = planLabel(t, billing.plan);
   const run = async (action: () => Promise<SchoolBilling>, done: string) => {
     setBusy(true);
@@ -222,12 +233,18 @@ export function SubscriptionChanges({
       setBusy(false);
     }
   };
-  const endsOn = formatPlainDate(sub.periodEnd, locale);
+  const cancellation = billing.cancellation ?? null;
+  const cancelled = Boolean(cancellation) || Boolean(sub?.cancelAtPeriodEnd);
+  const endsOn = cancellation?.endsOn
+    ? formatPlainDate(cancellation.endsOn, locale)
+    : sub
+      ? formatPlainDate(sub.periodEnd, locale)
+      : formatDate(billing.trialEndsAt ?? "", locale);
 
   return (
     <div className="flex flex-col gap-2">
       <FormAlert message={error} />
-      {sub.pendingPlan ? (
+      {sub?.pendingPlan ? (
         <div className="alert alert-warn" role="status" data-testid="billing-pending-plan">
           <CalendarClock size={18} aria-hidden="true" className="mt-0.5 flex-none" />
           <span className="flex flex-1 flex-wrap items-center justify-between gap-2">
@@ -250,19 +267,36 @@ export function SubscriptionChanges({
           </span>
         </div>
       ) : null}
-      {sub.cancelAtPeriodEnd ? (
+      {cancelled ? (
         <div className="alert alert-bad" role="status" data-testid="billing-cancelled">
           <CalendarClock size={18} aria-hidden="true" className="mt-0.5 flex-none" />
           <span className="flex flex-1 flex-wrap items-center justify-between gap-2">
-            {t("billing.end.scheduled", { date: endsOn })}
+            <span>
+              {trial ? t("billing.end.trialScheduled", { date: endsOn }) : t("billing.end.scheduled", { date: endsOn })}
+              {cancellation?.requestedByName ? (
+                <span className="block text-[12.5px]">
+                  {t("billing.cancellation.by", {
+                    name: cancellation.requestedByName,
+                    date: formatDateTime(cancellation.requestedAt, locale),
+                  })}
+                  {cancellation.reason ? ` · ${cancellation.reason}` : ""}
+                </span>
+              ) : null}
+            </span>
             {canChange ? (
               <button
                 type="button"
                 className="btn btn-sm"
                 disabled={busy}
-                onClick={() => void run(billingApi.resumeSubscription, t("billing.end.resumed"))}
+                data-testid="billing-resume"
+                onClick={() =>
+                  void run(
+                    billingApi.resumeSubscription,
+                    trial ? t("billing.end.trialResumed") : t("billing.end.resumed"),
+                  )
+                }
               >
-                {t("billing.end.resume")}
+                {trial ? t("billing.end.trialResume") : t("billing.end.resume")}
               </button>
             ) : null}
           </span>
@@ -274,16 +308,17 @@ export function SubscriptionChanges({
           data-testid="billing-cancel"
           onClick={() => setCancelling(true)}
         >
-          {t("billing.end.button")}
+          {trial ? t("billing.end.trialButton") : t("billing.end.button")}
         </button>
       ) : null}
       {cancelling ? (
         <CancelDialog
           endsOn={endsOn}
+          trial={trial}
           onClose={() => setCancelling(false)}
           onCancelled={(updated) => {
             setCancelling(false);
-            toast(t("billing.end.done", { date: endsOn }));
+            toast(trial ? t("billing.end.trialDone", { date: endsOn }) : t("billing.end.done", { date: endsOn }));
             onChanged(updated);
           }}
         />
@@ -294,10 +329,12 @@ export function SubscriptionChanges({
 
 function CancelDialog({
   endsOn,
+  trial,
   onClose,
   onCancelled,
 }: {
   endsOn: string;
+  trial: boolean;
   onClose: () => void;
   onCancelled: (billing: SchoolBilling) => void;
 }) {
@@ -320,8 +357,8 @@ function CancelDialog({
     <Dialog
       open
       onClose={onClose}
-      title={t("billing.end.title")}
-      description={t("billing.end.body", { date: endsOn })}
+      title={trial ? t("billing.end.trialTitle") : t("billing.end.title")}
+      description={trial ? t("billing.end.trialBody", { date: endsOn }) : t("billing.end.body", { date: endsOn })}
       closeLabel={t("common.close")}
     >
       <form method="post" className="flex flex-col gap-3.5" onSubmit={(e) => void submit(e)} noValidate>
@@ -339,7 +376,7 @@ function CancelDialog({
             {t("billing.end.back")}
           </button>
           <button type="submit" className="btn btn-danger" disabled={saving}>
-            {saving ? t("common.saving") : t("billing.end.confirm")}
+            {saving ? t("common.saving") : trial ? t("billing.end.trialConfirm") : t("billing.end.confirm")}
           </button>
         </div>
       </form>

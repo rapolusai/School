@@ -106,6 +106,9 @@ class SesEmailSender implements MessageSender, DisposableBean {
         if (MessageTemplates.PASSWORD_RESET.equals(message.templateKey())) {
             return "Your Akshara password reset code";
         }
+        if (message.templateKey() != null && message.templateKey().startsWith("billing.")) {
+            return "Akshara billing";
+        }
         String school = message.params() == null ? null : message.params().get("school");
         return school == null || school.isBlank() ? "Message from Akshara" : "Message from " + school;
     }

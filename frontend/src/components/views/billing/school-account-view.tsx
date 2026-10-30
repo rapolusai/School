@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Ban, FilePlus2, Pencil, Play, RefreshCcw } from "lucide-react";
+import { ArrowLeft, Ban, CircleX, FilePlus2, Pencil, Play, RefreshCcw, Undo2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -255,7 +255,117 @@ function SuspendDialog({
   );
 }
 
-type Pending = null | "details" | "start" | "change" | "issue" | "suspend" | "reactivate" | "pastDue" | "active";
+/** The last day a cancellation at the end of the period (or trial) leaves the school, as shown in the dialog. */
+function cancelEndsOn(account: SchoolAccount): string | null {
+  if (account.subscription) return account.subscription.periodEnd;
+  return account.school.trialEndsAt ? account.school.trialEndsAt.slice(0, 10) : null;
+}
+
+/** The Super Admin cancels for the school: at the end of its period (or trial), or now. A reason is required. */
+function CancelDialog({
+  account,
+  onClose,
+  onDone,
+}: {
+  account: SchoolAccount;
+  onClose: () => void;
+  onDone: (next: SchoolAccount, immediate: boolean) => void;
+}) {
+  const { t, lang } = useI18n();
+  const locale = localeFor(lang);
+  const form = useForm({ reason: "", when: "PERIOD_END" as "PERIOD_END" | "NOW" });
+  const endsOn = cancelEndsOn(account);
+  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const reason = form.values.reason.trim();
+    const problems: Problems = {};
+    if (!reason) problems.reason = "validation.required";
+    else if (reason.length > 500) problems.reason = "validation.tooLong";
+    if (!form.check(problems, t, event.currentTarget)) return;
+    const immediate = form.values.when === "NOW";
+    const result: { account?: SchoolAccount } = {};
+    const ok = await form.submit(t, async () => {
+      result.account = await platformBillingApi.cancel(account.school.id, reason, immediate);
+    });
+    if (ok && result.account) onDone(result.account, immediate);
+  };
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      title={t("billing.cancelFor.title", { name: account.school.name })}
+      description={t("billing.cancelFor.description")}
+      closeLabel={t("common.close")}
+    >
+      <form method="post" className="flex flex-col gap-3.5" onSubmit={onSubmit} noValidate>
+        <FormAlert message={form.formError} />
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-1 text-[13.5px] font-semibold text-ink-2">{t("billing.cancelFor.when")}</legend>
+          <label className="flex items-start gap-2 text-[14px]">
+            <input
+              type="radio"
+              name="when"
+              value="PERIOD_END"
+              checked={form.values.when === "PERIOD_END"}
+              onChange={() => form.set("when", "PERIOD_END")}
+            />
+            <span>
+              {account.subscription
+                ? t("billing.cancelFor.periodEnd", { date: endsOn ? formatPlainDate(endsOn, locale) : "—" })
+                : t("billing.cancelFor.trialEnd", { date: endsOn ? formatPlainDate(endsOn, locale) : "—" })}
+            </span>
+          </label>
+          <label className="flex items-start gap-2 text-[14px]">
+            <input
+              type="radio"
+              name="when"
+              value="NOW"
+              checked={form.values.when === "NOW"}
+              onChange={() => form.set("when", "NOW")}
+            />
+            <span>{t("billing.cancelFor.now")}</span>
+          </label>
+        </fieldset>
+        <TextAreaField
+          label={t("billing.cancelFor.reason")}
+          name="reason"
+          value={form.values.reason}
+          maxLength={500}
+          placeholder={t("billing.cancelFor.placeholder")}
+          onChange={(e) => form.set("reason", e.target.value)}
+          error={form.errors.reason}
+          required
+          data-autofocus
+        />
+        <div className="flex justify-end gap-2">
+          <button type="button" className="btn" onClick={onClose}>
+            {t("common.cancel")}
+          </button>
+          <button type="submit" className="btn btn-danger" disabled={form.submitting}>
+            {form.submitting
+              ? t("common.working")
+              : form.values.when === "NOW"
+                ? t("billing.cancelFor.submitNow")
+                : t("billing.cancelFor.submit")}
+          </button>
+        </div>
+      </form>
+    </Dialog>
+  );
+}
+
+type Pending =
+  | null
+  | "details"
+  | "start"
+  | "change"
+  | "issue"
+  | "suspend"
+  | "reactivate"
+  | "pastDue"
+  | "active"
+  | "cancel"
+  | "resume";
 
 /** /app/platform/schools/[id]: the Super Admin manages one school's subscription, invoices and status. */
 export function SchoolAccountView({ id }: { id: string }) {
@@ -364,7 +474,7 @@ export function SchoolAccountView({ id }: { id: string }) {
                     })}
                   </dd>
                 ) : null}
-                {sub.cancelAtPeriodEnd ? (
+                {sub.cancelAtPeriodEnd && !data.cancellation ? (
                   <dd className="col-span-2 text-[13px] text-bad" data-testid="account-cancelling">
                     {t("billing.account.cancelling", { date: formatPlainDate(sub.periodEnd, locale) })}
                   </dd>
@@ -391,6 +501,24 @@ export function SchoolAccountView({ id }: { id: string }) {
             <dt>{t("billing.account.users")}</dt>
             <dd>{school.userCount.toLocaleString("en-IN")}</dd>
           </dl>
+          {data.cancellation && !suspended ? (
+            <div className="alert alert-bad flex-col items-start gap-1" role="status" data-testid="account-cancellation">
+              <strong className="text-[13.5px]">
+                {data.cancellation.endsOn
+                  ? t(data.cancellation.trial ? "billing.cancellation.trialEnds" : "billing.cancellation.ends", {
+                      date: formatPlainDate(data.cancellation.endsOn, locale),
+                    })
+                  : t("billing.cancellation.title")}
+              </strong>
+              <span className="text-[13px]">
+                {t("billing.cancellation.by", {
+                  name: data.cancellation.requestedByName ?? t("common.system"),
+                  date: formatDateTime(data.cancellation.requestedAt, locale),
+                })}
+                {data.cancellation.reason ? ` · ${data.cancellation.reason}` : ""}
+              </span>
+            </div>
+          ) : null}
           {!suspended ? (
             <div className="flex flex-wrap gap-2">
               {sub ? (
@@ -413,6 +541,27 @@ export function SchoolAccountView({ id }: { id: string }) {
                 <RefreshCcw size={16} aria-hidden="true" />
                 {t("billing.change.button")}
               </button>
+              {data.cancellation ? (
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => setPending("resume")}
+                  data-testid="account-resume"
+                >
+                  <Undo2 size={16} aria-hidden="true" />
+                  {t("billing.cancelFor.resume")}
+                </button>
+              ) : sub || school.status === "TRIAL" || school.status === "PAST_DUE" ? (
+                <button
+                  type="button"
+                  className="btn btn-danger btn-sm"
+                  onClick={() => setPending("cancel")}
+                  data-testid="account-cancel"
+                >
+                  <CircleX size={16} aria-hidden="true" />
+                  {t("billing.cancelFor.button")}
+                </button>
+              ) : null}
             </div>
           ) : null}
           {!sub && !suspended && !data.details.stateCode ? (
@@ -505,6 +654,31 @@ export function SchoolAccountView({ id }: { id: string }) {
           }
         />
       ) : null}
+      {pending === "cancel" ? (
+        <CancelDialog
+          account={data}
+          onClose={close}
+          onDone={(_next, immediate) =>
+            done(
+              immediate
+                ? t("billing.cancelFor.doneNow", { name: school.name })
+                : t("billing.cancelFor.done", { name: school.name }),
+            )
+          }
+        />
+      ) : null}
+      <ConfirmDialog
+        open={pending === "resume"}
+        title={t("billing.cancelFor.resumeTitle", { name: school.name })}
+        body={t("billing.cancelFor.resumeBody")}
+        confirmLabel={t("billing.cancelFor.resume")}
+        danger={false}
+        onClose={close}
+        onConfirm={async () => {
+          await platformBillingApi.resume(school.id);
+          done(t("billing.cancelFor.resumed", { name: school.name }));
+        }}
+      />
       {pending === "suspend" ? (
         <SuspendDialog
           account={data}

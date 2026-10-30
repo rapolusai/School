@@ -16,7 +16,7 @@ export type TaxSplit = "CGST_SGST" | "IGST";
 
 export type NoticeKind = "TRIAL_ENDING" | "TRIAL_ENDED" | "PAYMENT_OVERDUE";
 
-export type RenewalKind = "OVERDUE" | "DUE_FOR_RENEWAL" | "TRIAL_ENDING";
+export type RenewalKind = "OVERDUE" | "DUE_FOR_RENEWAL" | "TRIAL_ENDING" | "CANCELLING" | "DOWNGRADE_SCHEDULED";
 
 /** A plan of the catalogue. Prices are per student before GST; `schools` is for the Super Admin only. */
 export type PlanView = {
@@ -65,6 +65,18 @@ export type SubscriptionView = {
 export type InvoiceKind = "PERIOD" | "UPGRADE";
 
 export type Suspension = { suspendedAt: string; reason: string };
+
+/**
+ * A cancellation waiting to take effect (docs/api/phase-3-subscriptions.md, section 5): the school is suspended after
+ * endsOn, the period's last day or, for a school still on its trial (`trial`), the trial's.
+ */
+export type Cancellation = {
+  endsOn: PlainDate | null;
+  requestedAt: string;
+  reason: string | null;
+  requestedByName: string | null;
+  trial: boolean;
+};
 
 export type InvoiceSummary = {
   id: string;
@@ -159,6 +171,10 @@ export type SchoolBilling = {
   details: BillingDetails;
   invoices: InvoiceSummary[];
   notice: BillingNotice;
+  /** Null unless the school cancelled. */
+  cancellation?: Cancellation | null;
+  /** False while Akshara takes no online payments (invoices are paid by bank transfer). */
+  onlinePayments?: boolean;
 };
 
 /** GET /api/platform/billing/schools/{id}: one school's billing as the Super Admin manages it. */
@@ -172,6 +188,7 @@ export type SchoolAccount = {
   unpaidPaise: number;
   overduePaise: number;
   notice: BillingNotice;
+  cancellation?: Cancellation | null;
 };
 
 export type RenewalRow = {
@@ -186,6 +203,10 @@ export type RenewalRow = {
   days: number;
   amountPaise: number | null;
   invoices: number | null;
+  /** DOWNGRADE_SCHEDULED: the plan the school moves to at the renewal. */
+  pendingPlan?: Plan | null;
+  /** CANCELLING: the reason given, if any. */
+  note?: string | null;
 };
 
 export type PlatformHealth = {

@@ -57,6 +57,15 @@ public final class BillingViews {
     public record Suspension(Instant suspendedAt, String reason) {
     }
 
+    /**
+     * A cancellation waiting to take effect: the school is suspended instead of renewed after {@code endsOn} (the
+     * current period's last day, or the trial's last day for a school not paying yet: {@code trial}).
+     * {@code requestedByName} is the School Admin, or the Super Admin who cancelled for the school.
+     */
+    public record Cancellation(LocalDate endsOn, Instant requestedAt, String reason, String requestedByName,
+            boolean trial) {
+    }
+
     /** {@code kind}: PERIOD (a period's own invoice) or UPGRADE (the rest of a period after an upgrade). */
     public record InvoiceSummary(UUID id, String invoiceNo, LocalDate invoiceDate, LocalDate dueDate,
             LocalDate periodStart, LocalDate periodEnd, Plan plan, BillingCycle billingCycle, long totalPaise,
@@ -96,26 +105,33 @@ public final class BillingViews {
         static final Notice NONE = new Notice(null, null, null, 0, 0, null);
     }
 
-    /** The school's own Billing page. {@code trialDaysLeft} is null when the school is not on trial. */
+    /**
+     * The school's own Billing page. {@code trialDaysLeft} is null when the school is not on trial.
+     * {@code cancellation} is null unless the school cancelled. {@code onlinePayments} is false while Akshara has no
+     * payment gateway switched on (invoices are then paid by bank transfer).
+     */
     public record SchoolBilling(TenantStatus status, Plan plan, Instant trialEndsAt, Integer trialDaysLeft,
             long activeStudents, List<PlanView> plans, SubscriptionView subscription, BillingDetails details,
-            List<InvoiceSummary> invoices, Notice notice) {
+            List<InvoiceSummary> invoices, Notice notice, Cancellation cancellation, boolean onlinePayments) {
     }
 
-    /** One school's billing as the Super Admin manages it. */
+    /** One school's billing as the Super Admin manages it. {@code cancellation} is null unless it cancelled. */
     public record SchoolAccount(TenantSummary school, long activeStudents, SubscriptionView subscription,
             BillingDetails details, Suspension suspension, List<InvoiceSummary> invoices, long unpaidPaise,
-            long overduePaise, Notice notice) {
+            long overduePaise, Notice notice, Cancellation cancellation) {
     }
 
     /**
      * A row of the Super Admin's renewals list. {@code kind} is OVERDUE (date: the oldest unpaid due date, amount:
      * what is overdue), DUE_FOR_RENEWAL (date: the next renewal, amount: the next invoice with GST, or before GST
-     * when the state is not known) or TRIAL_ENDING (date: the trial's last day). {@code days} counts from today: days
-     * left, or negative days past.
+     * when the state is not known), TRIAL_ENDING (date: the trial's last day), CANCELLING (the school cancelled; date:
+     * the last day it works, the period's or the trial's) or DOWNGRADE_SCHEDULED (date: the next renewal, when
+     * {@code pendingPlan} takes over; amount: the next invoice as for DUE_FOR_RENEWAL). {@code days} counts from
+     * today: days left, or negative days past. {@code pendingPlan} is the scheduled downgrade, {@code note} the
+     * cancellation's reason; both null otherwise.
      */
     public record RenewalRow(UUID tenantId, String name, String code, TenantStatus status, Plan plan, String kind,
-            LocalDate date, long days, Long amountPaise, Integer invoices) {
+            LocalDate date, long days, Long amountPaise, Integer invoices, Plan pendingPlan, String note) {
     }
 
     /**
