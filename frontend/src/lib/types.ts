@@ -42,6 +42,8 @@ export type SignupRequest = {
   adminName: string;
   adminEmail: string;
   password: string;
+  /** Starter when left out. Every plan's features are open during the trial. */
+  plan?: Plan;
 };
 
 export type SignupResponse = { tenantId: string; schoolCode: string; trialEndsAt: string };

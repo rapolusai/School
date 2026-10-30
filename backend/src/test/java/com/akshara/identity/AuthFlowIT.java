@@ -336,6 +336,37 @@ class AuthFlowIT extends IntegrationTest {
     }
 
     @Test
+    void signupStartsOnTheChosenPlanOrStarter() throws Exception {
+        api.get("/api/me", api.login(api.signup()).accessToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tenant.plan").value("STARTER"));
+
+        String code = TestApi.randomCode();
+        String email = "admin@" + code + ".akshara.test";
+        api.post("/api/public/signup", null, signup(code, email, TestApi.PASSWORD, "GROWTH"))
+                .andExpect(status().isCreated());
+        api.get("/api/me", api.login(code, email, TestApi.PASSWORD).accessToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tenant.plan").value("GROWTH"))
+                .andExpect(jsonPath("$.tenant.status").value("TRIAL"));
+
+        api.post("/api/public/signup", null, signup(TestApi.randomCode(), "a@b.akshara.test", TestApi.PASSWORD, "GOLD"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void anyoneCanReadThePlanCatalogue() throws Exception {
+        api.get("/api/public/plans", null)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(3))
+                .andExpect(jsonPath("$[0].plan").value("STARTER"))
+                .andExpect(jsonPath("$[0].maxStudents").value(300))
+                .andExpect(jsonPath("$[1].popular").value(true))
+                .andExpect(jsonPath("$[2].maxStudents").doesNotExist())
+                .andExpect(jsonPath("$[0].schools").doesNotExist());
+    }
+
+    @Test
     void signupCreatesTheFourteenStandardRoles() throws Exception {
         Session admin = api.login(api.signup());
         api.get("/api/roles", admin.accessToken())
@@ -379,6 +410,13 @@ class AuthFlowIT extends IntegrationTest {
                 {"schoolName":"Test","schoolCode":"%s","board":"CBSE","city":"Pune",
                  "adminName":"Asha","adminEmail":"%s","password":"%s"}
                 """.formatted(code, email, password);
+    }
+
+    private static String signup(String code, String email, String password, String plan) {
+        return """
+                {"schoolName":"Test","schoolCode":"%s","board":"CBSE","city":"Pune",
+                 "adminName":"Asha","adminEmail":"%s","password":"%s","plan":"%s"}
+                """.formatted(code, email, password, plan);
     }
 
     private static MockHttpServletRequestBuilderWithIp fromIp(String ip, String json) {

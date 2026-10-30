@@ -23,7 +23,10 @@ import com.akshara.platform.TenantStatus;
 import com.akshara.shared.AksharaProperties;
 import com.akshara.shared.PasswordRules;
 
-/** Self-service sign-up: a school starts on a free trial of the Starter plan. */
+/**
+ * Self-service sign-up: a school starts on a free trial of the plan it chose (Starter when it sends none). The trial
+ * unlocks every feature; the plan sets the price and limits once the school pays.
+ */
 @RestController
 public class SignupController {
 
@@ -47,7 +50,8 @@ public class SignupController {
             @Size(max = 100) String city,
             @NotBlank @Size(max = 200) String adminName,
             @NotBlank @Email @Size(max = 254) String adminEmail,
-            @NotBlank @Size(min = 10, max = 200, message = "Use at least 10 characters.") String password) {
+            @NotBlank @Size(min = 10, max = 200, message = "Use at least 10 characters.") String password,
+            Plan plan) {
     }
 
     public record SignupResponse(UUID tenantId, String schoolCode, Instant trialEndsAt) {
@@ -60,7 +64,8 @@ public class SignupController {
         limiter.take(http.getRemoteAddr());
         Instant trialEndsAt = Instant.now().plus(properties.trial().length());
         var provisioned = provisioning.provision(new SchoolProvisioning.NewSchool(request.schoolName(),
-                request.schoolCode(), request.board(), request.city(), Plan.STARTER, request.adminName(),
+                request.schoolCode(), request.board(), request.city(),
+                request.plan() == null ? Plan.STARTER : request.plan(), request.adminName(),
                 request.adminEmail(), request.password()), TenantStatus.TRIAL, trialEndsAt, null);
         return new SignupResponse(provisioned.tenant().id(), provisioned.tenant().code(),
                 provisioned.tenant().trialEndsAt());

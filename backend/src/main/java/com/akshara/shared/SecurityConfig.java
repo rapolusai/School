@@ -54,6 +54,9 @@ public class SecurityConfig {
      */
     static final String PUBLIC_VEHICLE_POSITIONS = "/api/public/transport/vehicles/*/positions";
 
+    /** The plan catalogue, shown on the sign-up page before the school has an account. */
+    static final String PUBLIC_PLANS = "/api/public/plans";
+
     /** Checks a certificate by the token in its QR code (no sign-in; rate-limited by the certificates module). */
     static final String PUBLIC_VERIFY = "/api/public/verify/*";
 
@@ -75,6 +78,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, PUBLIC_ENQUIRIES).permitAll()
                         .requestMatchers(HttpMethod.POST, PUBLIC_VEHICLE_POSITIONS).permitAll()
                         .requestMatchers(HttpMethod.GET, PUBLIC_VERIFY).permitAll()
+                        .requestMatchers(HttpMethod.GET, PUBLIC_PLANS).permitAll()
                         .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
                         .requestMatchers("/api/platform/**").hasAuthority(Permissions.PLATFORM_ADMIN)
                         .requestMatchers("/api/**").authenticated()

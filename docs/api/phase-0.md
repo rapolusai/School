@@ -27,7 +27,8 @@ A Super Admin's refresh token is a separate httpOnly, `SameSite=Strict` cookie n
 
 | Method | Path | Body | Success |
 | --- | --- | --- | --- |
-| POST | `/api/public/signup` | `{ schoolName, schoolCode, board, city, adminName, adminEmail, password }` | `201 { tenantId, schoolCode, trialEndsAt }` |
+| POST | `/api/public/signup` | `{ schoolName, schoolCode, board, city, adminName, adminEmail, password, plan? }` (`plan`: `STARTER` when left out) | `201 { tenantId, schoolCode, trialEndsAt }` |
+| GET | `/api/public/plans` | — | `200 PlanView[]` (the plan catalogue; `schools` is null) |
 | POST | `/api/auth/login` | `{ schoolCode, email, password }` | `200 AuthResponse` + refresh cookie |
 | POST | `/api/auth/refresh` | (refresh cookie) | `200 AuthResponse` + rotated refresh cookie |
 | POST | `/api/auth/logout` | (refresh cookie) | `204`, cookie cleared, token family revoked |
