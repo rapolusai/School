@@ -21,6 +21,8 @@ const api = vi.hoisted(() => ({
   suspend: vi.fn(),
   reactivate: vi.fn(),
   updateDetails: vi.fn(),
+  cancel: vi.fn(),
+  resume: vi.fn(),
 }));
 
 vi.mock("@/lib/billing-api", async (importOriginal) => {
@@ -201,6 +203,77 @@ describe("SchoolAccountView", () => {
     );
     expect(screen.getByTestId("account-cancelling")).toHaveTextContent("Cancelled by the school: ends on 8 Oct 2027");
     expect(screen.getByText("₹20,750 + GST (250 students × ₹83)")).toBeInTheDocument();
+  });
+
+  it("cancels for a school at period end with a reason, and takes it back", async () => {
+    const user = userEvent.setup();
+    const school = { ...SUNRISE_SUMMARY, status: "ACTIVE", plan: "GROWTH" };
+    api.account.mockResolvedValue(account({ school, subscription: PAYING }));
+    const cancelled = account({
+      school,
+      subscription: { ...PAYING, cancelAtPeriodEnd: true, cancelRequestedAt: "2026-10-21T05:00:00Z" },
+      cancellation: {
+        endsOn: "2027-10-08",
+        requestedAt: "2026-10-21T05:00:00Z",
+        reason: "Asked by phone",
+        requestedByName: "Ravi (Super Admin)",
+        trial: false,
+      },
+    });
+    api.cancel.mockResolvedValue(cancelled);
+    renderAsSuperAdmin(<SchoolAccountView id="t1" />);
+    await user.click(await screen.findByTestId("account-cancel"));
+    const dialog = await screen.findByRole("dialog", { name: "Cancel Sunrise Public School's subscription" });
+    expect(dialog).toHaveTextContent("At the end of the paid period (8 Oct 2027)");
+    await user.click(within(dialog).getByRole("button", { name: "Cancel at period end" }));
+    expect(await within(dialog).findByText("Fill in this field.")).toBeInTheDocument();
+    expect(api.cancel).not.toHaveBeenCalled();
+
+    api.account.mockResolvedValue(cancelled);
+    await user.type(within(dialog).getByLabelText("Reason"), "Asked by phone");
+    await user.click(within(dialog).getByRole("button", { name: "Cancel at period end" }));
+    await waitFor(() => expect(api.cancel).toHaveBeenCalledWith("t1", "Asked by phone", false));
+    const alert = await screen.findByTestId("account-cancellation");
+    expect(alert).toHaveTextContent("Cancelled: ends on 8 Oct 2027");
+    expect(alert).toHaveTextContent("By Ravi (Super Admin)");
+    expect(screen.queryByTestId("account-cancelling")).not.toBeInTheDocument();
+
+    api.resume.mockResolvedValue(account({ school, subscription: PAYING }));
+    api.account.mockResolvedValue(account({ school, subscription: PAYING }));
+    await user.click(screen.getByTestId("account-resume"));
+    const confirm = await screen.findByRole("dialog", { name: "Keep Sunrise Public School's subscription?" });
+    await user.click(within(confirm).getByRole("button", { name: "Take back cancellation" }));
+    await waitFor(() => expect(api.resume).toHaveBeenCalledWith("t1"));
+    await waitFor(() => expect(screen.queryByTestId("account-cancellation")).not.toBeInTheDocument());
+  });
+
+  it("ends a subscription now, which suspends the school", async () => {
+    const user = userEvent.setup();
+    const school = { ...SUNRISE_SUMMARY, status: "ACTIVE", plan: "GROWTH" };
+    api.account.mockResolvedValue(account({ school, subscription: PAYING }));
+    const ended = account({
+      school: { ...school, status: "SUSPENDED" },
+      subscription: PAYING,
+      suspension: { suspendedAt: "2026-10-21T05:00:00Z", reason: "Subscription ended by Akshara: Closed down" },
+    });
+    api.cancel.mockResolvedValue(ended);
+    renderAsSuperAdmin(<SchoolAccountView id="t1" />);
+    await user.click(await screen.findByTestId("account-cancel"));
+    const dialog = await screen.findByRole("dialog", { name: "Cancel Sunrise Public School's subscription" });
+    await user.click(within(dialog).getByLabelText(/Now: suspend the school today/));
+    await user.type(within(dialog).getByLabelText("Reason"), "Closed down");
+    api.account.mockResolvedValue(ended);
+    await user.click(within(dialog).getByRole("button", { name: "End now and suspend" }));
+    await waitFor(() => expect(api.cancel).toHaveBeenCalledWith("t1", "Closed down", true));
+    expect(await screen.findByTestId("account-suspended")).toHaveTextContent("Subscription ended by Akshara");
+  });
+
+  it("offers a trial school's cancellation for when its trial ends", async () => {
+    const user = userEvent.setup();
+    renderAsSuperAdmin(<SchoolAccountView id="t1" />);
+    await user.click(await screen.findByTestId("account-cancel"));
+    const dialog = await screen.findByRole("dialog", { name: "Cancel Sunrise Public School's subscription" });
+    expect(dialog).toHaveTextContent("When the free trial ends (12 Oct 2026)");
   });
 
   it("says when the school does not exist", async () => {

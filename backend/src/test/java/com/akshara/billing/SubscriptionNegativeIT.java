@@ -263,8 +263,8 @@ class SubscriptionNegativeIT extends IntegrationTest {
         api.post("/api/billing/plan", admin.accessToken(), """
                 {"plan":null}""").andExpect(status().isBadRequest());
         api.post("/api/billing/plan", admin.accessToken(), "[]").andExpect(status().isBadRequest());
-        // The trial cannot be cancelled; resume and withdraw with nothing to take back are harmless.
-        api.post("/api/billing/cancel", admin.accessToken(), null).andExpect(status().isConflict());
+        // Resume and withdraw with nothing to take back are harmless. (A trial can be cancelled: see
+        // SubscriptionCancellationIT.)
         api.post("/api/billing/resume", admin.accessToken(), null).andExpect(status().isOk());
         api.delete("/api/billing/plan/pending", admin.accessToken()).andExpect(status().isOk());
         // The Super Admin has no school plan to change.

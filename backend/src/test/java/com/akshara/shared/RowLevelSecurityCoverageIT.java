@@ -54,11 +54,15 @@ import com.jayway.jsonpath.JsonPath;
  */
 class RowLevelSecurityCoverageIT extends IntegrationTest {
 
-    /** Tables that are not owned by one school. Everything else must be isolated. */
+    /**
+     * Tables that are not owned by one school. Everything else must be isolated. audit.platform_event is the Super
+     * Admin's trail across schools: written from any request, read only through the platform.admin API.
+     */
     static final Set<String> NOT_SCHOOL_OWNED = Set.of("platform.tenant", "platform.platform_admin",
             "public.flyway_schema_history", "billing.subscription", "billing.invoice_counter",
             "payroll.statutory_rate", "payroll.tax_rule", "payroll.tax_slab", "payroll.pt_slab_default",
-            "platform.rate_limit", "platform.platform_refresh_token", "platform.signed_out_session");
+            "platform.rate_limit", "platform.platform_refresh_token", "audit.platform_event",
+            "platform.signed_out_session");
 
     /** Tables whose isolation comes from a parent row instead of their own tenant_id. */
     static final Set<String> ISOLATED_THROUGH_PARENT = Set.of("identity.user_role");

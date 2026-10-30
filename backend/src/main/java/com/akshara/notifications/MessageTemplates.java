@@ -100,6 +100,33 @@ public final class MessageTemplates {
     /** The one-time code of "Forgot password", sent to the person's own email. */
     public static final String PASSWORD_RESET = "identity.password_reset";
 
+    /** To a school's admins: Akshara issued a subscription invoice. */
+    public static final String BILLING_INVOICE_ISSUED = "billing.invoice_issued";
+
+    /** To a school's admins: a subscription invoice is fully paid. */
+    public static final String BILLING_INVOICE_PAID = "billing.invoice_paid";
+
+    /** To a school's admins: the school is past due (an invoice overdue, or the trial ended unpaid). */
+    public static final String BILLING_PAST_DUE = "billing.past_due";
+
+    /** To a school's admins: the school is suspended. */
+    public static final String BILLING_SUSPENDED = "billing.suspended";
+
+    /** To a school's admins: the school's suspension was lifted. */
+    public static final String BILLING_REACTIVATED = "billing.reactivated";
+
+    /** To a school's admins: the subscription (or trial) was cancelled and ends on a date. */
+    public static final String BILLING_CANCEL_SCHEDULED = "billing.cancel_scheduled";
+
+    /** To a school's admins: a cancellation was taken back. */
+    public static final String BILLING_CANCEL_WITHDRAWN = "billing.cancel_withdrawn";
+
+    /** To a school's admins: the subscription renews soon. */
+    public static final String BILLING_RENEWAL_REMINDER = "billing.renewal_reminder";
+
+    /** To a school's admins: the free trial ends soon. */
+    public static final String BILLING_TRIAL_ENDING = "billing.trial_ending";
+
     /**
      * Templates whose text is a secret for its recipient alone (a sign-in code): the message log never shows their
      * text, and it is wiped once a provider has delivered it.
@@ -264,7 +291,62 @@ public final class MessageTemplates {
                             + "ignore this message.",
                     HINDI, "{school}: आपका Akshara पासवर्ड रीसेट कोड {code} है। यह 15 मिनट तक मान्य है। इसे किसी को "
                             + "न बताएँ, विद्यालय के कर्मचारियों को भी नहीं। यदि आपने यह नहीं माँगा है, तो इस संदेश को अनदेखा करें।",
-                    TELUGU, "{school}: మీ Akshara పాస్‌వర్డ్ రీసెట్ కోడ్ {code}. ఇది 15 నిమిషాలు చెల్లుతుంది. దీన్ని ఎవరికీ, పాఠశాల సిబ్బందికి కూడా చెప్పవద్దు. మీరు దీన్ని అడగకపోతే ఈ సందేశాన్ని పట్టించుకోకండి.")));
+                    TELUGU, "{school}: మీ Akshara పాస్‌వర్డ్ రీసెట్ కోడ్ {code}. ఇది 15 నిమిషాలు చెల్లుతుంది. దీన్ని ఎవరికీ, పాఠశాల సిబ్బందికి కూడా చెప్పవద్దు. మీరు దీన్ని అడగకపోతే ఈ సందేశాన్ని పట్టించుకోకండి.")),
+            Map.entry(BILLING_INVOICE_ISSUED, Map.of(
+                    ENGLISH, "{school}: Akshara invoice {invoiceNo} for {amount} has been issued and is due on {date}. "
+                            + "Open Billing in Akshara to see it and pay online or by bank transfer.",
+                    HINDI, "{school}: Akshara का बिल {invoiceNo} ({amount}) जारी किया गया है, जिसकी नियत तिथि {date} है। "
+                            + "इसे देखने और ऑनलाइन या बैंक ट्रांसफ़र से भुगतान करने के लिए Akshara में बिलिंग खोलें।",
+                    TELUGU, "{school}: Akshara ఇన్‌వాయిస్ {invoiceNo} ({amount}) జారీ చేయబడింది, చెల్లింపు గడువు {date}. దీన్ని చూడటానికి, ఆన్‌లైన్‌లో లేదా బ్యాంక్ బదిలీ ద్వారా చెల్లించడానికి Akshara లో బిల్లింగ్ తెరవండి.")),
+            Map.entry(BILLING_INVOICE_PAID, Map.of(
+                    ENGLISH, "{school}: thank you. Akshara received {amount} for invoice {invoiceNo} on {date}. "
+                            + "The invoice is now fully paid.",
+                    HINDI, "{school}: धन्यवाद। Akshara को {date} को बिल {invoiceNo} के लिए {amount} प्राप्त हुए। "
+                            + "यह बिल अब पूरी तरह चुका दिया गया है।",
+                    TELUGU, "{school}: ధన్యవాదాలు. ఇన్‌వాయిస్ {invoiceNo} కోసం {date}న Akshara కు {amount} అందింది. ఈ ఇన్‌వాయిస్ ఇప్పుడు పూర్తిగా చెల్లించబడింది.")),
+            Map.entry(BILLING_PAST_DUE, Map.of(
+                    ENGLISH, "{school}: your Akshara subscription is past due. Please pay the open invoices from "
+                            + "Billing in Akshara soon: a school that stays unpaid is suspended, and then nobody can "
+                            + "sign in.",
+                    HINDI, "{school}: आपकी Akshara सदस्यता का भुगतान बकाया है। कृपया Akshara में बिलिंग से खुले बिलों का "
+                            + "जल्द भुगतान करें: भुगतान न होने पर विद्यालय निलंबित कर दिया जाता है और फिर कोई साइन इन नहीं कर सकता।",
+                    TELUGU, "{school}: మీ Akshara సబ్‌స్క్రిప్షన్ చెల్లింపు బకాయి ఉంది. దయచేసి Akshara లో బిల్లింగ్ నుండి తెరిచి ఉన్న ఇన్‌వాయిస్‌లను త్వరగా చెల్లించండి: చెల్లించని పాఠశాల నిలిపివేయబడుతుంది, అప్పుడు ఎవరూ సైన్ ఇన్ చేయలేరు.")),
+            Map.entry(BILLING_SUSPENDED, Map.of(
+                    ENGLISH, "{school} has been suspended on Akshara, so nobody can sign in. Reason: {reason} "
+                            + "Contact Akshara to have it reactivated.",
+                    HINDI, "{school} को Akshara पर निलंबित कर दिया गया है, इसलिए कोई साइन इन नहीं कर सकता। कारण: {reason} "
+                            + "दोबारा शुरू कराने के लिए Akshara से संपर्क करें।",
+                    TELUGU, "{school} Akshara లో నిలిపివేయబడింది, కాబట్టి ఎవరూ సైన్ ఇన్ చేయలేరు. కారణం: {reason} తిరిగి ప్రారంభించడానికి Akshara ను సంప్రదించండి.")),
+            Map.entry(BILLING_REACTIVATED, Map.of(
+                    ENGLISH, "{school} is active on Akshara again. Everyone can sign in as before.",
+                    HINDI, "{school} Akshara पर फिर से सक्रिय है। सभी पहले की तरह साइन इन कर सकते हैं।",
+                    TELUGU, "{school} Akshara లో మళ్లీ సక్రియంగా ఉంది. అందరూ మునుపటిలా సైన్ ఇన్ చేయవచ్చు.")),
+            Map.entry(BILLING_CANCEL_SCHEDULED, Map.of(
+                    ENGLISH, "{school}: your Akshara subscription has been cancelled ({by}). The school keeps working "
+                            + "until {date}; after that it is suspended and nobody can sign in. You can keep the "
+                            + "subscription from Billing in Akshara until then.",
+                    HINDI, "{school}: आपकी Akshara सदस्यता रद्द कर दी गई है ({by})। विद्यालय {date} तक चलता रहेगा; उसके बाद "
+                            + "इसे निलंबित कर दिया जाएगा और कोई साइन इन नहीं कर सकेगा। तब तक आप Akshara में बिलिंग से सदस्यता "
+                            + "जारी रख सकते हैं।",
+                    TELUGU, "{school}: మీ Akshara సబ్‌స్క్రిప్షన్ రద్దు చేయబడింది ({by}). పాఠశాల {date} వరకు పనిచేస్తుంది; ఆ తర్వాత నిలిపివేయబడుతుంది, ఎవరూ సైన్ ఇన్ చేయలేరు. అప్పటివరకు Akshara లో బిల్లింగ్ నుండి సబ్‌స్క్రిప్షన్‌ను కొనసాగించవచ్చు.")),
+            Map.entry(BILLING_CANCEL_WITHDRAWN, Map.of(
+                    ENGLISH, "{school}: the cancellation of your Akshara subscription has been withdrawn ({by}). "
+                            + "The subscription continues as before.",
+                    HINDI, "{school}: आपकी Akshara सदस्यता का रद्दीकरण वापस ले लिया गया है ({by})। सदस्यता पहले की तरह "
+                            + "जारी रहेगी।",
+                    TELUGU, "{school}: మీ Akshara సబ్‌స్క్రిప్షన్ రద్దు ఉపసంహరించబడింది ({by}). సబ్‌స్క్రిప్షన్ మునుపటిలా కొనసాగుతుంది.")),
+            Map.entry(BILLING_RENEWAL_REMINDER, Map.of(
+                    ENGLISH, "{school}: your Akshara subscription renews on {date}, and its next invoice will be "
+                            + "about {amount}. To change the plan or cancel, use Billing in Akshara before then.",
+                    HINDI, "{school}: आपकी Akshara सदस्यता {date} को नवीनीकृत होगी और अगला बिल लगभग {amount} का होगा। "
+                            + "प्लान बदलने या रद्द करने के लिए उससे पहले Akshara में बिलिंग का उपयोग करें।",
+                    TELUGU, "{school}: మీ Akshara సబ్‌స్క్రిప్షన్ {date}న పునరుద్ధరించబడుతుంది, తదుపరి ఇన్‌వాయిస్ సుమారు {amount} ఉంటుంది. ప్లాన్ మార్చడానికి లేదా రద్దు చేయడానికి అంతకుముందే Akshara లో బిల్లింగ్ ఉపయోగించండి.")),
+            Map.entry(BILLING_TRIAL_ENDING, Map.of(
+                    ENGLISH, "{school}: your Akshara free trial ends on {date}. To keep using Akshara, add your "
+                            + "billing details on the Billing page and contact Akshara to start a plan.",
+                    HINDI, "{school}: आपका Akshara निःशुल्क परीक्षण {date} को समाप्त होगा। Akshara का उपयोग जारी रखने के लिए "
+                            + "बिलिंग पेज पर अपने बिलिंग विवरण जोड़ें और प्लान शुरू करने के लिए Akshara से संपर्क करें।",
+                    TELUGU, "{school}: మీ Akshara ఉచిత ట్రయల్ {date}న ముగుస్తుంది. Akshara ను కొనసాగించడానికి బిల్లింగ్ పేజీలో మీ బిల్లింగ్ వివరాలు జోడించి, ప్లాన్ ప్రారంభించడానికి Akshara ను సంప్రదించండి.")));
 
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{(\\w+)}");
     private static final DateTimeFormatter ENGLISH_DATE = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH);

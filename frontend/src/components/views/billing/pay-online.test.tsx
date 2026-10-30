@@ -78,6 +78,23 @@ beforeEach(() => {
 });
 
 describe("paying an invoice online", () => {
+  it("offers no online payment while Akshara takes none, and says to pay by bank transfer", async () => {
+    mine.mockResolvedValue(
+      schoolBilling({
+        status: "ACTIVE",
+        plan: "GROWTH",
+        trialEndsAt: null,
+        trialDaysLeft: null,
+        notice: NO_NOTICE,
+        invoices: [unpaid, paid],
+        onlinePayments: false,
+      }),
+    );
+    renderInSchool(SCHOOL_ADMIN_BILLING, <SchoolBillingView />);
+    expect(await screen.findByTestId("billing-pay-offline")).toHaveTextContent("Pay by bank transfer");
+    expect(screen.queryByRole("button", { name: /Pay online/ })).not.toBeInTheDocument();
+  });
+
   it("offers Pay online only on open invoices, and opens the sandbox checkout", async () => {
     const user = userEvent.setup();
     payOnline.mockResolvedValue(order());

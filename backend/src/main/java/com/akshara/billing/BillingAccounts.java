@@ -45,10 +45,11 @@ public class BillingAccounts {
     private final StudentRoster roster;
     private final PlatformCounts counts;
     private final BillingProperties properties;
+    private final BillingGateways gateways;
 
     BillingAccounts(TenantDirectory tenants, SubscriptionRepository subscriptions, InvoiceRepository invoices,
             InvoicePaymentRepository payments, StudentRoster roster, PlatformCounts counts,
-            BillingProperties properties) {
+            BillingProperties properties, BillingGateways gateways) {
         this.tenants = tenants;
         this.subscriptions = subscriptions;
         this.invoices = invoices;
@@ -56,6 +57,7 @@ public class BillingAccounts {
         this.roster = roster;
         this.counts = counts;
         this.properties = properties;
+        this.gateways = gateways;
     }
 
     // ------------------------------------------------------------------ the school's own view
@@ -74,7 +76,8 @@ public class BillingAccounts {
                 BillingMapper.subscription(subscription, school.plan()), BillingMapper.details(subscription),
                 all.stream().map(i -> BillingMapper.summary(i, today)).toList(),
                 BillingMapper.notice(school.status(), school.trialEndsAt(), all, today, now,
-                        properties.trialWarningDays()));
+                        properties.trialWarningDays()),
+                BillingMapper.cancellation(subscription, school.trialEndsAt()), gateways.enabled());
     }
 
     /** The banner for the school's admins. */
@@ -113,7 +116,8 @@ public class BillingAccounts {
                 BillingMapper.details(subscription), BillingMapper.suspension(subscription),
                 all.stream().map(i -> BillingMapper.summary(i, today)).toList(), unpaid, overdue,
                 BillingMapper.notice(school.status(), school.trialEndsAt(), all, today, Instant.now(),
-                        properties.trialWarningDays()));
+                        properties.trialWarningDays()),
+                BillingMapper.cancellation(subscription, school.trialEndsAt()));
     }
 
     /** The plan catalogue with how many schools are on each plan. */
@@ -126,8 +130,10 @@ public class BillingAccounts {
     /**
      * What needs the Super Admin's attention, most urgent first: unpaid invoices past their due date, paid
      * subscriptions whose next period starts within {@code renewalWindowDays} (or already started) and has no invoice
-     * yet, and trials that end within {@code trialWarningDays} or have ended. Nothing here changes any school.
-     * Invoice amounts come from a security-definer function that returns per-school totals only.
+     * yet, trials that end within {@code trialWarningDays} or have ended, schools that cancelled (from the day they
+     * cancel until they end), and downgrades scheduled for the next renewal. A school that cancelled is listed as
+     * CANCELLING instead of due for renewal (it will not renew). Nothing here changes any school. Invoice amounts come
+     * from a security-definer function that returns per-school totals only.
      */
     public List<RenewalRow> renewals() {
         LocalDate today = BillingDay.today();
@@ -140,25 +146,37 @@ public class BillingAccounts {
             PlatformCounts.Unpaid owed = unpaid.getOrDefault(school.id(), PlatformCounts.Unpaid.NONE);
             if (owed.overdueCount() > 0) {
                 rows.add(row(school, "OVERDUE", owed.oldestOverdueDue(), today, owed.overduePaise(),
-                        (int) owed.overdueCount()));
+                        (int) owed.overdueCount(), null, null));
             }
             if (school.status() == TenantStatus.SUSPENDED) {
                 continue;
             }
             Subscription subscription = byTenant.get(school.id());
+            BillingViews.Cancellation cancellation = BillingMapper.cancellation(subscription, school.trialEndsAt());
+            if (cancellation != null && cancellation.endsOn() != null) {
+                rows.add(row(school, "CANCELLING", cancellation.endsOn(), today, null, null, null,
+                        cancellation.reason()));
+                continue;
+            }
             if (subscription != null && subscription.isPaid()) {
                 LocalDate next = subscription.nextRenewalOn();
-                if (ChronoUnit.DAYS.between(today, next) <= properties.renewalWindowDays()) {
+                boolean dueSoon = ChronoUnit.DAYS.between(today, next) <= properties.renewalWindowDays();
+                if (dueSoon || subscription.getPendingPlan() != null) {
                     long taxable = BillingMapper.subscription(subscription, school.plan()).nextInvoiceTaxablePaise();
                     long amount = subscription.getStateCode() == null ? taxable
                             : GstMath.tax(taxable, sellerState, subscription.getStateCode()).totalPaise();
-                    rows.add(row(school, "DUE_FOR_RENEWAL", next, today, amount, null));
+                    if (subscription.getPendingPlan() != null) {
+                        rows.add(row(school, "DOWNGRADE_SCHEDULED", next, today, amount, null,
+                                subscription.getPendingPlan(), null));
+                    } else {
+                        rows.add(row(school, "DUE_FOR_RENEWAL", next, today, amount, null, null, null));
+                    }
                 }
             }
             if (school.status() == TenantStatus.TRIAL && school.trialEndsAt() != null) {
                 LocalDate ends = BillingDay.of(school.trialEndsAt());
                 if (ChronoUnit.DAYS.between(today, ends) <= properties.trialWarningDays()) {
-                    rows.add(row(school, "TRIAL_ENDING", ends, today, null, null));
+                    rows.add(row(school, "TRIAL_ENDING", ends, today, null, null, null, null));
                 }
             }
         }
@@ -167,8 +185,8 @@ public class BillingAccounts {
     }
 
     private static RenewalRow row(TenantSummary school, String kind, LocalDate date, LocalDate today, Long amount,
-            Integer invoiceCount) {
+            Integer invoiceCount, Plan pendingPlan, String note) {
         return new RenewalRow(school.id(), school.name(), school.code(), school.status(), school.plan(), kind, date,
-                ChronoUnit.DAYS.between(today, date), amount, invoiceCount);
+                ChronoUnit.DAYS.between(today, date), amount, invoiceCount, pendingPlan, note);
     }
 }

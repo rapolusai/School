@@ -48,6 +48,17 @@ public class UserService {
                 .toList());
     }
 
+    /** The current school's active people who hold the role (for example its School Admins), by name. */
+    @Transactional(readOnly = true)
+    public List<UserSummary> activeWithRole(String roleCode) {
+        TenantContext.require();
+        return users.findAllWithRoles().stream()
+                .filter(UserAccount::isActive)
+                .filter(u -> u.roleCodes().contains(roleCode))
+                .map(UserSummary::of)
+                .toList();
+    }
+
     /** Adds a person to the current school and records it in the audit trail. */
     @Transactional
     public UserAccount createUser(String name, String email, String passwordHash, Collection<String> roleCodes,
