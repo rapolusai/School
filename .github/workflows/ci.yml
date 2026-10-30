@@ -127,6 +127,9 @@ jobs:
           DB_URL: jdbc:postgresql://localhost:5432/akshara
           COOKIE_SECURE: "false"
           ALLOWED_ORIGINS: http://localhost:3000
+          # Every spec signs up its own school from this one machine.
+          AKSHARA_SIGNUP_PERIP: "100000"
+          AKSHARA_SIGNUP_INALL: "100000"
         run: |
           mvn -B -q -DskipTests package
           nohup java -jar target/akshara-api-*.jar > ../api.log 2>&1 &

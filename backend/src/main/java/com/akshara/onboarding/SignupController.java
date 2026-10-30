@@ -3,6 +3,7 @@ package com.akshara.onboarding;
 import java.time.Instant;
 import java.util.UUID;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -20,6 +21,7 @@ import com.akshara.platform.Board;
 import com.akshara.platform.Plan;
 import com.akshara.platform.TenantStatus;
 import com.akshara.shared.AksharaProperties;
+import com.akshara.shared.PasswordRules;
 
 /** Self-service sign-up: a school starts on a free trial of the Starter plan. */
 @RestController
@@ -30,10 +32,12 @@ public class SignupController {
 
     private final SchoolProvisioning provisioning;
     private final AksharaProperties properties;
+    private final SignupRateLimiter limiter;
 
-    public SignupController(SchoolProvisioning provisioning, AksharaProperties properties) {
+    public SignupController(SchoolProvisioning provisioning, AksharaProperties properties, SignupRateLimiter limiter) {
         this.provisioning = provisioning;
         this.properties = properties;
+        this.limiter = limiter;
     }
 
     public record SignupRequest(
@@ -51,7 +55,9 @@ public class SignupController {
 
     @PostMapping("/api/public/signup")
     @ResponseStatus(HttpStatus.CREATED)
-    public SignupResponse signup(@Valid @RequestBody SignupRequest request) {
+    public SignupResponse signup(@Valid @RequestBody SignupRequest request, HttpServletRequest http) {
+        PasswordRules.check(request.password(), "password");
+        limiter.take(http.getRemoteAddr());
         Instant trialEndsAt = Instant.now().plus(properties.trial().length());
         var provisioned = provisioning.provision(new SchoolProvisioning.NewSchool(request.schoolName(),
                 request.schoolCode(), request.board(), request.city(), Plan.STARTER, request.adminName(),

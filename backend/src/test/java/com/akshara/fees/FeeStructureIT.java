@@ -238,6 +238,16 @@ class FeeStructureIT extends IntegrationTest {
                 [{"dueDate":"2026-09-10"},{"dueDate":"2026-06-10"}]"""))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors['instalments[1].dueDate']").exists());
+        // Due dates stay within six months of the year (2026-06-01 to 2027-03-31).
+        api.post("/api/fees/structures", admin.accessToken(), base.formatted(yearId, class6, heads.tuition(), """
+                [{"dueDate":"2020-01-01"}]"""))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors['instalments[0].dueDate']").value(
+                        "Pick a due date from 2025-12-01 to 2027-09-30, close to 2026-27."));
+        api.post("/api/fees/structures", admin.accessToken(), base.formatted(yearId, class6, heads.tuition(), """
+                [{"dueDate":"2026-06-10"},{"dueDate":"2027-10-01"}]"""))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors['instalments[1].dueDate']").exists());
         // At most twelve instalments.
         StringBuilder thirteen = new StringBuilder("[");
         for (int i = 0; i < 13; i++) {

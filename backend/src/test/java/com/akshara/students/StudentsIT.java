@@ -8,6 +8,7 @@ import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -150,6 +151,16 @@ class StudentsIT extends IntegrationTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errors.dateOfBirth").exists());
         }
+
+        // An admission date more than a year ahead is a typing mistake too.
+        api.post("/api/students", admin.accessToken(), """
+                {"admissionNo":"A-1","firstName":"Asha","dateOfBirth":"2018-01-01","gender":"FEMALE",
+                 "admissionDate":"%s","sectionId":"%s",
+                 "guardians":[{"name":"Lata","relation":"MOTHER","phone":"9876501003","primary":true}]}"""
+                .formatted(LocalDate.now().plusYears(2), sectionA))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.admissionDate").value(
+                        "Pick an admission date no more than a year from today."));
 
         fixtures.student(admin, sectionA, "A-1", "Asha", null, "Lata Rao", "9876501003");
         api.post("/api/students", admin.accessToken(),

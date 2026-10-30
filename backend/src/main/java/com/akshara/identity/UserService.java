@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.akshara.audit.AuditService;
 import com.akshara.shared.ApiException;
+import com.akshara.shared.SignedOutSessions;
 import com.akshara.shared.TenantContext;
 
 /**
@@ -27,9 +28,11 @@ public class UserService {
     private final RoleRepository roles;
     private final AuditService audit;
     private final RefreshTokenRepository tokens;
+    private final SignedOutSessions signedOut;
 
     public UserService(UserRepository users, RoleRepository roles, AuditService audit,
-            RefreshTokenRepository tokens) {
+            RefreshTokenRepository tokens, SignedOutSessions signedOut) {
+        this.signedOut = signedOut;
         this.users = users;
         this.roles = roles;
         this.audit = audit;
@@ -94,7 +97,7 @@ public class UserService {
         UserAccount user = users.findById(userId).orElseThrow(() -> ApiException.notFound("User"));
         user.changePasswordHash(passwordHash);
         users.flush();
-        tokens.revokeAllOf(userId, Instant.now());
+        endSessions(userId);
         if (actor == null) {
             audit.record("user.password_set", "user", userId, details);
         } else {
@@ -114,12 +117,19 @@ public class UserService {
             return false;
         }
         users.flush();
-        tokens.revokeAllOf(userId, Instant.now());
+        endSessions(userId);
         if (actor == null) {
             audit.record("user.disabled", "user", userId, details);
         } else {
             audit.record(actor, "user.disabled", "user", userId, details);
         }
         return true;
+    }
+
+    /** Ends every open session of the person: no refresh, and their access tokens stop working at once. */
+    private void endSessions(UUID userId) {
+        Instant now = Instant.now();
+        tokens.openFamiliesOf(userId).forEach(family -> signedOut.signOut(family, now));
+        tokens.revokeAllOf(userId, now);
     }
 }

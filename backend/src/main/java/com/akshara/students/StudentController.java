@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.akshara.shared.ApiException;
 import com.akshara.shared.ApiExceptionHandler;
+import com.akshara.shared.PasswordRules;
 import com.akshara.students.StudentForms.CreateStudent;
 import com.akshara.students.StudentForms.GuardianFields;
 import com.akshara.students.StudentForms.Leave;
@@ -169,6 +170,7 @@ public class StudentController {
         if (request.password() == null || request.password().length() < 10) {
             throw ApiException.badRequest("Use at least 10 characters.", "password");
         }
+        PasswordRules.check(request.password(), "password");
         return passwordEncoder.encode(request.password());
     }
 }

@@ -360,6 +360,10 @@ public class StudentImportService {
                 rowErrors.add(new RowError(line, "date_of_birth", "Check the date of birth: at most "
                         + StudentService.MAX_AGE_AT_ADMISSION + " years before the admission date."));
             }
+            if (admissionDate != null && StudentService.admittedTooFarAhead(admissionDate)) {
+                rowErrors.add(new RowError(line, "admission_date",
+                        "Pick an admission date no more than a year from today."));
+            }
 
             Gender gender = parseGender(row.cell("gender"));
             if (gender == null) {

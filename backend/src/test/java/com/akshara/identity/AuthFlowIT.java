@@ -90,9 +90,15 @@ class AuthFlowIT extends IntegrationTest {
         assertThat(second.refreshToken()).isNotBlank().isNotEqualTo(first.refreshToken());
         assertThat(second.accessToken()).isNotBlank();
 
+        Session otherDevice = api.login(school);
+        api.get("/api/me", second.accessToken()).andExpect(status().isOk());
         api.logout(second.refreshToken()).andExpect(status().isNoContent())
                 .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("Max-Age=0")));
         api.refresh(second.refreshToken()).andExpect(status().isUnauthorized());
+        // Signing out ends this session's access tokens at once, not when they expire; other devices stay signed in.
+        api.get("/api/me", second.accessToken()).andExpect(status().isUnauthorized());
+        api.get("/api/me", first.accessToken()).andExpect(status().isUnauthorized());
+        api.get("/api/me", otherDevice.accessToken()).andExpect(status().isOk());
     }
 
     @Test
@@ -321,6 +327,10 @@ class AuthFlowIT extends IntegrationTest {
         api.post("/api/public/signup", null, signup(TestApi.randomCode(), "not-an-email", "short"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors.adminEmail").exists())
+                .andExpect(jsonPath("$.errors.password").exists());
+        // Long enough, but too easy to guess.
+        api.post("/api/public/signup", null, signup(TestApi.randomCode(), "a@b.akshara.test", "Password@123"))
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors.password").exists());
         api.post("/api/public/signup", null, "{not json").andExpect(status().isBadRequest());
     }

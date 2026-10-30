@@ -34,10 +34,15 @@ class PasswordResetIT extends IntegrationTest {
         confirm(school.code(), school.adminEmail(), wrong(code), "Brand-new-password-1")
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors.code").exists());
+        // A password that is too easy to guess is refused without using the code up.
+        confirm(school.code(), school.adminEmail(), code, "1111111111")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.newPassword").exists());
         confirm(school.code(), school.adminEmail(), code, "Brand-new-password-1")
                 .andExpect(status().isNoContent());
 
         api.refresh(before.refreshToken()).andExpect(status().isUnauthorized());
+        api.get("/api/me", before.accessToken()).andExpect(status().isUnauthorized());
         api.post("/api/auth/login", null, login(school.code(), school.adminEmail(), TestApi.PASSWORD))
                 .andExpect(status().isUnauthorized());
         api.login(school.code(), school.adminEmail(), "Brand-new-password-1");

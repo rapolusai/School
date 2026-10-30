@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.akshara.shared.ApiException;
+import com.akshara.shared.PasswordRules;
 
 @RestController
 @RequestMapping("/api/users")
@@ -62,6 +63,7 @@ public class UserController {
     @PreAuthorize("hasAuthority('users.manage')")
     @ResponseStatus(HttpStatus.CREATED)
     public UserSummary create(@Valid @RequestBody CreateUserRequest request) {
+        PasswordRules.check(request.password(), "password");
         String hash = passwordEncoder.encode(request.password());
         return UserSummary.of(userService.createUser(request.name(), request.email(), hash, request.roles(), null));
     }

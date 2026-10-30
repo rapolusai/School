@@ -1,6 +1,7 @@
 package com.akshara.students;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -716,7 +717,17 @@ public class StudentService {
     static final int MAX_AGE_AT_ADMISSION = 25;
     private static final LocalDate EARLIEST_BIRTH = LocalDate.of(1900, 1, 1);
 
+    /** An admission date more than a year from today (India time) is a typo, not a planned admission. */
+    static boolean admittedTooFarAhead(LocalDate admissionDate) {
+        return admissionDate.isAfter(LocalDate.now(INDIA).plusYears(1));
+    }
+
+    private static final ZoneId INDIA = ZoneId.of("Asia/Kolkata");
+
     private void checkProfile(UUID id, Student.Profile p) {
+        if (admittedTooFarAhead(p.admissionDate())) {
+            throw ApiException.badRequest("Pick an admission date no more than a year from today.", "admissionDate");
+        }
         if (!p.dateOfBirth().isBefore(p.admissionDate())) {
             throw ApiException.badRequest("The date of birth must be before the admission date.", "dateOfBirth");
         }

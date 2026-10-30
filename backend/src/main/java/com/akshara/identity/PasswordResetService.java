@@ -30,6 +30,7 @@ import com.akshara.platform.TenantView;
 import com.akshara.shared.ApiException;
 import com.akshara.shared.Ids;
 import com.akshara.shared.LoginRateLimiter;
+import com.akshara.shared.PasswordRules;
 import com.akshara.shared.TenantContext;
 
 /**
@@ -130,6 +131,8 @@ public class PasswordResetService {
         String school = schoolCode.trim().toLowerCase(Locale.ROOT);
         String key = "reset-confirm|" + clientIp + "|" + school + "|" + cleanEmail.toLowerCase(Locale.ROOT);
         rateLimiter.attempt(key);
+        // Before the code is checked, so a weak choice does not use the code up.
+        PasswordRules.check(newPassword, "newPassword");
 
         TenantView tenant = tenants.findByCode(school).filter(t -> t.status().allowsSignIn()).orElse(null);
         String typed = code == null ? "" : code.replaceAll("\\s", "");

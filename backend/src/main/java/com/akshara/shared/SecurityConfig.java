@@ -1,8 +1,10 @@
 package com.akshara.shared;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -19,6 +21,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.BadJwtException;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
@@ -56,7 +60,7 @@ public class SecurityConfig {
     /** Web only: the one-off "migrate" task runs without a web server, so there is no HttpSecurity to build from. */
     @Bean
     @ConditionalOnWebApplication
-    SecurityFilterChain api(HttpSecurity http, JwtService jwtService) throws Exception {
+    SecurityFilterChain api(HttpSecurity http, JwtDecoder jwtDecoder) throws Exception {
         http
                 .csrf(csrf -> csrf.disable()) // bearer tokens; the refresh cookie is SameSite=Strict and Origin-checked
                 .cors(cors -> cors.disable()) // the web app calls the API through its own origin
@@ -76,7 +80,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(rs -> rs
-                        .jwt(jwt -> jwt.decoder(jwtDecoder(jwtService)).jwtAuthenticationConverter(converter()))
+                        .jwt(jwt -> jwt.decoder(jwtDecoder).jwtAuthenticationConverter(converter()))
                         .authenticationEntryPoint(entryPoint())
                         .accessDeniedHandler(deniedHandler()))
                 .exceptionHandling(e -> e.authenticationEntryPoint(entryPoint()).accessDeniedHandler(deniedHandler()))
@@ -95,9 +99,26 @@ public class SecurityConfig {
                 "The request could not be read.");
     }
 
+    /** Verifies the token, then refuses one whose sign-in session has been signed out. */
     @Bean
-    JwtDecoder jwtDecoder(JwtService jwtService) {
-        return jwtService.decoder();
+    JwtDecoder jwtDecoder(JwtService jwtService, SignedOutSessions signedOut) {
+        JwtDecoder decoder = jwtService.decoder();
+        return token -> {
+            Jwt jwt = decoder.decode(token);
+            String sid = jwt.getClaimAsString(JwtService.CLAIM_SESSION);
+            if (sid != null) {
+                UUID sessionId;
+                try {
+                    sessionId = UUID.fromString(sid);
+                } catch (IllegalArgumentException e) {
+                    throw new BadJwtException("The token's session id is not valid.");
+                }
+                if (signedOut.isSignedOut(sessionId, Instant.now())) {
+                    throw new BadJwtException("This session has been signed out.");
+                }
+            }
+            return jwt;
+        };
     }
 
     @Bean
