@@ -58,6 +58,9 @@ public class AcademicsService {
     public record SubjectView(UUID id, String name, String code, int classCount) {
     }
 
+    /** Longest academic year: a normal one is 10 to 12 months, a changeover year a little more. */
+    static final int MAX_YEAR_MONTHS = 18;
+
     private final AcademicYearRepository years;
     private final SchoolClassRepository classes;
     private final SectionRepository sections;
@@ -151,6 +154,10 @@ public class AcademicsService {
     private void checkYear(UUID id, String name, LocalDate startsOn, LocalDate endsOn) {
         if (!endsOn.isAfter(startsOn)) {
             throw ApiException.badRequest("The end date must be after the start date.", "endsOn");
+        }
+        if (endsOn.isAfter(startsOn.plusMonths(MAX_YEAR_MONTHS))) {
+            throw ApiException.badRequest("An academic year can be at most " + MAX_YEAR_MONTHS + " months long.",
+                    "endsOn");
         }
         if (years.existsByNameExcept(name, id == null ? new UUID(0, 0) : id)) {
             throw ApiException.conflict("There is already an academic year called " + name + ".", "name");

@@ -59,6 +59,11 @@ class AcademicsIT extends IntegrationTest {
                 {"name":"2026-27","startsOn":"2027-03-31","endsOn":"2026-06-01"}""")
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors.endsOn").exists());
+        // A typo such as 2056 for 2027: at most 18 months.
+        api.post("/api/academics/years", admin.accessToken(), """
+                {"name":"2030-56","startsOn":"2030-06-01","endsOn":"2056-03-31"}""")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.endsOn").value("An academic year can be at most 18 months long."));
         api.post("/api/academics/years", admin.accessToken(), """
                 {"name":"2025-26","startsOn":"2030-06-01","endsOn":"2031-03-31"}""")
                 .andExpect(status().isConflict())

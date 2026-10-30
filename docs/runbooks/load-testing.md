@@ -28,7 +28,10 @@ requests under 800 ms (`P95_MS`) and 99% under 2 s (`P99_MS`), saving a register
 2. **Let the generator past the firewall's rate limits** for the test: put its public IP in `waf_trusted_ips`
    (e.g. `["203.0.113.10/32"]`) in `environments/staging.tfvars`, plan and apply. Without this the WAF blocks the
    generator after 2,000 requests in 5 minutes.
-3. **Seed schools** once per test run (a new `RUN_ID` makes new schools):
+3. **Raise the sign-up limit** for the test: the API allows 5 sign-ups an hour from one IP and 100 in all. Set
+   `AKSHARA_SIGNUP_PERIP` and `AKSHARA_SIGNUP_INALL` above `SCHOOLS` on the staging API while seeding, then remove
+   them.
+4. **Seed schools** once per test run (a new `RUN_ID` makes new schools):
 
    ```bash
    export BASE_URL=https://staging.example.com RUN_ID=lt1 LOAD_PASSWORD='<a throwaway password>'
@@ -37,14 +40,14 @@ requests under 800 ms (`P95_MS`) and 99% under 2 s (`P99_MS`), saving a register
 
    Each school gets Class 5 A and B with a class teacher each, 40 students per section from the CSV import, and
    sign-ins for five parents per section.
-4. **Smoke test** (one minute, a few users) to check the scripts against this environment:
+5. **Smoke test** (one minute, a few users) to check the scripts against this environment:
    `k6 run -e SCHOOLS=200 -e PROFILE=smoke loadtest/scenarios.js`
-5. **Peak test**: `k6 run -e SCHOOLS=200 -e PROFILE=peak -e SCALE=1 --summary-export=peak-1.json loadtest/scenarios.js`.
+6. **Peak test**: `k6 run -e SCHOOLS=200 -e PROFILE=peak -e SCALE=1 --summary-export=peak-1.json loadtest/scenarios.js`.
    Watch the environment's CloudWatch dashboard while it runs (`terraform output dashboard_url`).
-6. **Find the limit**: repeat with `SCALE=2`, `3`, … until a pass mark fails. The last passing `SCALE` × 1,000
+7. **Find the limit**: repeat with `SCALE=2`, `3`, … until a pass mark fails. The last passing `SCALE` × 1,000
    schools is the environment's capacity at that size.
-7. **Undo step 2**: empty `waf_trusted_ips`, plan and apply.
-8. **Write the capacity report** (below) and size production from it.
+8. **Undo steps 2 and 3**: empty `waf_trusted_ips`, plan and apply; remove the sign-up limit overrides.
+9. **Write the capacity report** (below) and size production from it.
 
 ## Sizing for the test
 

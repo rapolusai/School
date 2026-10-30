@@ -28,6 +28,8 @@ public class JwtService {
     public static final String CLAIM_ROLES = "roles";
     public static final String CLAIM_NAME = "name";
     public static final String CLAIM_TYPE = "typ";
+    /** The sign-in session (refresh-token family) a school token belongs to; signing out ends it. */
+    public static final String CLAIM_SESSION = "sid";
 
     private final JwtEncoder encoder;
     private final JwtDecoder decoder;
@@ -54,16 +56,17 @@ public class JwtService {
         return properties.auth().accessTokenTtl().toSeconds();
     }
 
-    public String issueSchoolToken(UUID userId, UUID tenantId, String name, List<String> roles,
+    public String issueSchoolToken(UUID userId, UUID tenantId, UUID sessionId, String name, List<String> roles,
             List<String> permissions) {
-        return issue(userId, name, "school", tenantId, roles, permissions);
+        return issue(userId, name, "school", tenantId, sessionId, roles, permissions);
     }
 
     public String issuePlatformToken(UUID adminId, String name) {
-        return issue(adminId, name, "platform", null, List.of("SUPER_ADMIN"), List.of(Permissions.PLATFORM_ADMIN));
+        return issue(adminId, name, "platform", null, null, List.of("SUPER_ADMIN"),
+                List.of(Permissions.PLATFORM_ADMIN));
     }
 
-    private String issue(UUID subject, String name, String type, UUID tenantId, List<String> roles,
+    private String issue(UUID subject, String name, String type, UUID tenantId, UUID sessionId, List<String> roles,
             List<String> permissions) {
         Instant now = Instant.now();
         JwtClaimsSet.Builder claims = JwtClaimsSet.builder()
@@ -77,6 +80,9 @@ public class JwtService {
                 .claim(CLAIM_PERMISSIONS, permissions);
         if (tenantId != null) {
             claims.claim(CLAIM_TENANT, tenantId.toString());
+        }
+        if (sessionId != null) {
+            claims.claim(CLAIM_SESSION, sessionId.toString());
         }
         JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
         return encoder.encode(JwtEncoderParameters.from(header, claims.build())).getTokenValue();

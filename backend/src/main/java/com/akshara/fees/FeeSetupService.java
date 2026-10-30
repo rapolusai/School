@@ -2,6 +2,7 @@ package com.akshara.fees;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.Period;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -56,6 +57,12 @@ public class FeeSetupService {
             new HeadForm("Exam fee", FeeHeadKind.EXAM, false, true),
             new HeadForm("Lab fee", FeeHeadKind.LAB, false, true),
             new HeadForm("Transport fee", FeeHeadKind.TRANSPORT, false, true));
+
+    /**
+     * How far an instalment may fall before the academic year starts (fees collected in advance) or after it ends.
+     * Beyond this the date is a typo, and every student would show it as long overdue.
+     */
+    static final Period DUE_DATE_SLACK = Period.ofMonths(6);
 
     private final FeeHeadRepository heads;
     private final FeeStructureRepository structures;
@@ -210,7 +217,7 @@ public class FeeSetupService {
             throw ApiException.conflict(className + " already has a fee structure for " + year.name() + ".",
                     "classId");
         }
-        Plan plan = plan(form, Set.of());
+        Plan plan = plan(form, year, Set.of());
         FeeStructure structure = structures.saveAndFlush(new FeeStructure(year.id(), form.classId()));
         write(structure, plan);
         record(actor, "fee_structure.saved", "fee_structure", structure.getId(), details(structure, year, className,
@@ -237,7 +244,7 @@ public class FeeSetupService {
         Set<UUID> headsInUse = current.isEmpty() ? Set.of()
                 : shares.findByInstalmentIdIn(current.stream().map(FeeInstalment::getId).toList()).stream()
                         .map(FeeInstalmentShare::getHeadId).collect(Collectors.toSet());
-        Plan plan = plan(form, headsInUse);
+        Plan plan = plan(form, year, headsInUse);
         write(structure, plan);
         structure.edited();
         structures.saveAndFlush(structure);
@@ -279,7 +286,7 @@ public class FeeSetupService {
             long totalPaise) {
     }
 
-    private Plan plan(StructureForm form, Set<UUID> headsAlreadyUsed) {
+    private Plan plan(StructureForm form, YearInfo year, Set<UUID> headsAlreadyUsed) {
         Map<UUID, FeeHead> headById = duesService.headsById();
         Map<UUID, Long> amounts = new LinkedHashMap<>();
         long total = 0;
@@ -300,8 +307,14 @@ public class FeeSetupService {
         }
         List<InstalmentForm> list = form.instalments();
         LocalDate previous = null;
+        LocalDate earliest = year.startsOn().minus(DUE_DATE_SLACK);
+        LocalDate latest = year.endsOn().plus(DUE_DATE_SLACK);
         for (int i = 0; i < list.size(); i++) {
             LocalDate due = list.get(i).dueDate();
+            if (due.isBefore(earliest) || due.isAfter(latest)) {
+                throw ApiException.badRequest("Pick a due date from " + earliest + " to " + latest + ", close to "
+                        + year.name() + ".", "instalments[" + i + "].dueDate");
+            }
             if (previous != null && !due.isAfter(previous)) {
                 throw ApiException.badRequest("Each instalment must be due after the one before it.",
                         "instalments[" + i + "].dueDate");

@@ -20,6 +20,7 @@ import com.akshara.platform.TenantDirectory;
 import com.akshara.platform.TenantStatus;
 import com.akshara.platform.TenantSummary;
 import com.akshara.shared.CurrentUser;
+import com.akshara.shared.PasswordRules;
 
 /** A Super Admin adds a school directly (sales-led onboarding). It starts active, with no trial. */
 @RestController
@@ -48,6 +49,7 @@ public class PlatformSchoolController {
     @PostMapping("/api/platform/tenants")
     @ResponseStatus(HttpStatus.CREATED)
     public TenantSummary create(@Valid @RequestBody CreateSchoolRequest request) {
+        PasswordRules.check(request.password(), "password");
         Actor actor = new Actor(CurrentUser.requireId(), CurrentUser.name().orElse("Platform admin"));
         var provisioned = provisioning.provision(new SchoolProvisioning.NewSchool(request.schoolName(),
                 request.schoolCode(), request.board(), request.city(), request.plan(), request.adminName(),

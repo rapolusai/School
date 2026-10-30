@@ -27,6 +27,8 @@ import com.akshara.shared.ApiException;
 import com.akshara.shared.Ids;
 import com.akshara.shared.JwtService;
 import com.akshara.shared.LoginRateLimiter;
+import com.akshara.shared.PasswordRules;
+import com.akshara.shared.SignedOutSessions;
 import com.akshara.shared.TenantContext;
 
 /**
@@ -85,12 +87,15 @@ public class AuthService {
     private final TransactionTemplate tx;
     private final AksharaProperties properties;
     private final UserService userService;
+    private final SignedOutSessions signedOut;
     private final SecureRandom random = new SecureRandom();
     private final String dummyHash;
 
     public AuthService(TenantDirectory tenants, UserRepository users, RefreshTokenRepository tokens,
             PasswordEncoder passwordEncoder, JwtService jwt, LoginRateLimiter rateLimiter, AuditService audit,
-            PlatformTransactionManager transactionManager, AksharaProperties properties, UserService userService) {
+            PlatformTransactionManager transactionManager, AksharaProperties properties, UserService userService,
+            SignedOutSessions signedOut) {
+        this.signedOut = signedOut;
         this.userService = userService;
         this.tenants = tenants;
         this.users = users;
@@ -149,7 +154,7 @@ public class AuthService {
                 return null;
             }
             user.recordLogin();
-            String refreshToken = issueRefreshToken(user.getId(), Ids.newId(), tenant.id()).raw();
+            IssuedToken refreshToken = issueRefreshToken(user.getId(), Ids.newId(), tenant.id());
             audit.record(actor, "auth.login", "user", user.getId(), Map.of());
             return session(user, tenant, refreshToken);
         }));
@@ -180,6 +185,7 @@ public class AuthService {
                     // An old token came back: someone may have copied it. End every session in this chain.
                     UUID userId = token.getUserId();
                     tokens.revokeFamily(token.getFamilyId(), now);
+                    signedOut.signOut(token.getFamilyId(), now);
                     users.findById(userId).ifPresent(u -> audit.record(new Actor(u.getId(), u.getName()),
                             "auth.refresh_reused", "user", u.getId(), Map.of()));
                     return new RefreshRejected(true);
@@ -205,7 +211,7 @@ public class AuthService {
                 // A retried token keeps its first rotation time, so its grace period never extends.
                 token.rotateTo(next.entity());
             }
-            return session(user, tenant, next.raw());
+            return session(user, tenant, next);
         }));
         if (outcome instanceof RefreshRejected rejected) {
             throw rejected;
@@ -238,6 +244,7 @@ public class AuthService {
         if (passwordEncoder.matches(newPassword, currentHash)) {
             throw ApiException.badRequest("Choose a password different from the current one.", "newPassword");
         }
+        PasswordRules.check(newPassword, "newPassword");
         rateLimiter.reset(key);
 
         String newHash = passwordEncoder.encode(newPassword);
@@ -245,7 +252,7 @@ public class AuthService {
                 new Actor(userId, readOnly.execute(s -> users.findById(userId).map(UserAccount::getName).orElse(null))));
         return tx.execute(status -> {
             UserAccount user = users.findByIdWithRoles(userId).orElseThrow(() -> ApiException.notFound("User"));
-            return session(user, tenant, issueRefreshToken(user.getId(), Ids.newId(), tenantId).raw());
+            return session(user, tenant, issueRefreshToken(user.getId(), Ids.newId(), tenantId));
         });
     }
 
@@ -259,6 +266,7 @@ public class AuthService {
             tokens.findByTokenHash(parsed.get().hash()).ifPresent(token -> {
                 UUID userId = token.getUserId();
                 tokens.revokeFamily(token.getFamilyId(), Instant.now());
+                signedOut.signOut(token.getFamilyId(), Instant.now());
                 users.findById(userId).ifPresent(u -> audit.record(new Actor(u.getId(), u.getName()),
                         "auth.logout", "user", u.getId(), Map.of()));
             });
@@ -266,10 +274,10 @@ public class AuthService {
         }));
     }
 
-    private Session session(UserAccount user, TenantView tenant, String refreshToken) {
-        String accessToken = jwt.issueSchoolToken(user.getId(), tenant.id(), user.getName(), user.roleCodes(),
-                user.permissions());
-        return new Session(accessToken, jwt.ttlSeconds(), Me.of(user, tenant), refreshToken);
+    private Session session(UserAccount user, TenantView tenant, IssuedToken refreshToken) {
+        String accessToken = jwt.issueSchoolToken(user.getId(), tenant.id(), refreshToken.entity().getFamilyId(),
+                user.getName(), user.roleCodes(), user.permissions());
+        return new Session(accessToken, jwt.ttlSeconds(), Me.of(user, tenant), refreshToken.raw());
     }
 
     private record IssuedToken(String raw, RefreshToken entity) {

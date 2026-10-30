@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.akshara.shared.PasswordRules;
 import com.akshara.staff.LeaveService.StaffLeave;
 import com.akshara.staff.StaffAttendanceService.PersonMonth;
 import com.akshara.staff.StaffForms.CreateStaff;
@@ -92,6 +93,7 @@ public class StaffController {
     @PreAuthorize(MANAGE)
     @ResponseStatus(HttpStatus.CREATED)
     public StaffDetail create(@Valid @RequestBody CreateStaff request) {
+        PasswordRules.check(request.password(), "password");
         String hash = passwordEncoder.encode(request.password());
         return staff.create(request, hash, StaffAuth.actor());
     }
@@ -110,6 +112,7 @@ public class StaffController {
     @PutMapping("/{userId}/password")
     @PreAuthorize(MANAGE)
     public StaffDetail setPassword(@PathVariable UUID userId, @Valid @RequestBody SetPassword request) {
+        PasswordRules.check(request.password(), "password");
         String hash = passwordEncoder.encode(request.password());
         return staff.setPassword(userId, hash, StaffAuth.actor());
     }
