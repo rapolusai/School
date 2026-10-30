@@ -5387,3 +5387,60 @@
     print-color-adjust: exact;
   }
 }
+
+/* ---- subjects by class ---- */
+@layer components {
+  .subject-plan th,
+  .subject-plan td {
+    padding: 8px 6px;
+  }
+  .subject-plan .subject-plan-name {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--surface);
+    min-width: 170px;
+    text-align: left;
+    white-space: normal;
+  }
+  .subject-plan td[data-hint="suggested"] {
+    background: var(--accent-soft);
+  }
+  .subject-plan td[data-hint="optional"] {
+    outline: 1px dashed var(--accent);
+    outline-offset: -4px;
+  }
+  .subject-plan-box {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+  .subject-plan-box:disabled {
+    cursor: default;
+  }
+  .subject-plan-copy {
+    margin-top: 4px;
+    min-width: 116px;
+    padding: 2px 6px;
+    font-size: 12px;
+    text-transform: none;
+    letter-spacing: 0;
+    height: auto;
+  }
+  .subject-plan-bar {
+    position: sticky;
+    bottom: 12px;
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 16px;
+    box-shadow: 0 6px 24px rgb(0 0 0 / 0.12);
+  }
+  .subject-plan-bar > .alert {
+    flex-basis: 100%;
+  }
+}

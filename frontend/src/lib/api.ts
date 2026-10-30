@@ -29,6 +29,9 @@ import type {
   Subject,
   SubjectRef,
   SubjectRequest,
+  SubjectPlan,
+  SubjectPlanRequest,
+  SubjectPlanResult,
   TeacherRef,
   TenantSummary,
   UpdateStudentRequest,
@@ -433,6 +436,11 @@ export const api = {
       method: "PUT",
       body: { subjectIds },
     }),
+
+  getSubjectPlan: (board?: string) =>
+    apiFetch<SubjectPlan>(`/api/academics/subject-plan${board ? `?board=${encodeURIComponent(board)}` : ""}`),
+  saveSubjectPlan: (body: SubjectPlanRequest) =>
+    apiFetch<SubjectPlanResult>("/api/academics/subject-plan", { method: "PUT", body }),
 
   getSchoolProfile: () => apiFetch<SchoolProfile>("/api/school/profile"),
   updateSchoolProfile: (body: SchoolProfileRequest) =>

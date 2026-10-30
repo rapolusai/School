@@ -120,8 +120,9 @@ function ChildHealth({ childId }: { childId: string }) {
   );
 }
 
-/** Today's infirmary visit of a child, if any (days in India: a visit at 00:30 IST is that day's). Pure; exported for tests. */
+/** Today's infirmary visit of a child, if any. Pure; exported for tests. */
 export function visitToday(record: MedicalRecord | undefined, today: string): InfirmaryVisit | undefined {
+  // Visit times are UTC instants; "today" is the school's date in India, so compare India dates.
   const day = (instant: string) => todayInIndia(new Date(instant));
   return record?.visits.find((v) => day(v.timeIn) === today || (v.timeOut !== null && day(v.timeOut) === today));
 }
