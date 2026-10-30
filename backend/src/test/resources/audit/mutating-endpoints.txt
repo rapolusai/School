@@ -391,6 +391,7 @@ POST /api/users | audited
 PUT /api/academics/classes/{id} | audited
 PUT /api/academics/classes/{id}/subjects | audited
 PUT /api/academics/sections/{id} | audited
+PUT /api/academics/subject-plan | audited
 PUT /api/academics/subjects/{id} | audited
 PUT /api/academics/years/{id} | audited
 PUT /api/accounts/bank-accounts/{id} | audited
