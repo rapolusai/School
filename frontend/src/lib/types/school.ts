@@ -250,3 +250,34 @@ export type Child = {
   classTeacherName: string | null;
   academicYearName: string | null;
 };
+
+/** A board's usual subject; `subjectId` is the school's subject of that name, when it has one. */
+export type StandardSubject = { name: string; code: string; subjectId: string | null };
+
+export type PlanClass = {
+  id: string;
+  name: string;
+  /** The class level its name stands for: -2 nursery, -1 LKG, 0 UKG, 1 to 12; null when the name does not say. */
+  level: number | null;
+  subjectIds: string[];
+  /** Standard subjects usually taught at this level, by name. */
+  suggested: string[];
+  /** Standard subjects some schools at this level teach (a third language, a stream subject). */
+  optional: string[];
+};
+
+export type SubjectPlan = {
+  board: string;
+  schoolBoard: string;
+  boards: string[];
+  subjects: SubjectRef[];
+  standard: StandardSubject[];
+  classes: PlanClass[];
+};
+
+export type SubjectPlanRequest = {
+  newSubjects: { name: string; code: string | null }[];
+  classes: { classId: string; subjectIds: string[]; newSubjects: string[] }[];
+};
+
+export type SubjectPlanResult = { subjectsCreated: number; classesChanged: number };

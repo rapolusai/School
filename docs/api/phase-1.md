@@ -76,6 +76,36 @@ characters, unique (ignoring case); `displayOrder` 0–999. Section name 1–20 
 its class; `capacity` 1–500 or empty for no limit; the class teacher must have the Teacher role in
 this school. Subject name 1–100 characters and code up to 20 letters, digits or hyphens, both unique.
 
+### Subjects by class — `/api/academics/subject-plan`
+
+Every class's subjects on one screen, with the board's usual subjects as suggestions. Reading needs
+`academics.read`; saving needs `settings.manage`.
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| GET | `/subject-plan?board=` | | `200 SubjectPlan`; `board` (CBSE, ICSE, STATE, IB, CAMBRIDGE) defaults to the school's |
+| PUT | `/subject-plan` | `SubjectPlanRequest` | `200 { subjectsCreated, classesChanged }` |
+
+```ts
+type StandardSubject = { name: string; code: string; subjectId: string | null }; // the school's subject of that name
+type PlanClass = { id: string; name: string;
+  level: number | null;          // -2 nursery, -1 LKG, 0 UKG, 1–12; null when the name does not say
+  subjectIds: string[];          // what the class studies now
+  suggested: string[]; optional: string[] };  // standard subject names for the level
+type SubjectPlan = { board: string; schoolBoard: string; boards: string[]; subjects: SubjectRef[];
+  standard: StandardSubject[]; classes: PlanClass[] };
+type SubjectPlanRequest = {
+  newSubjects?: { name: string; code?: string | null }[];   // max 200
+  classes: { classId: string; subjectIds: string[]; newSubjects?: string[] }[] };  // max 300
+```
+
+Rules: each class sent gets exactly the subjects listed (existing ones by id, new ones by name); classes not
+sent are unchanged. A new subject whose name the school already has (ignoring case) reuses that subject; a
+new subject's code is dropped when another subject already uses it. A class named twice, a class or subject
+of another school, or a new subject a class names but `newSubjects` does not list is `400`, and nothing is
+written. The class level is read from names such as "LKG", "PP1", "Class 5", "Grade V" or "Std 10th".
+Audit: `subject.created`, `class.subjects_updated` per class, and `subjects.plan_saved`.
+
 ### School profile — `/api/school/profile`
 
 | Method | Path | Permission | Success |

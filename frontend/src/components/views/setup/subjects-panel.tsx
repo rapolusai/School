@@ -1,6 +1,7 @@
 "use client";
 
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { LayoutGrid, Pencil, Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog } from "@/components/ui/dialog";
@@ -111,12 +112,18 @@ export function SubjectsPanel({ subjects, canManage }: { subjects: ApiData<Subje
           <h2 id="subjects-title">{t("setup.subjects.title")}</h2>
           <p className="mt-1 text-sm text-ink-2">{t("setup.subjects.sub")}</p>
         </div>
-        {canManage ? (
-          <button type="button" className="btn btn-primary" onClick={() => setEditing("new")}>
-            <Plus size={18} aria-hidden="true" />
-            {t("setup.subjects.add")}
-          </button>
-        ) : null}
+        <div className="flex flex-wrap gap-2">
+          <Link href="/app/setup/subjects" className={canManage ? "btn" : "btn btn-primary"}>
+            <LayoutGrid size={18} aria-hidden="true" />
+            {t("subjectPlan.open")}
+          </Link>
+          {canManage ? (
+            <button type="button" className="btn btn-primary" onClick={() => setEditing("new")}>
+              <Plus size={18} aria-hidden="true" />
+              {t("setup.subjects.add")}
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {subjects.error && !subjects.data ? (
